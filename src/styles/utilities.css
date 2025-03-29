@@ -17,13 +17,13 @@
     border-radius: calc(var(--radius) + 2px);
     background: linear-gradient(
       90deg,
-      rgba(155, 135, 245, 0.5),
-      rgba(126, 105, 171, 0.5),
-      rgba(110, 89, 165, 0.5),
-      rgba(139, 92, 246, 0.5),
-      rgba(30, 174, 219, 0.5),
-      rgba(51, 195, 240, 0.5),
-      rgba(155, 135, 245,.5)
+      rgba(155, 135, 245, 0.6),
+      rgba(126, 105, 171, 0.6),
+      rgba(110, 89, 165, 0.6),
+      rgba(139, 92, 246, 0.6),
+      rgba(30, 174, 219, 0.6),
+      rgba(51, 195, 240, 0.6),
+      rgba(155, 135, 245, 0.6)
     );
     background-size: 300% 300%;
     z-index: -1;
@@ -47,7 +47,7 @@
   }
   
   .light-mode .gradient-text {
-    @apply from-purple-800 to-indigo-800;
+    @apply from-purple-900 to-indigo-900;
   }
   
   .dark-mode .gradient-text {

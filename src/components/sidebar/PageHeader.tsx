@@ -35,7 +35,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   };
 
   return (
-    <div className="p-4 flex items-center justify-between border-b border-white/10 bg-black/30">
+    <div className="p-4 flex items-center justify-between border-b light-mode:border-gray-400 dark-mode:border-white/10 light-mode:bg-gray-100 dark-mode:bg-black/30">
       <button 
         onClick={onPrevPage}
         disabled={!canGoToPrevPage}
@@ -51,7 +51,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
               type="text"
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
-              className="glass-input text-lg font-semibold bg-black/20 border-b border-purple-400 px-2 py-1 outline-none"
+              className="glass-input text-lg font-semibold dark:bg-black/20 light:bg-white border-b border-purple-400 px-2 py-1 outline-none"
               autoFocus
             />
             <button 
@@ -63,7 +63,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
           </div>
         ) : (
           <div className="flex items-center">
-            <h1 className="text-lg font-semibold text-purple-200">{title}</h1>
+            <h1 className="text-lg font-semibold light-mode:text-purple-800 dark-mode:text-purple-200">{title}</h1>
             <button 
               onClick={handleEditTitle}
               className="p-1 ml-1 rounded-full hover:bg-purple-500/20"

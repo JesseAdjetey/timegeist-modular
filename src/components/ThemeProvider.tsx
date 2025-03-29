@@ -15,8 +15,8 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       document.documentElement.classList.add('light-mode');
       document.documentElement.classList.remove('dark-mode');
       
-      // Lighter background gradient for light mode
-      const endColor = adjustColorBrightness(backgroundColor, 15); // Reduced brightness shift
+      // Lighter background gradient for light mode with more subtle shift
+      const endColor = adjustColorBrightness(backgroundColor, 5);
       document.body.style.background = `linear-gradient(to bottom right, ${backgroundColor}, ${endColor})`;
     } else {
       document.documentElement.classList.add('dark-mode');

@@ -6,7 +6,7 @@
   }
   
   .light-mode .glass {
-    @apply bg-white/90 border-gray-400 shadow-sm;
+    @apply bg-white/90 border-gray-400 border shadow-sm;
   }
   
   .dark-mode .glass {
@@ -18,7 +18,7 @@
   }
   
   .light-mode .glass-sidebar {
-    @apply border-gray-400;
+    @apply border-gray-400 bg-white/95;
   }
   
   .dark-mode .glass-sidebar {
@@ -30,7 +30,7 @@
   }
   
   .light-mode .glass-card {
-    @apply border-gray-400 shadow-sm;
+    @apply border-gray-400 shadow-sm bg-white/95;
   }
   
   .dark-mode .glass-card {
@@ -42,7 +42,7 @@
   }
   
   .light-mode .glass-input {
-    @apply bg-white/90 border-gray-400;
+    @apply bg-white/95 border-gray-400;
   }
   
   .dark-mode .glass-input {

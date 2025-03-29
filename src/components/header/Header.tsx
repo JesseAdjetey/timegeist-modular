@@ -76,13 +76,13 @@ const Header = () => {
   };
 
   return (
-    <div className="glass mx-4 mt-4 rounded-xl p-4 flex items-center justify-between border border-white/10">
+    <div className="glass mx-4 mt-4 rounded-xl p-4 flex items-center justify-between border light-mode:border-gray-400 dark-mode:border-white/10">
       {/* Left Side */}
       <div className="flex items-center gap-4">
         <Button 
           variant="outline" 
           onClick={handleTodayClick} 
-          className="bg-white/10 hover:bg-white/20 border border-white/10"
+          className="light-mode:bg-white/95 light-mode:text-gray-800 light-mode:border-gray-400 dark-mode:bg-white/10 dark-mode:border-white/10 dark-mode:hover:bg-white/20"
         >
           Today
         </Button>
@@ -90,13 +90,13 @@ const Header = () => {
         <div className="flex items-center gap-2">
           <button 
             onClick={handlePrevClick}
-            className="p-1 rounded-full hover:bg-white/10"
+            className="p-1 rounded-full light-mode:hover:bg-gray-200 dark-mode:hover:bg-white/10"
           >
             <ChevronLeft size={18} />
           </button>
           <button 
             onClick={handleNextClick}
-            className="p-1 rounded-full hover:bg-white/10"
+            className="p-1 rounded-full light-mode:hover:bg-gray-200 dark-mode:hover:bg-white/10"
           >
             <ChevronRight size={18} />
           </button>
@@ -115,7 +115,7 @@ const Header = () => {
               onClick={() => setView(view)}
               className={selectedView === view 
                 ? "bg-primary text-white" 
-                : "bg-white/10 border border-white/10 hover:bg-white/20"
+                : "light-mode:bg-white light-mode:text-gray-800 light-mode:border-gray-400 dark-mode:bg-white/10 dark-mode:border-white/10 dark-mode:hover:bg-white/20"
               }
             >
               {view}

@@ -21,13 +21,13 @@ const themeColors = [
   { name: 'Forest', value: '#064E3B' },
 ];
 
-// Light theme colors
+// Light theme colors - updated for better contrast
 const lightThemeColors = [
-  { name: 'Lavender', value: '#F1F0FB' },
-  { name: 'Soft Blue', value: '#E0EAFC' },
-  { name: 'Mint', value: '#E0F2F1' },
-  { name: 'Peach', value: '#FFF0E5' },
-  { name: 'Rose', value: '#FFF1F2' },
+  { name: 'Lavender', value: '#E6E3FA' },
+  { name: 'Soft Blue', value: '#DEE8F7' },
+  { name: 'Mint', value: '#D6EDE7' },
+  { name: 'Peach', value: '#FAEAE0' },
+  { name: 'Rose', value: '#FAE8E9' },
 ];
 
 const Settings = () => {
@@ -39,10 +39,11 @@ const Settings = () => {
   useEffect(() => {
     document.documentElement.style.setProperty('--background-start', backgroundColor);
     
-    // Update the body gradient based on the background color
-    document.body.style.background = `linear-gradient(to bottom right, ${backgroundColor}, ${adjustColorBrightness(backgroundColor, -20)})`;
+    // Update the body gradient based on the background color and theme
+    const gradientShift = themeMode === 'light' ? 5 : -20;
+    document.body.style.background = `linear-gradient(to bottom right, ${backgroundColor}, ${adjustColorBrightness(backgroundColor, gradientShift)})`;
     document.body.style.backgroundAttachment = 'fixed';
-  }, [backgroundColor]);
+  }, [backgroundColor, themeMode]);
   
   const handleThemeChange = (value: 'dark' | 'light') => {
     setThemeMode(value);
@@ -148,7 +149,7 @@ const Settings = () => {
                   h-20 rounded-lg cursor-pointer transition-all duration-300 flex items-center justify-center
                   ${backgroundColor === color.value ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:scale-105'}
                 `}
-                style={{ background: `linear-gradient(to bottom right, ${color.value}, ${adjustColorBrightness(color.value, -20)})` }}
+                style={{ background: `linear-gradient(to bottom right, ${color.value}, ${adjustColorBrightness(color.value, themeMode === 'light' ? -10 : -20)})` }}
               >
                 <span className={`font-medium ${themeMode === 'light' ? 'text-gray-800 drop-shadow-sm' : 'text-white drop-shadow-md'}`}>
                   {color.name}
