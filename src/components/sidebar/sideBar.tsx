@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Edit2, Check, Plus, X } from 'lucide-react';
 import { useSidebarStore, ModuleType } from '@/lib/store';
 import TodoModule from '../modules/TodoModule';
@@ -12,6 +12,26 @@ const SideBar = () => {
   const [newTitle, setNewTitle] = useState(pages[currentPageIndex]?.title || '');
   const [showNewPageInput, setShowNewPageInput] = useState(false);
   const [newPageTitle, setNewPageTitle] = useState('');
+  const [isTwoColumn, setIsTwoColumn] = useState(false);
+  const sidebarContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        if (entry.contentRect.width > 700) {
+          setIsTwoColumn(true);
+        } else {
+          setIsTwoColumn(false);
+        }
+      }
+    });
+
+    if (sidebarContentRef.current) {
+      resizeObserver.observe(sidebarContentRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, []);
 
   const handlePrevPage = () => {
     if (currentPageIndex > 0) {
@@ -122,13 +142,18 @@ const SideBar = () => {
         </button>
       </div>
       
-      {/* Page modules */}
-      <div className="flex-1 overflow-y-auto p-4">
+      {/* Page modules with responsive grid */}
+      <div 
+        ref={sidebarContentRef} 
+        className="flex-1 overflow-y-auto p-4"
+      >
         <ModuleSelector onSelect={handleAddModule} />
         
-        {pages[currentPageIndex]?.modules.map((moduleType, index) => 
-          renderModule(moduleType, index)
-        )}
+        <div className={`${isTwoColumn ? 'grid grid-cols-2 gap-4' : 'flex flex-col'}`}>
+          {pages[currentPageIndex]?.modules.map((moduleType, index) => 
+            renderModule(moduleType, index)
+          )}
+        </div>
         
         {/* New Page Creator */}
         {showNewPageInput ? (
