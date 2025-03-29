@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ModuleContainer from './ModuleContainer';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,12 +14,16 @@ interface Invitation {
 }
 
 interface InvitesModuleProps {
+  title?: string;
   onRemove?: () => void;
+  onTitleChange?: (title: string) => void;
   invitations?: Invitation[];
 }
 
 const InvitesModule: React.FC<InvitesModuleProps> = ({ 
+  title = "Event Invites",
   onRemove, 
+  onTitleChange,
   invitations = [
     {
       id: '1',
@@ -49,7 +52,11 @@ const InvitesModule: React.FC<InvitesModuleProps> = ({
   ] 
 }) => {
   return (
-    <ModuleContainer title="Event Invites" onRemove={onRemove}>
+    <ModuleContainer 
+      title={title} 
+      onRemove={onRemove}
+      onTitleChange={onTitleChange}
+    >
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {invitations.map(invitation => (
           <div 

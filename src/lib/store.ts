@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import dayjs, { Dayjs } from "dayjs";
@@ -19,10 +18,15 @@ interface DateStoreType {
 
 export type ModuleType = 'todo' | 'pomodoro' | 'alarms' | 'eisenhower' | 'invites';
 
+interface ModuleInstance {
+  type: ModuleType;
+  title: string;
+}
+
 interface SidebarPage {
   id: string;
   title: string;
-  modules: ModuleType[];
+  modules: ModuleInstance[];
 }
 
 interface SidebarStoreType {
@@ -33,6 +37,7 @@ interface SidebarStoreType {
   addModule: (pageIndex: number, moduleType: ModuleType) => void;
   removeModule: (pageIndex: number, moduleIndex: number) => void;
   updatePageTitle: (pageIndex: number, title: string) => void;
+  updateModuleTitle: (pageIndex: number, moduleIndex: number, title: string) => void;
 }
 
 export type CalendarEventType = {
@@ -62,7 +67,7 @@ type EventStore = {
   openEventSummary: (event: CalendarEventType) => void;
   closeEventSummary: () => void;
   toggleEventLock: (id: string, isLocked: boolean) => void;
-}
+};
 
 export const useViewStore = create<ViewStoreType>()(
   devtools(
@@ -105,12 +110,19 @@ export const useSidebarStore = create<SidebarStoreType>()(
           {
             id: '1',
             title: 'Tasks',
-            modules: ['todo', 'eisenhower']
+            modules: [
+              { type: 'todo', title: 'To-Do List' },
+              { type: 'eisenhower', title: 'Eisenhower Matrix' }
+            ]
           },
           {
             id: '2',
             title: 'Tools',
-            modules: ['pomodoro', 'alarms', 'invites']
+            modules: [
+              { type: 'pomodoro', title: 'Pomodoro' },
+              { type: 'alarms', title: 'Alarms' },
+              { type: 'invites', title: 'Event Invites' }
+            ]
           }
         ],
         currentPageIndex: 0,
@@ -130,7 +142,19 @@ export const useSidebarStore = create<SidebarStoreType>()(
           set(state => {
             const newPages = [...state.pages];
             if (newPages[pageIndex]) {
-              newPages[pageIndex].modules = [...newPages[pageIndex].modules, moduleType];
+              let defaultTitle = '';
+              switch (moduleType) {
+                case 'todo': defaultTitle = 'To-Do List'; break;
+                case 'pomodoro': defaultTitle = 'Pomodoro'; break;
+                case 'alarms': defaultTitle = 'Alarms'; break;
+                case 'eisenhower': defaultTitle = 'Eisenhower Matrix'; break;
+                case 'invites': defaultTitle = 'Event Invites'; break;
+              }
+              
+              newPages[pageIndex].modules = [
+                ...newPages[pageIndex].modules, 
+                { type: moduleType, title: defaultTitle }
+              ];
             }
             return { pages: newPages };
           });
@@ -149,6 +173,15 @@ export const useSidebarStore = create<SidebarStoreType>()(
             const newPages = [...state.pages];
             if (newPages[pageIndex]) {
               newPages[pageIndex].title = title;
+            }
+            return { pages: newPages };
+          });
+        },
+        updateModuleTitle: (pageIndex, moduleIndex, title) => {
+          set(state => {
+            const newPages = [...state.pages];
+            if (newPages[pageIndex] && newPages[pageIndex].modules[moduleIndex]) {
+              newPages[pageIndex].modules[moduleIndex].title = title;
             }
             return { pages: newPages };
           });

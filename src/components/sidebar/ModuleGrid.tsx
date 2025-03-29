@@ -1,15 +1,20 @@
 
 import React from 'react';
-import { ModuleType } from '@/lib/store';
+import { useSidebarStore } from '@/lib/store';
 import ModuleRenderer from './ModuleRenderer';
 import { useSidebarLayout } from '@/hooks/use-sidebar-layout';
 
 interface ModuleGridProps {
-  modules: ModuleType[];
+  modules: Array<{type: string; title: string}>;
   onRemoveModule: (index: number) => void;
+  onUpdateModuleTitle: (index: number, title: string) => void;
 }
 
-const ModuleGrid: React.FC<ModuleGridProps> = ({ modules, onRemoveModule }) => {
+const ModuleGrid: React.FC<ModuleGridProps> = ({ 
+  modules, 
+  onRemoveModule,
+  onUpdateModuleTitle
+}) => {
   // Module dimensions - fixed width for modules
   const MODULE_WIDTH = 320;
   
@@ -23,13 +28,14 @@ const ModuleGrid: React.FC<ModuleGridProps> = ({ modules, onRemoveModule }) => {
       ref={containerRef} 
       className={`${isTwoColumn ? 'grid grid-cols-2 gap-4 justify-items-center' : 'flex flex-col items-center'}`}
     >
-      {modules.map((moduleType, index) => (
+      {modules.map((module, index) => (
         <ModuleRenderer
           key={index}
-          type={moduleType}
+          module={module}
           index={index}
           moduleWidth={MODULE_WIDTH}
           onRemove={() => onRemoveModule(index)}
+          onTitleChange={(title) => onUpdateModuleTitle(index, title)}
         />
       ))}
     </div>

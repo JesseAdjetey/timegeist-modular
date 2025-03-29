@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import ModuleContainer from './ModuleContainer';
 import { Clock, Bell } from 'lucide-react';
@@ -11,11 +10,18 @@ interface Alarm {
 }
 
 interface AlarmsModuleProps {
+  title?: string;
   onRemove?: () => void;
+  onTitleChange?: (title: string) => void;
   initialAlarms?: Alarm[];
 }
 
-const AlarmsModule: React.FC<AlarmsModuleProps> = ({ onRemove, initialAlarms = [] }) => {
+const AlarmsModule: React.FC<AlarmsModuleProps> = ({ 
+  title = "Alarms",
+  onRemove, 
+  onTitleChange,
+  initialAlarms = [] 
+}) => {
   const [alarms, setAlarms] = useState<Alarm[]>(initialAlarms);
   const [newAlarmTitle, setNewAlarmTitle] = useState('');
   const [newAlarmTime, setNewAlarmTime] = useState('08:00');
@@ -50,7 +56,11 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({ onRemove, initialAlarms = [
   };
 
   return (
-    <ModuleContainer title="Alarms" onRemove={onRemove}>
+    <ModuleContainer 
+      title={title} 
+      onRemove={onRemove}
+      onTitleChange={onTitleChange}
+    >
       <div className="max-h-60 overflow-y-auto mb-3">
         {alarms.map(alarm => (
           <div 

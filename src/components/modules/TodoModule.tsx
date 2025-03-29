@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import ModuleContainer from './ModuleContainer';
 import { cn } from '@/lib/utils';
@@ -14,6 +13,7 @@ interface TodoItem {
 interface TodoModuleProps {
   title: string;
   onRemove?: () => void;
+  onTitleChange?: (title: string) => void;
   initialItems?: TodoItem[];
   onDragStart?: (item: TodoItem) => void;
 }
@@ -21,6 +21,7 @@ interface TodoModuleProps {
 const TodoModule: React.FC<TodoModuleProps> = ({ 
   title, 
   onRemove, 
+  onTitleChange,
   initialItems = [],
   onDragStart
 }) => {
@@ -59,7 +60,11 @@ const TodoModule: React.FC<TodoModuleProps> = ({
   };
 
   return (
-    <ModuleContainer title={title} onRemove={onRemove}>
+    <ModuleContainer 
+      title={title} 
+      onRemove={onRemove}
+      onTitleChange={onTitleChange}
+    >
       <div className="max-h-60 overflow-y-auto mb-3">
         {items.map(item => (
           <div 

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ModuleType } from '@/lib/store';
+import { ModuleInstance } from '@/lib/store';
 import TodoModule from '../modules/TodoModule';
 import InvitesModule from '../modules/InvitesModule';
 import PomodoroModule from '../modules/PomodoroModule';
@@ -8,17 +8,19 @@ import EisenhowerModule from '../modules/EisenhowerModule';
 import AlarmsModule from '../modules/AlarmsModule';
 
 interface ModuleRendererProps {
-  type: ModuleType;
+  module: ModuleInstance;
   index: number;
   moduleWidth: number;
   onRemove: () => void;
+  onTitleChange: (title: string) => void;
 }
 
 const ModuleRenderer: React.FC<ModuleRendererProps> = ({ 
-  type, 
+  module, 
   index, 
   moduleWidth, 
-  onRemove 
+  onRemove,
+  onTitleChange
 }) => {
   // Each module has a fixed width
   const moduleStyle = {
@@ -26,35 +28,55 @@ const ModuleRenderer: React.FC<ModuleRendererProps> = ({
     maxWidth: '100%'
   };
   
-  switch (type) {
+  switch (module.type) {
     case 'todo':
       return (
         <div key={index} style={moduleStyle} className="mb-4">
-          <TodoModule title="To-Do List" onRemove={onRemove} />
+          <TodoModule 
+            title={module.title} 
+            onRemove={onRemove} 
+            onTitleChange={onTitleChange}
+          />
         </div>
       );
     case 'pomodoro':
       return (
         <div key={index} style={moduleStyle} className="mb-4">
-          <PomodoroModule onRemove={onRemove} />
+          <PomodoroModule 
+            title={module.title}
+            onRemove={onRemove} 
+            onTitleChange={onTitleChange}
+          />
         </div>
       );
     case 'alarms':
       return (
         <div key={index} style={moduleStyle} className="mb-4">
-          <AlarmsModule onRemove={onRemove} />
+          <AlarmsModule 
+            title={module.title}
+            onRemove={onRemove} 
+            onTitleChange={onTitleChange}
+          />
         </div>
       );
     case 'eisenhower':
       return (
         <div key={index} style={moduleStyle} className="mb-4">
-          <EisenhowerModule onRemove={onRemove} />
+          <EisenhowerModule 
+            title={module.title}
+            onRemove={onRemove} 
+            onTitleChange={onTitleChange}
+          />
         </div>
       );
     case 'invites':
       return (
         <div key={index} style={moduleStyle} className="mb-4">
-          <InvitesModule onRemove={onRemove} />
+          <InvitesModule 
+            title={module.title}
+            onRemove={onRemove} 
+            onTitleChange={onTitleChange}
+          />
         </div>
       );
     default:

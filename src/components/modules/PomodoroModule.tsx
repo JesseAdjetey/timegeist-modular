@@ -1,12 +1,17 @@
-
 import React, { useState, useEffect } from 'react';
 import ModuleContainer from './ModuleContainer';
 
 interface PomodoroModuleProps {
+  title?: string;
   onRemove?: () => void;
+  onTitleChange?: (title: string) => void;
 }
 
-const PomodoroModule: React.FC<PomodoroModuleProps> = ({ onRemove }) => {
+const PomodoroModule: React.FC<PomodoroModuleProps> = ({ 
+  title = "Pomodoro", 
+  onRemove,
+  onTitleChange
+}) => {
   const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutes in seconds
   const [isActive, setIsActive] = useState(false);
   const [progress, setProgress] = useState(100);
@@ -55,7 +60,11 @@ const PomodoroModule: React.FC<PomodoroModuleProps> = ({ onRemove }) => {
   };
 
   return (
-    <ModuleContainer title="Pomodoro" onRemove={onRemove}>
+    <ModuleContainer 
+      title={title} 
+      onRemove={onRemove}
+      onTitleChange={onTitleChange}
+    >
       <div className="flex flex-col items-center">
         <div className="relative w-32 h-32 mb-4">
           {/* Circular progress background */}
