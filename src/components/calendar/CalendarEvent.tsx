@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Lock, Unlock, Bell, CalendarClock, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CalendarEventType } from '@/lib/store';
@@ -27,6 +27,10 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
   onClick,
   onLockToggle
 }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const touchTimeout = useRef<number | null>(null);
+  const touchStartPos = useRef<{ x: number, y: number } | null>(null);
+
   const handleLockToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onLockToggle) onLockToggle(!isLocked);
@@ -49,16 +53,10 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
     return { start: '09:00', end: '10:00' };
   };
 
-  const handleDragStart = (e: React.DragEvent) => {
-    // Don't allow dragging if event is locked
-    if (isLocked) {
-      e.preventDefault();
-      return;
-    }
-    
+  const getDragData = () => {
     // Set drag data with event information
     const timeInfo = getTimeInfo();
-    const dragData = {
+    return {
       id: event.id,
       title: event.title,
       description: event.description,
@@ -69,14 +67,116 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
       isTodo: hasTodo,
       hasAlarm,
       hasReminder,
-      color
+      color,
+      participants: event.participants
     };
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    // Don't allow dragging if event is locked
+    if (isLocked) {
+      e.preventDefault();
+      return;
+    }
     
-    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+    setIsDragging(true);
+    e.dataTransfer.setData('application/json', JSON.stringify(getDragData()));
     e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Touch event handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (isLocked) return;
     
-    // Add a custom drag image or use default
-    // We could create a custom element here, but using default for now
+    // Save the initial touch position
+    const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+    
+    // Use a timeout to differentiate between tap and drag
+    touchTimeout.current = window.setTimeout(() => {
+      setIsDragging(true);
+    }, 200);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (isLocked || !touchStartPos.current) return;
+    
+    // Clear the timeout to prevent it from triggering if we're dragging
+    if (touchTimeout.current) {
+      clearTimeout(touchTimeout.current);
+      touchTimeout.current = null;
+    }
+    
+    // If we're not in drag mode yet, check if we've moved enough to start dragging
+    if (!isDragging) {
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStartPos.current.x;
+      const dy = touch.clientY - touchStartPos.current.y;
+      
+      // If we've moved more than 10 pixels, start dragging
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        setIsDragging(true);
+        
+        // Create a custom event to notify parent components
+        const eventElement = e.currentTarget;
+        const dragData = getDragData();
+        
+        // Store the data in the element for later use
+        (eventElement as any).dragData = dragData;
+        
+        // Dispatch a custom event to notify that touch dragging has started
+        const customEvent = new CustomEvent('touchdragstart', {
+          bubbles: true,
+          detail: { dragData, element: eventElement, touch: e.touches[0] }
+        });
+        eventElement.dispatchEvent(customEvent);
+      }
+    }
+    
+    // If we're dragging, prevent the default behavior (scrolling)
+    if (isDragging) {
+      e.preventDefault();
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    // Clear any pending timeout
+    if (touchTimeout.current) {
+      clearTimeout(touchTimeout.current);
+      touchTimeout.current = null;
+    }
+    
+    if (isDragging) {
+      const eventElement = e.currentTarget;
+      const dragData = (eventElement as any).dragData;
+      
+      // Dispatch a custom event for touch drag end
+      if (dragData) {
+        const customEvent = new CustomEvent('touchdragend', {
+          bubbles: true,
+          detail: { dragData, clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY }
+        });
+        eventElement.dispatchEvent(customEvent);
+      }
+      
+      setIsDragging(false);
+    }
+    
+    touchStartPos.current = null;
+  };
+
+  // Prevent click when dragging
+  const handleClick = (e: React.MouseEvent) => {
+    if (isDragging) {
+      e.stopPropagation();
+      return;
+    }
+    
+    if (onClick) onClick();
   };
 
   return (
@@ -84,11 +184,16 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
       className={cn(
         "calendar-event group", 
         color,
-        !isLocked && "cursor-move"
+        !isLocked && "cursor-move",
+        isDragging && "opacity-70"
       )}
-      onClick={onClick}
+      onClick={handleClick}
       draggable={!isLocked}
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       <div className="relative">
         {/* Lock/Unlock Button */}
@@ -122,7 +227,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
           {hasTodo && <span className="text-xs">✓</span>}
           
           {/* Participants */}
-          {participants.length > 0 && (
+          {participants && participants.length > 0 && (
             <div className="flex -space-x-1">
               {participants.slice(0, 3).map((participant, i) => (
                 <div 

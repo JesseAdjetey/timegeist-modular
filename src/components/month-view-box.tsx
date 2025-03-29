@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
 import CalendarEvent from "./calendar/CalendarEvent";
@@ -23,6 +23,56 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
   onDayClick,
   onEventDrop
 }) => {
+  const boxRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const boxElement = boxRef.current;
+    if (!boxElement) return;
+    
+    // Handle touch drag start
+    const handleTouchDragStart = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { dragData, element } = customEvent.detail;
+      
+      // Mark the element as being dragged
+      if (element) {
+        element.classList.add('touch-dragging');
+      }
+    };
+    
+    // Handle touch drag end
+    const handleTouchDragEnd = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { dragData, clientX, clientY } = customEvent.detail;
+      
+      // Find the element at the drop position
+      const elementAtPoint = document.elementFromPoint(clientX, clientY);
+      const dropTarget = elementAtPoint?.closest('.month-view-box');
+      
+      if (dropTarget && dropTarget !== boxElement && day) {
+        // Get the day from the drop target's dataset
+        const dropDay = (dropTarget as HTMLElement).dataset.day;
+        if (dropDay && onEventDrop && dragData && !dragData.isLocked) {
+          onEventDrop(dragData, dropDay);
+          toast.success(`Event moved to ${dayjs(dropDay).format("MMM D")}`);
+        }
+      }
+      
+      // Remove touch-dragging class from all elements
+      document.querySelectorAll('.touch-dragging').forEach(el => {
+        el.classList.remove('touch-dragging');
+      });
+    };
+    
+    boxElement.addEventListener('touchdragstart', handleTouchDragStart);
+    boxElement.addEventListener('touchdragend', handleTouchDragEnd);
+    
+    return () => {
+      boxElement.removeEventListener('touchdragstart', handleTouchDragStart);
+      boxElement.removeEventListener('touchdragend', handleTouchDragEnd);
+    };
+  }, [day, onEventDrop]);
+
   if (!day) {
     return <div className="h-full border-r border-t border-white/10 bg-secondary/30"></div>;
   }
@@ -66,8 +116,9 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
   
   return (
     <div 
+      ref={boxRef}
       className={cn(
-        "group relative flex flex-col border-r border-t border-white/10 gradient-border cursor-glow",
+        "group relative flex flex-col border-r border-t border-white/10 gradient-border cursor-glow month-view-box",
         "transition-all hover:bg-white/5",
         isToday && "bg-primary/10"
       )}
@@ -79,6 +130,7 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
       }}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      data-day={day.format('YYYY-MM-DD')}
     >
       {/* Day Header */}
       <div className="flex flex-col items-center py-1 border-b border-white/10">

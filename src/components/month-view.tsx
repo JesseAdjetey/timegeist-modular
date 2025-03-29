@@ -1,5 +1,5 @@
 
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import MonthViewBox from "@/components/month-view-box";
 import { useDateStore, useEventStore } from "@/lib/store";
 import AddEventButton from "@/components/calendar/AddEventButton";
@@ -10,6 +10,25 @@ const MonthView = () => {
   const { events, openEventSummary, updateEvent } = useEventStore();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
+  
+  useEffect(() => {
+    // Add global CSS to style elements while being dragged via touch
+    const style = document.createElement('style');
+    style.textContent = `
+      .touch-dragging {
+        opacity: 0.6;
+        transform: scale(0.95);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        z-index: 100;
+        position: relative;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   const getEventsForDay = (day: any) => {
     if (!day) return [];

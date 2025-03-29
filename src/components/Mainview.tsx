@@ -13,10 +13,34 @@ const Mainview = () => {
   const [sidebarWidth, setSidebarWidth] = useState(400); // Initial width
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
+  const isTouchDevice = useRef(false);
 
   // Set limits for sidebar width
   const MIN_WIDTH = 400;
   const MAX_WIDTH = 800;
+
+  // Detect touch device on mount
+  useEffect(() => {
+    isTouchDevice.current = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    // Add touch-specific styles
+    if (isTouchDevice.current) {
+      const style = document.createElement('style');
+      style.textContent = `
+        .calendar-event {
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          user-select: none;
+          touch-action: none;
+        }
+      `;
+      document.head.appendChild(style);
+      
+      return () => {
+        document.head.removeChild(style);
+      };
+    }
+  }, []);
 
   const startDrag = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -45,6 +69,33 @@ const Mainview = () => {
     document.removeEventListener("mouseup", stopDrag);
   };
 
+  // Touch handling for the resizer
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    isDragging.current = true;
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging.current) return;
+      
+      const touch = e.touches[0];
+      let newWidth = touch.clientX;
+      
+      // Constrain sidebar width
+      newWidth = Math.max(MIN_WIDTH, Math.min(newWidth, MAX_WIDTH));
+      
+      setSidebarWidth(newWidth);
+    };
+    
+    const handleTouchEnd = () => {
+      isDragging.current = false;
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+    
+    document.addEventListener('touchmove', handleTouchMove);
+    document.addEventListener('touchend', handleTouchEnd);
+  };
+
   useEffect(() => {
     return () => {
       // Cleanup event listeners when component unmounts
@@ -69,6 +120,7 @@ const Mainview = () => {
       <div
         className="flex items-center justify-center w-6 cursor-ew-resize z-10 hover:bg-purple-400/30 transition-colors"
         onMouseDown={startDrag}
+        onTouchStart={handleTouchStart}
       >
         <div className="h-16 w-4 rounded-md flex items-center justify-center light-mode:bg-purple-200 light-mode:hover:bg-purple-300 dark-mode:bg-purple-600/30 dark-mode:hover:bg-purple-500/60">
           <GripVertical className="text-purple-500 h-10" />
