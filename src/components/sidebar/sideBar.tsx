@@ -51,6 +51,15 @@ const SideBar = () => {
 
   return (
     <div className="glass-sidebar h-full overflow-hidden flex flex-col bg-black/20">
+      {/* Logo on top of sidebar */}
+      <div className="p-4 flex justify-center border-b border-white/10">
+        <img 
+          src="/lovable-uploads/50041269-e66c-4735-b847-3d4fef85beca.png" 
+          alt="Company Logo" 
+          className="h-12 w-12 rounded-lg shadow-md" 
+        />
+      </div>
+      
       {/* Header with page title and navigation */}
       <PageHeader 
         title={pages[currentPageIndex]?.title || 'Untitled'}

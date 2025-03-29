@@ -77,8 +77,17 @@ const Header = () => {
 
   return (
     <div className="glass mx-4 mt-4 rounded-xl p-4 flex items-center justify-between border light-mode:border-gray-400 dark-mode:border-white/10">
-      {/* Left Side */}
+      {/* Left Side - Logo and Navigation */}
       <div className="flex items-center gap-4">
+        {/* Logo */}
+        <div className="flex items-center mr-2">
+          <img 
+            src="/lovable-uploads/50041269-e66c-4735-b847-3d4fef85beca.png" 
+            alt="Company Logo" 
+            className="h-10 w-10 rounded-lg shadow-md" 
+          />
+        </div>
+        
         <Button 
           variant="outline" 
           onClick={handleTodayClick} 
