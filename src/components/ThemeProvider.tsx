@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useSettingsStore } from '@/lib/stores/settings-store';
 
@@ -13,17 +14,21 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     if (themeMode === 'light') {
       document.documentElement.classList.add('light-mode');
       document.documentElement.classList.remove('dark-mode');
+      
+      // Lighter background gradient for light mode
+      const endColor = adjustColorBrightness(backgroundColor, 40);
+      document.body.style.background = `linear-gradient(to bottom right, ${backgroundColor}, ${endColor})`;
     } else {
       document.documentElement.classList.add('dark-mode');
       document.documentElement.classList.remove('light-mode');
+      
+      // Darker background gradient for dark mode
+      const endColor = adjustColorBrightness(backgroundColor, -25);
+      document.body.style.background = `linear-gradient(to bottom right, ${backgroundColor}, ${endColor})`;
     }
 
     // Apply background color
     document.documentElement.style.setProperty('--background-start', backgroundColor);
-    
-    // Update body gradient
-    const endColor = adjustColorBrightness(backgroundColor, -25);
-    document.body.style.background = `linear-gradient(to bottom right, ${backgroundColor}, ${endColor})`;
     document.body.style.backgroundAttachment = 'fixed';
     
   }, [themeMode, backgroundColor]);

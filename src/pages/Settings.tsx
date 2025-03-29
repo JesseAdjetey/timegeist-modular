@@ -14,6 +14,20 @@ const themeColors = [
   { name: 'Dark Teal', value: '#133636' },
   { name: 'Dark Green', value: '#1a3622' },
   { name: 'Dark Red', value: '#3a1a1a' },
+  { name: 'Royal Blue', value: '#1E3A8A' },
+  { name: 'Deep Orange', value: '#9A3412' },
+  { name: 'Midnight', value: '#0F172A' },
+  { name: 'Navy', value: '#172554' },
+  { name: 'Forest', value: '#064E3B' },
+];
+
+// Light theme colors
+const lightThemeColors = [
+  { name: 'Lavender', value: '#F1F0FB' },
+  { name: 'Soft Blue', value: '#E0EAFC' },
+  { name: 'Mint', value: '#E0F2F1' },
+  { name: 'Peach', value: '#FFF0E5' },
+  { name: 'Rose', value: '#FFF1F2' },
 ];
 
 const Settings = () => {
@@ -32,6 +46,16 @@ const Settings = () => {
   
   const handleThemeChange = (value: 'dark' | 'light') => {
     setThemeMode(value);
+    
+    // Set default background based on theme
+    if (value === 'light' && !lightThemeColors.some(color => color.value === backgroundColor)) {
+      // If switching to light mode with a dark color, set a default light color
+      setBackgroundColor(lightThemeColors[0].value);
+    } else if (value === 'dark' && !themeColors.some(color => color.value === backgroundColor)) {
+      // If switching to dark mode with a light color, set a default dark color
+      setBackgroundColor(themeColors[0].value);
+    }
+    
     toast({
       title: 'Theme Updated',
       description: `Theme changed to ${value} mode`,
@@ -64,6 +88,9 @@ const Settings = () => {
     // Convert back to hex
     return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
   };
+
+  // Determines which color palette to show based on theme mode
+  const displayedColors = themeMode === 'light' ? lightThemeColors : themeColors;
 
   return (
     <div className="container mx-auto max-w-4xl py-12 px-4">
@@ -113,7 +140,7 @@ const Settings = () => {
           </h2>
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
-            {themeColors.map((color) => (
+            {displayedColors.map((color) => (
               <div 
                 key={color.value}
                 onClick={() => handleBackgroundChange(color.value)}
@@ -123,7 +150,9 @@ const Settings = () => {
                 `}
                 style={{ background: `linear-gradient(to bottom right, ${color.value}, ${adjustColorBrightness(color.value, -20)})` }}
               >
-                <span className="font-medium text-white drop-shadow-md">{color.name}</span>
+                <span className={`font-medium ${themeMode === 'light' ? 'text-gray-800 drop-shadow-sm' : 'text-white drop-shadow-md'}`}>
+                  {color.name}
+                </span>
               </div>
             ))}
           </div>
