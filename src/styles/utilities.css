@@ -1,3 +1,4 @@
+
 @layer components {
   /* Enhanced Gradient Border Animation - Now with reduced brightness */
   .gradient-border {
@@ -16,13 +17,13 @@
     border-radius: calc(var(--radius) + 2px);
     background: linear-gradient(
       90deg,
-      rgba(155, 135, 245, 0.4),
-      rgba(126, 105, 171, 0.4),
-      rgba(110, 89, 165, 0.4),
-      rgba(139, 92, 246, 0.4),
-      rgba(30, 174, 219, 0.4),
-      rgba(51, 195, 240, 0.4),
-      rgba(155, 135, 245,.4)
+      rgba(155, 135, 245, 0.5),
+      rgba(126, 105, 171, 0.5),
+      rgba(110, 89, 165, 0.5),
+      rgba(139, 92, 246, 0.5),
+      rgba(30, 174, 219, 0.5),
+      rgba(51, 195, 240, 0.5),
+      rgba(155, 135, 245,.5)
     );
     background-size: 300% 300%;
     z-index: -1;
@@ -31,7 +32,7 @@
   }
 
   .gradient-border:hover::before {
-    opacity: 0.7;
+    opacity: 0.8;
     animation: gradient-shift 3s ease infinite;
   }
 
@@ -46,7 +47,7 @@
   }
   
   .light-mode .gradient-text {
-    @apply from-purple-700 to-indigo-700;
+    @apply from-purple-800 to-indigo-800;
   }
   
   .dark-mode .gradient-text {
