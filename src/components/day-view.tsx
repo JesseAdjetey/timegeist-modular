@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { useDateStore, useEventStore } from "@/lib/store";
@@ -6,11 +7,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { getHours, isCurrentDay } from "@/lib/getTime";
 import CalendarEvent from "./calendar/CalendarEvent";
 import AddEventButton from "@/components/calendar/AddEventButton";
+import EventForm from "@/components/calendar/EventForm";
 
 const DayView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const { userSelectedDate } = useDateStore();
   const { events, openEventSummary, toggleEventLock } = useEventStore();
+  const [formOpen, setFormOpen] = useState(false);
+  const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -33,6 +37,14 @@ const DayView = () => {
       return parseInt(hourMatch[1], 10);
     }
     return 9; // Default to 9am if we can't parse
+  };
+
+  const handleTimeSlotClick = (hour: dayjs.Dayjs) => {
+    setSelectedTime({
+      date: userSelectedDate.toDate(),
+      startTime: hour.format("HH:00")
+    });
+    setFormOpen(true);
   };
 
   return (
@@ -75,6 +87,7 @@ const DayView = () => {
                 <div
                   key={i}
                   className="relative flex h-20 border-t border-white/10 hover:bg-white/5 gradient-border cursor-glow"
+                  onClick={() => handleTimeSlotClick(hour)}
                 >
                   {/* Events for this hour */}
                   {dayEvents
@@ -84,6 +97,10 @@ const DayView = () => {
                         key={event.id} 
                         className="absolute inset-x-2 z-10"
                         style={{ top: '2px' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEventSummary(event);
+                        }}
                       >
                         <CalendarEvent
                           event={event}
@@ -115,6 +132,13 @@ const DayView = () => {
         </ScrollArea>
       </div>
       <AddEventButton />
+
+      {/* Event Form Dialog */}
+      <EventForm 
+        open={formOpen} 
+        onClose={() => setFormOpen(false)}
+        initialTime={selectedTime}
+      />
     </>
   );
 };

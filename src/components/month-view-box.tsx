@@ -10,13 +10,15 @@ interface MonthViewBoxProps {
   rowIndex: number;
   events?: CalendarEventType[];
   onEventClick?: (event: CalendarEventType) => void;
+  onDayClick?: (day: dayjs.Dayjs) => void;
 }
 
 const MonthViewBox: React.FC<MonthViewBoxProps> = ({
   day,
   rowIndex,
   events = [],
-  onEventClick
+  onEventClick,
+  onDayClick
 }) => {
   if (!day) {
     return <div className="h-full border-r border-t border-white/10 bg-secondary/30"></div>;
@@ -36,6 +38,12 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
         "transition-all hover:bg-white/5",
         isToday && "bg-primary/10"
       )}
+      onClick={(e) => {
+        // Only trigger day click if the click wasn't on an event
+        if ((e.target as HTMLElement).closest('.calendar-event-wrapper') === null) {
+          onDayClick?.(day);
+        }
+      }}
     >
       {/* Day Header */}
       <div className="flex flex-col items-center py-1 border-b border-white/10">
@@ -55,7 +63,14 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
       {/* Events */}
       <div className="flex-1 p-1 overflow-hidden">
         {visibleEvents.map(event => (
-          <div key={event.id} className="mb-1 gradient-border" onClick={() => onEventClick && onEventClick(event)}>
+          <div 
+            key={event.id} 
+            className="mb-1 gradient-border calendar-event-wrapper" 
+            onClick={(e) => {
+              e.stopPropagation();
+              onEventClick && onEventClick(event);
+            }}
+          >
             <CalendarEvent
               event={event}
               color={event.color}

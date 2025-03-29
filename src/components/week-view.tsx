@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { getHours, getWeekDays, isCurrentDay } from "@/lib/getTime";
 import { useDateStore, useEventStore } from "@/lib/store";
@@ -6,11 +7,14 @@ import dayjs from "dayjs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import CalendarEvent from "./calendar/CalendarEvent";
 import AddEventButton from "@/components/calendar/AddEventButton";
+import EventForm from "@/components/calendar/EventForm";
 
 const WeekView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const { userSelectedDate } = useDateStore();
   const { events, openEventSummary, toggleEventLock } = useEventStore();
+  const [formOpen, setFormOpen] = useState(false);
+  const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -32,6 +36,14 @@ const WeekView = () => {
       return parseInt(hourMatch[1], 10);
     }
     return 9; // Default to 9am if we can't parse
+  };
+
+  const handleTimeSlotClick = (day: dayjs.Dayjs, hour: dayjs.Dayjs) => {
+    setSelectedTime({
+      date: day.toDate(),
+      startTime: hour.format("HH:00")
+    });
+    setFormOpen(true);
   };
 
   return (
@@ -82,6 +94,7 @@ const WeekView = () => {
                     <div
                       key={i}
                       className="relative flex h-20 cursor-pointer border-t border-white/10 hover:bg-white/5"
+                      onClick={() => handleTimeSlotClick(currentDate, hour)}
                     >
                       {/* Events for this hour */}
                       {dayEvents
@@ -91,6 +104,10 @@ const WeekView = () => {
                             key={event.id} 
                             className="absolute inset-x-0.5 z-10"
                             style={{ top: '2px' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEventSummary(event);
+                            }}
                           >
                             <CalendarEvent
                               event={event}
@@ -124,6 +141,13 @@ const WeekView = () => {
         </ScrollArea>
       </div>
       <AddEventButton />
+
+      {/* Event Form Dialog */}
+      <EventForm 
+        open={formOpen} 
+        onClose={() => setFormOpen(false)}
+        initialTime={selectedTime}
+      />
     </>
   );
 };

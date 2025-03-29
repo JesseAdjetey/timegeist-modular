@@ -1,18 +1,32 @@
 
-import React, { Fragment } from "react";
+import React, { Fragment, useState } from "react";
 import MonthViewBox from "@/components/month-view-box";
 import { useDateStore, useEventStore } from "@/lib/store";
 import AddEventButton from "@/components/calendar/AddEventButton";
+import EventForm from "@/components/calendar/EventForm";
 
 const MonthView = () => {
   const { twoDMonthArray } = useDateStore();
   const { events, openEventSummary } = useEventStore();
+  const [formOpen, setFormOpen] = useState(false);
+  const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
 
   const getEventsForDay = (day: any) => {
     if (!day) return [];
     
     const dayStr = day.format('YYYY-MM-DD');
     return events.filter(event => event.date === dayStr);
+  };
+
+  const handleDayClick = (day: any) => {
+    if (!day) return;
+    
+    // Default to 9 AM when clicking on a day in month view
+    setSelectedTime({
+      date: day.toDate(),
+      startTime: '09:00'
+    });
+    setFormOpen(true);
   };
 
   return (
@@ -36,6 +50,7 @@ const MonthView = () => {
                   rowIndex={i}
                   events={getEventsForDay(day)}
                   onEventClick={openEventSummary}
+                  onDayClick={handleDayClick}
                 />
               ))}
             </Fragment>
@@ -43,6 +58,13 @@ const MonthView = () => {
         </section>
       </div>
       <AddEventButton />
+
+      {/* Event Form Dialog */}
+      <EventForm 
+        open={formOpen} 
+        onClose={() => setFormOpen(false)}
+        initialTime={selectedTime}
+      />
     </>
   );
 };
