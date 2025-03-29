@@ -3,11 +3,8 @@ import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Edit2, Check, Plus } from 'lucide-react';
 import { useSidebarStore, ModuleType } from '@/lib/store';
 import TodoModule from '../modules/TodoModule';
-import PomodoroModule from '../modules/PomodoroModule';
-import AlarmsModule from '../modules/AlarmsModule';
-import EisenhowerModule from '../modules/EisenhowerModule';
-import InvitesModule from '../modules/InvitesModule';
 import ModuleSelector from '../modules/ModuleSelector';
+import InvitesModule from '../modules/InvitesModule';
 
 const SideBar = () => {
   const { pages, currentPageIndex, setCurrentPage, addModule, removeModule, updatePageTitle, addPage } = useSidebarStore();
@@ -62,11 +59,11 @@ const SideBar = () => {
       case 'todo':
         return <TodoModule key={index} title="To-Do List" onRemove={() => handleRemoveModule(index)} />;
       case 'pomodoro':
-        return <PomodoroModule key={index} onRemove={() => handleRemoveModule(index)} />;
+        return <div key={index} className="glass-card p-4 mb-4">Pomodoro Timer Module</div>;
       case 'alarms':
-        return <AlarmsModule key={index} onRemove={() => handleRemoveModule(index)} />;
+        return <div key={index} className="glass-card p-4 mb-4">Alarms Module</div>;
       case 'eisenhower':
-        return <EisenhowerModule key={index} onRemove={() => handleRemoveModule(index)} />;
+        return <div key={index} className="glass-card p-4 mb-4">Eisenhower Matrix Module</div>;
       case 'invites':
         return <InvitesModule key={index} onRemove={() => handleRemoveModule(index)} />;
       default:
@@ -135,16 +132,14 @@ const SideBar = () => {
         
         {/* New Page Creator */}
         {showNewPageInput ? (
-          <div className="module-container">
-            <div className="module-header">
-              <h3 className="text-lg font-semibold">Create New Page</h3>
-              <button 
-                onClick={() => setShowNewPageInput(false)}
-                className="hover:bg-white/10 p-1 rounded-full transition-all"
-              >
-                ×
-              </button>
-            </div>
+          <div className="glass-card p-4 relative">
+            <button 
+              onClick={() => setShowNewPageInput(false)}
+              className="absolute top-2 right-2 text-muted-foreground hover:text-primary"
+            >
+              <X size={16} />
+            </button>
+            <h3 className="text-lg font-semibold mb-3 text-primary">Create New Page</h3>
             <div className="flex gap-2">
               <input
                 type="text"

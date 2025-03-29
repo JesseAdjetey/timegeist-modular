@@ -10,9 +10,9 @@ interface ModuleContainerProps {
 
 const ModuleContainer: React.FC<ModuleContainerProps> = ({ title, children, onRemove }) => {
   return (
-    <div className="module-container">
-      <div className="module-header">
-        <h3 className="text-lg font-semibold">{title}</h3>
+    <div className="module-container bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4 mb-4">
+      <div className="module-header flex justify-between items-center mb-3">
+        <h3 className="text-lg font-semibold text-primary">{title}</h3>
         {onRemove && (
           <button 
             onClick={onRemove}
@@ -22,7 +22,7 @@ const ModuleContainer: React.FC<ModuleContainerProps> = ({ title, children, onRe
           </button>
         )}
       </div>
-      <div>{children}</div>
+      <div className="module-content">{children}</div>
     </div>
   );
 };
