@@ -31,7 +31,7 @@ const ModuleRenderer: React.FC<ModuleRendererProps> = ({
   switch (module.type) {
     case 'todo':
       return (
-        <div key={index} style={moduleStyle} className="mb-4">
+        <div key={index} style={moduleStyle} className="mb-4 gradient-border cursor-glow">
           <TodoModule 
             title={module.title} 
             onRemove={onRemove} 
@@ -41,7 +41,7 @@ const ModuleRenderer: React.FC<ModuleRendererProps> = ({
       );
     case 'pomodoro':
       return (
-        <div key={index} style={moduleStyle} className="mb-4">
+        <div key={index} style={moduleStyle} className="mb-4 gradient-border cursor-glow">
           <PomodoroModule 
             title={module.title}
             onRemove={onRemove} 
@@ -51,7 +51,7 @@ const ModuleRenderer: React.FC<ModuleRendererProps> = ({
       );
     case 'alarms':
       return (
-        <div key={index} style={moduleStyle} className="mb-4">
+        <div key={index} style={moduleStyle} className="mb-4 gradient-border cursor-glow">
           <AlarmsModule 
             title={module.title}
             onRemove={onRemove} 
@@ -61,7 +61,7 @@ const ModuleRenderer: React.FC<ModuleRendererProps> = ({
       );
     case 'eisenhower':
       return (
-        <div key={index} style={moduleStyle} className="mb-4">
+        <div key={index} style={moduleStyle} className="mb-4 gradient-border cursor-glow">
           <EisenhowerModule 
             title={module.title}
             onRemove={onRemove} 
@@ -71,7 +71,7 @@ const ModuleRenderer: React.FC<ModuleRendererProps> = ({
       );
     case 'invites':
       return (
-        <div key={index} style={moduleStyle} className="mb-4">
+        <div key={index} style={moduleStyle} className="mb-4 gradient-border cursor-glow">
           <InvitesModule 
             title={module.title}
             onRemove={onRemove} 

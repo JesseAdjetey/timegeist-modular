@@ -33,7 +33,7 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
     <div 
       className={cn(
         "group relative flex flex-col border-r border-t border-white/10",
-        "transition-all hover:bg-white/5",
+        "transition-all hover:bg-white/5 cursor-glow",
         isToday && "bg-primary/10"
       )}
     >
@@ -55,7 +55,7 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
       {/* Events */}
       <div className="flex-1 p-1 overflow-hidden">
         {visibleEvents.map(event => (
-          <div key={event.id} className="mb-1" onClick={() => onEventClick && onEventClick(event)}>
+          <div key={event.id} className="mb-1 gradient-border" onClick={() => onEventClick && onEventClick(event)}>
             <CalendarEvent
               event={event}
               color={event.color}

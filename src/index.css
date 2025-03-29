@@ -41,6 +41,7 @@
 body {
   @apply bg-gradient-to-br from-[#1a1625] to-[#2d1b45] text-white;
   background-attachment: fixed;
+  cursor: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgc3Ryb2tlPSIjOGI1Y2Y2IiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9IjAuNSIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjQiIGZpbGw9IiM4YjVjZjYiLz48L3N2Zz4=") 12 12, auto;
 }
 
 @layer base {
@@ -82,7 +83,7 @@ body {
   }
   
   .module-container {
-    @apply glass-card mb-4 shadow-lg;
+    @apply glass-card mb-4 shadow-lg hover:cursor-none;
   }
   
   /* Calendar event colors */
@@ -113,4 +114,86 @@ body {
   .event-pink {
     @apply bg-gradient-to-br from-pink-400 to-pink-500;
   }
+
+  /* New gradient border animations */
+  .gradient-border {
+    position: relative;
+    border-radius: var(--radius);
+    transition: all 0.3s;
+  }
+
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: calc(var(--radius) + 2px);
+    background: linear-gradient(
+      90deg,
+      #9b87f5,
+      #7E69AB,
+      #6E59A5,
+      #8B5CF6,
+      #1EAEDB,
+      #33C3F0,
+      #9b87f5
+    );
+    background-size: 300% 300%;
+    z-index: -1;
+    animation: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .gradient-border:hover::before {
+    opacity: 1;
+    animation: gradient-shift 3s ease infinite;
+  }
+
+  /* Custom cursor glow */
+  .cursor-glow {
+    cursor: none;
+  }
+
+  .cursor-glow:hover {
+    transform: scale(1.01);
+    transition: transform 0.2s ease;
+  }
+}
+
+/* Animations */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Custom cursor */
+.custom-cursor {
+  position: fixed;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: transparent;
+  border: 2px solid hsl(var(--primary));
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s, height 0.2s, background-color 0.2s;
+  opacity: 0.6;
+}
+
+.custom-cursor.expanded {
+  width: 50px;
+  height: 50px;
+  background-color: rgba(139, 92, 246, 0.1);
+  opacity: 0.8;
 }
