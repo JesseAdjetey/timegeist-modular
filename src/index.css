@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,6 +36,9 @@
   --event-teal: 174 59% 65%;
   --event-orange: 24 89% 74%;
   --event-pink: 330 84% 85%;
+  
+  /* Background start color for gradient */
+  --background-start: #1a1625;
 }
 
 body {
@@ -152,6 +156,11 @@ body {
   /* Custom cursor styles */
   .cursor-glow {
     cursor: none !important;
+  }
+  
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-purple-400 to-indigo-500 text-transparent bg-clip-text;
   }
 }
 
