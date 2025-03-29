@@ -9,29 +9,52 @@ const DraggableLogo = () => {
   const dragRef = useRef<HTMLDivElement>(null);
   const dragStartPos = useRef({ x: 0, y: 0 });
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleDragStart = (clientX: number, clientY: number) => {
     setIsDragging(true);
     if (dragRef.current) {
       const rect = dragRef.current.getBoundingClientRect();
       dragStartPos.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+        x: clientX - rect.left,
+        y: clientY - rect.top
       };
     }
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleDragMove = (clientX: number, clientY: number) => {
     if (!isDragging) return;
     
     setPosition({
-      x: e.clientX - dragStartPos.current.x,
-      y: e.clientY - dragStartPos.current.y
+      x: clientX - dragStartPos.current.x,
+      y: clientY - dragStartPos.current.y
     });
   };
 
-  const handleMouseUp = () => {
+  const handleDragEnd = () => {
     setIsDragging(false);
+  };
+
+  // Mouse event handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    handleDragStart(e.clientX, e.clientY);
+  };
+
+  // Touch event handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    handleDragStart(touch.clientX, touch.clientY);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    handleDragMove(touch.clientX, touch.clientY);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault();
+    handleDragEnd();
   };
 
   const handleLogoClick = () => {
@@ -41,6 +64,14 @@ const DraggableLogo = () => {
   };
 
   useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      handleDragMove(e.clientX, e.clientY);
+    };
+
+    const handleMouseUp = () => {
+      handleDragEnd();
+    };
+
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
@@ -65,6 +96,9 @@ const DraggableLogo = () => {
           top: `${position.y}px`,
         }}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         onClick={handleLogoClick}
       >
         <div className="relative rounded-lg shadow-lg p-1 bg-white/80 dark:bg-black/50 hover:scale-105 transition-transform duration-200">
