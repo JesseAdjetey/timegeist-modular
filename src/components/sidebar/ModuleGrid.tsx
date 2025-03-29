@@ -3,9 +3,10 @@ import React from 'react';
 import { useSidebarStore } from '@/lib/store';
 import ModuleRenderer from './ModuleRenderer';
 import { useSidebarLayout } from '@/hooks/use-sidebar-layout';
+import { ModuleInstance, ModuleType } from '@/lib/stores/types';
 
 interface ModuleGridProps {
-  modules: Array<{type: string; title: string}>;
+  modules: ModuleInstance[];
   onRemoveModule: (index: number) => void;
   onUpdateModuleTitle: (index: number, title: string) => void;
 }
