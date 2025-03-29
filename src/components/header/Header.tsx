@@ -4,6 +4,7 @@ import { useDateStore, useViewStore } from "@/lib/store";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import dayjs from 'dayjs';
+import SettingsNav from './SettingsNav';
 
 const Header = () => {
   const todaysDate = dayjs();
@@ -104,21 +105,25 @@ const Header = () => {
         <h1 className="text-xl font-semibold">{formatDate()}</h1>
       </div>
 
-      {/* Right Side - View Selector */}
-      <div className="flex gap-2">
-        {["Day", "Week", "Month"].map((view) => (
-          <Button
-            key={view}
-            variant={selectedView === view ? "default" : "outline"}
-            onClick={() => setView(view)}
-            className={selectedView === view 
-              ? "bg-primary text-white" 
-              : "bg-white/10 border border-white/10 hover:bg-white/20"
-            }
-          >
-            {view}
-          </Button>
-        ))}
+      {/* Right Side - View Selector and Settings */}
+      <div className="flex items-center gap-4">
+        <div className="flex gap-2">
+          {["Day", "Week", "Month"].map((view) => (
+            <Button
+              key={view}
+              variant={selectedView === view ? "default" : "outline"}
+              onClick={() => setView(view)}
+              className={selectedView === view 
+                ? "bg-primary text-white" 
+                : "bg-white/10 border border-white/10 hover:bg-white/20"
+              }
+            >
+              {view}
+            </Button>
+          ))}
+        </div>
+        
+        <SettingsNav />
       </div>
     </div>
   );
