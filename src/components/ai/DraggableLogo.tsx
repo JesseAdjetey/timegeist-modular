@@ -23,9 +23,13 @@ const DraggableLogo = () => {
   const handleDragMove = (clientX: number, clientY: number) => {
     if (!isDragging) return;
     
+    // Calculate new position while ensuring the logo stays within viewport bounds
+    const newX = Math.max(0, Math.min(window.innerWidth - 60, clientX - dragStartPos.current.x));
+    const newY = Math.max(0, Math.min(window.innerHeight - 60, clientY - dragStartPos.current.y));
+    
     setPosition({
-      x: clientX - dragStartPos.current.x,
-      y: clientY - dragStartPos.current.y
+      x: newX,
+      y: newY
     });
   };
 
@@ -85,6 +89,23 @@ const DraggableLogo = () => {
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging]);
+
+  // Save position to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('logo-position', JSON.stringify(position));
+  }, [position]);
+
+  // Load position from localStorage on mount
+  useEffect(() => {
+    const savedPosition = localStorage.getItem('logo-position');
+    if (savedPosition) {
+      try {
+        setPosition(JSON.parse(savedPosition));
+      } catch (e) {
+        console.error('Failed to parse saved position', e);
+      }
+    }
+  }, []);
 
   return (
     <>
