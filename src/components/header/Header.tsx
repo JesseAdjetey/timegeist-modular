@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import dayjs from 'dayjs';
 import SettingsNav from './SettingsNav';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 const Header = () => {
   const todaysDate = dayjs();
@@ -79,14 +81,26 @@ const Header = () => {
     <div className="glass mx-4 mt-4 rounded-xl p-4 flex items-center justify-between border light-mode:border-gray-400 dark-mode:border-white/10">
       {/* Left Side - Logo and Navigation */}
       <div className="flex items-center gap-4">
-        {/* Logo */}
-        <div className="flex items-center mr-2">
-          <img 
-            src="/lovable-uploads/50041269-e66c-4735-b847-3d4fef85beca.png" 
-            alt="Company Logo" 
-            className="h-10 w-10 rounded-lg shadow-md" 
-          />
-        </div>
+        {/* Logo with hover effect */}
+        <HoverCard>
+          <HoverCardTrigger asChild>
+            <div className="relative overflow-hidden rounded-lg cursor-pointer group">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 opacity-0 group-hover:opacity-70 animate-pulse z-0 group-hover:animate-[gradient-shift_3s_ease_infinite]"></div>
+              <img 
+                src="/lovable-uploads/50041269-e66c-4735-b847-3d4fef85beca.png" 
+                alt="Company Logo" 
+                className="h-10 w-10 rounded-lg shadow-md relative z-20 transition-transform duration-300 group-hover:scale-110" 
+              />
+            </div>
+          </HoverCardTrigger>
+          <HoverCardContent className="w-60 p-4 light-mode:bg-white/95 dark-mode:bg-black/80 backdrop-blur-sm">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-lg font-bold gradient-text">Your Company</h3>
+              <p className="text-sm text-muted-foreground">Innovative solutions for your productivity needs</p>
+            </div>
+          </HoverCardContent>
+        </HoverCard>
         
         <Button 
           variant="outline" 
