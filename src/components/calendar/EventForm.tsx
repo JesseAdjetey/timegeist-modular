@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { nanoid } from 'nanoid';
 import { useEventStore } from '@/lib/store';
@@ -12,12 +12,14 @@ interface EventFormProps {
     date: Date;
     startTime: string;
   };
+  onSave?: (event: any) => void;
 }
 
 const EventForm: React.FC<EventFormProps> = ({ 
   open, 
   onClose, 
-  initialTime 
+  initialTime,
+  onSave: propOnSave
 }) => {
   const { addEvent } = useEventStore();
   
@@ -28,7 +30,11 @@ const EventForm: React.FC<EventFormProps> = ({
       id: nanoid()
     };
     
-    addEvent(newEvent);
+    if (propOnSave) {
+      propOnSave(newEvent);
+    } else {
+      addEvent(newEvent);
+    }
     onClose();
   };
 
