@@ -14,7 +14,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      // Background color for the app
+      // Chat accent color (not background)
       backgroundColor: '#8664A0',
       setBackgroundColor: (color) => set({ backgroundColor: color }),
       
