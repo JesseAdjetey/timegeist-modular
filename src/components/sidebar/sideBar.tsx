@@ -15,8 +15,8 @@ const SideBar = () => {
   const [isTwoColumn, setIsTwoColumn] = useState(false);
   const sidebarContentRef = useRef<HTMLDivElement>(null);
 
-  // Module dimensions
-  const MODULE_WIDTH = 320; // Fixed width for modules
+  // Module dimensions - fixed width for modules
+  const MODULE_WIDTH = 320;
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver((entries) => {
@@ -94,19 +94,19 @@ const SideBar = () => {
         );
       case 'pomodoro':
         return (
-          <div key={index} style={moduleStyle} className="glass-card p-4 mb-4">
+          <div key={index} style={moduleStyle} className="glass-card p-4 mb-4 bg-purple-500/20">
             Pomodoro Timer Module
           </div>
         );
       case 'alarms':
         return (
-          <div key={index} style={moduleStyle} className="glass-card p-4 mb-4">
+          <div key={index} style={moduleStyle} className="glass-card p-4 mb-4 bg-blue-500/20">
             Alarms Module
           </div>
         );
       case 'eisenhower':
         return (
-          <div key={index} style={moduleStyle} className="glass-card p-4 mb-4">
+          <div key={index} style={moduleStyle} className="glass-card p-4 mb-4 bg-green-500/20">
             Eisenhower Matrix Module
           </div>
         );
@@ -122,13 +122,13 @@ const SideBar = () => {
   };
 
   return (
-    <div className="glass-sidebar h-full overflow-hidden flex flex-col">
+    <div className="glass-sidebar h-full overflow-hidden flex flex-col bg-black/20">
       {/* Header with page title and navigation */}
-      <div className="p-4 flex items-center justify-between border-b border-white/10">
+      <div className="p-4 flex items-center justify-between border-b border-white/10 bg-black/30">
         <button 
           onClick={handlePrevPage}
           disabled={currentPageIndex === 0}
-          className="p-1 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1 rounded-full hover:bg-purple-500/20 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronLeft size={16} />
         </button>
@@ -140,22 +140,22 @@ const SideBar = () => {
                 type="text"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                className="glass-input text-lg font-semibold bg-transparent border-b border-primary px-2 py-1 outline-none"
+                className="glass-input text-lg font-semibold bg-black/20 border-b border-purple-400 px-2 py-1 outline-none"
                 autoFocus
               />
               <button 
                 onClick={handleSaveTitle}
-                className="p-1 ml-1 rounded-full hover:bg-white/10"
+                className="p-1 ml-1 rounded-full hover:bg-purple-500/20"
               >
-                <Check size={16} />
+                <Check size={16} className="text-purple-300" />
               </button>
             </div>
           ) : (
             <div className="flex items-center">
-              <h1 className="text-lg font-semibold">{pages[currentPageIndex]?.title || 'Untitled'}</h1>
+              <h1 className="text-lg font-semibold text-purple-200">{pages[currentPageIndex]?.title || 'Untitled'}</h1>
               <button 
                 onClick={handleEditTitle}
-                className="p-1 ml-1 rounded-full hover:bg-white/10"
+                className="p-1 ml-1 rounded-full hover:bg-purple-500/20"
               >
                 <Edit2 size={14} />
               </button>
@@ -166,7 +166,7 @@ const SideBar = () => {
         <button 
           onClick={handleNextPage}
           disabled={currentPageIndex >= pages.length - 1}
-          className="p-1 rounded-full hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1 rounded-full hover:bg-purple-500/20 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronRight size={16} />
         </button>
@@ -188,27 +188,27 @@ const SideBar = () => {
         
         {/* New Page Creator */}
         {showNewPageInput ? (
-          <div className="glass-card p-4 relative mt-4 max-w-md mx-auto">
+          <div className="glass-card p-4 relative mt-4 max-w-md mx-auto bg-purple-800/20">
             <button 
               onClick={() => setShowNewPageInput(false)}
-              className="absolute top-2 right-2 text-muted-foreground hover:text-primary"
+              className="absolute top-2 right-2 text-muted-foreground hover:text-purple-300"
             >
               <X size={16} />
             </button>
-            <h3 className="text-lg font-semibold mb-3 text-primary">Create New Page</h3>
+            <h3 className="text-lg font-semibold mb-3 text-purple-300">Create New Page</h3>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={newPageTitle}
                 onChange={(e) => setNewPageTitle(e.target.value)}
-                className="glass-input w-full"
+                className="glass-input w-full bg-black/20"
                 placeholder="Page title..."
                 autoFocus
               />
               <button
                 onClick={handleCreateNewPage}
                 disabled={!newPageTitle.trim()}
-                className="bg-primary px-3 py-1 rounded-md hover:bg-primary/80 transition-colors disabled:opacity-50"
+                className="bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded-md transition-colors disabled:opacity-50"
               >
                 Create
               </button>
@@ -217,7 +217,7 @@ const SideBar = () => {
         ) : (
           <button 
             onClick={() => setShowNewPageInput(true)}
-            className="flex items-center justify-center w-full p-2 mt-4 glass-card text-primary hover:text-primary-foreground hover:bg-primary/30 transition-all max-w-md mx-auto"
+            className="flex items-center justify-center w-full p-2 mt-4 glass-card text-purple-300 hover:text-white hover:bg-purple-600/30 transition-all max-w-md mx-auto"
           >
             <Plus size={16} className="mr-2" />
             <span>New Page</span>

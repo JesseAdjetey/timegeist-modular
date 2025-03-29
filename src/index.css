@@ -4,33 +4,42 @@
 @tailwind utilities;
 
 :root {
-  --primary: 252 56% 57%;
+  --primary: 261 54% 61%;
   --primary-foreground: 210 40% 98%;
   
-  --secondary: 215 27% 11%;
+  --secondary: 262 83% 58%;
   --secondary-foreground: 210 40% 98%;
   
-  --background: 222 47% 11%;
+  --background: 240 21% 14%;
   --foreground: 213 31% 91%;
   
   --muted: 215 27% 16%;
   --muted-foreground: 215 20% 65%;
   
-  --accent: 215 27% 16%;
+  --accent: 261 54% 61%;
   --accent-foreground: 210 40% 98%;
   
   --destructive: 0 63% 31%;
   --destructive-foreground: 210 40% 98%;
   
-  --border: 215 27% 18%;
+  --border: 240 3% 25%;
   --input: 215 27% 18%;
-  --ring: 215 27% 16%;
+  --ring: 261 54% 61%;
   
   --radius: 0.75rem;
+  
+  /* Calendar Event Colors */
+  --event-red: 354 76% 75%;
+  --event-green: 142 69% 58%;
+  --event-blue: 221 83% 75%;
+  --event-purple: 261 54% 70%;
+  --event-teal: 174 59% 65%;
+  --event-orange: 24 89% 74%;
+  --event-pink: 330 84% 85%;
 }
 
 body {
-  @apply bg-gradient-to-br from-gray-900 to-indigo-900 text-white;
+  @apply bg-gradient-to-br from-[#1a1625] to-[#2d1b45] text-white;
   background-attachment: fixed;
 }
 
@@ -45,7 +54,7 @@ body {
 
 @layer components {
   .glass {
-    @apply bg-white/5 backdrop-blur-md;
+    @apply bg-black/25 backdrop-blur-md;
   }
   
   .glass-sidebar {
@@ -53,15 +62,15 @@ body {
   }
   
   .glass-card {
-    @apply glass rounded-xl border border-white/10;
+    @apply glass rounded-xl border border-white/20 shadow-md;
   }
   
   .glass-input {
-    @apply bg-white/5 border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary;
+    @apply bg-white/10 border border-white/20 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary;
   }
   
   .resizer {
-    @apply w-1 cursor-ew-resize hover:bg-primary/40 z-10;
+    @apply w-1 cursor-ew-resize hover:bg-primary/60 z-10;
   }
   
   .calendar-event {
@@ -73,6 +82,35 @@ body {
   }
   
   .module-container {
-    @apply glass-card mb-4;
+    @apply glass-card mb-4 shadow-lg;
+  }
+  
+  /* Calendar event colors */
+  .event-red {
+    @apply bg-gradient-to-br from-rose-400 to-rose-500;
+  }
+  
+  .event-green {
+    @apply bg-gradient-to-br from-green-400 to-green-500;
+  }
+  
+  .event-blue {
+    @apply bg-gradient-to-br from-blue-400 to-blue-500;
+  }
+  
+  .event-purple {
+    @apply bg-gradient-to-br from-purple-400 to-purple-500;
+  }
+  
+  .event-teal {
+    @apply bg-gradient-to-br from-teal-400 to-teal-500;
+  }
+  
+  .event-orange {
+    @apply bg-gradient-to-br from-orange-400 to-orange-500;
+  }
+  
+  .event-pink {
+    @apply bg-gradient-to-br from-pink-400 to-pink-500;
   }
 }

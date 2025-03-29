@@ -63,7 +63,7 @@ const Mainview = () => {
 
       {/* Resizer */}
       <div
-        className="w-2 cursor-ew-resize bg-gray-300 hover:bg-gray-400"
+        className="w-1 cursor-ew-resize bg-purple-600/30 hover:bg-purple-500/60 transition-colors"
         onMouseDown={startDrag}
       ></div>
 
