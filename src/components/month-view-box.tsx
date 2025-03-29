@@ -32,8 +32,8 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
   return (
     <div 
       className={cn(
-        "group relative flex flex-col border-r border-t border-white/10",
-        "transition-all hover:bg-white/5 cursor-glow",
+        "group relative flex flex-col border-r border-t border-white/10 gradient-border cursor-glow",
+        "transition-all hover:bg-white/5",
         isToday && "bg-primary/10"
       )}
     >

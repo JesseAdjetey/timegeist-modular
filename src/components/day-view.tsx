@@ -36,7 +36,7 @@ const DayView = () => {
   };
 
   return (
-    <div className="glass m-4 rounded-xl overflow-hidden">
+    <div className="glass m-4 rounded-xl overflow-hidden gradient-border cursor-glow">
       <div className="grid grid-cols-[auto_auto_1fr] px-4 py-3 bg-secondary/50 border-b border-white/10">
         <div className="w-16 text-muted-foreground text-sm font-medium">GMT</div>
         <div className="flex w-16 flex-col items-center">
@@ -73,7 +73,7 @@ const DayView = () => {
             {getHours.map((hour, i) => (
               <div
                 key={i}
-                className="relative flex h-20 cursor-pointer border-t border-white/10 hover:bg-white/5"
+                className="relative flex h-20 border-t border-white/10 hover:bg-white/5 gradient-border cursor-glow"
               >
                 {/* Events for this hour */}
                 {dayEvents

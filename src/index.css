@@ -41,7 +41,6 @@
 body {
   @apply bg-gradient-to-br from-[#1a1625] to-[#2d1b45] text-white;
   background-attachment: fixed;
-  cursor: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgc3Ryb2tlPSIjOGI1Y2Y2IiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9IjAuNSIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjQiIGZpbGw9IiM4YjVjZjYiLz48L3N2Zz4=") 12 12, auto;
 }
 
 @layer base {
@@ -83,7 +82,7 @@ body {
   }
   
   .module-container {
-    @apply glass-card mb-4 shadow-lg hover:cursor-none;
+    @apply glass-card mb-4 shadow-lg;
   }
   
   /* Calendar event colors */
@@ -115,11 +114,11 @@ body {
     @apply bg-gradient-to-br from-pink-400 to-pink-500;
   }
 
-  /* New gradient border animations */
+  /* Enhanced Gradient Border Animation */
   .gradient-border {
     position: relative;
     border-radius: var(--radius);
-    transition: all 0.3s;
+    overflow: hidden;
   }
 
   .gradient-border::before {
@@ -142,7 +141,6 @@ body {
     );
     background-size: 300% 300%;
     z-index: -1;
-    animation: none;
     opacity: 0;
     transition: opacity 0.3s ease;
   }
@@ -152,14 +150,9 @@ body {
     animation: gradient-shift 3s ease infinite;
   }
 
-  /* Custom cursor glow */
+  /* Custom cursor styles */
   .cursor-glow {
-    cursor: none;
-  }
-
-  .cursor-glow:hover {
-    transform: scale(1.01);
-    transition: transform 0.2s ease;
+    cursor: none !important;
   }
 }
 
@@ -177,23 +170,23 @@ body {
 }
 
 /* Custom cursor */
-.custom-cursor {
+#custom-cursor {
   position: fixed;
-  width: 30px;
-  height: 30px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background-color: transparent;
-  border: 2px solid hsl(var(--primary));
+  border: 2px solid rgb(139, 92, 246);
   pointer-events: none;
   z-index: 9999;
   transform: translate(-50%, -50%);
-  transition: width 0.2s, height 0.2s, background-color 0.2s;
-  opacity: 0.6;
+  transition: width 0.3s, height 0.3s, background-color 0.3s;
+  opacity: 0.7;
+  mix-blend-mode: screen;
 }
 
-.custom-cursor.expanded {
-  width: 50px;
-  height: 50px;
-  background-color: rgba(139, 92, 246, 0.1);
-  opacity: 0.8;
+#custom-cursor.expanded {
+  width: 40px;
+  height: 40px;
+  background-color: rgba(139, 92, 246, 0.2);
+  opacity: 0.9;
 }

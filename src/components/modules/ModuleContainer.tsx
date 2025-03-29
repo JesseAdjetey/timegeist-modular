@@ -41,7 +41,7 @@ const ModuleContainer: React.FC<ModuleContainerProps> = ({
   };
 
   return (
-    <div className="module-container bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4 mb-4">
+    <div className="module-container bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4 mb-4 gradient-border cursor-glow">
       <div className="module-header flex justify-between items-center mb-3">
         {isEditing ? (
           <div className="flex items-center gap-2 flex-1">
