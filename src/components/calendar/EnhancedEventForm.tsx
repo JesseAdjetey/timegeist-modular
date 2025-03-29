@@ -71,13 +71,13 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
   const formattedDate = dayjs(date).format('dddd, MMMM D');
 
   return (
-    <div className="py-6">
-      <div className="mb-6">
+    <div className="py-6 max-h-[85vh] overflow-y-auto">
+      <div className="mb-4">
         <h2 className="text-2xl font-bold gradient-text mb-1">Add Event</h2>
         <p className="text-muted-foreground text-sm">Create a new event on your calendar</p>
       </div>
       
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Title input */}
         <div>
           <Input
@@ -150,7 +150,7 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="min-h-[80px] bg-background/30 border-white/10 focus:border-primary resize-none"
+            className="min-h-[60px] bg-background/30 border-white/10 focus:border-primary resize-none"
             placeholder="Event description"
           />
         </div>
@@ -202,7 +202,7 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
         </div>
 
         {/* Action buttons */}
-        <div className="grid grid-cols-2 gap-3 pt-4">
+        <div className="grid grid-cols-2 gap-3 pt-2">
           <Button 
             type="button" 
             variant="outline" 

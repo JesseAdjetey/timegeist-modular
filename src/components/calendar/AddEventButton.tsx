@@ -49,13 +49,13 @@ const AddEventButton = () => {
       <SheetTrigger asChild>
         <Button 
           size="icon" 
-          className="h-14 w-14 rounded-full fixed bottom-8 right-8 z-50 shadow-lg bg-primary hover:bg-primary/90"
+          className="h-14 w-14 rounded-full fixed bottom-20 right-8 z-50 shadow-lg bg-primary hover:bg-primary/90"
           aria-label="Add event"
         >
           <Plus className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent className="sm:max-w-md md:max-w-lg border-white/10 bg-background/95 backdrop-blur-xl">
+      <SheetContent className="sm:max-w-md md:max-w-lg border-white/10 bg-background/95 backdrop-blur-xl overflow-y-auto pb-16">
         <EventForm 
           onSave={handleSaveEvent} 
           onCancel={() => setOpen(false)}
