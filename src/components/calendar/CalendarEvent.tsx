@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Lock, Unlock, Bell, CalendarClock } from 'lucide-react';
+import { Lock, Unlock, Bell, CalendarClock, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CalendarEventType } from '@/lib/store';
 
@@ -32,13 +32,63 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
     if (onLockToggle) onLockToggle(!isLocked);
   };
 
+  // Extract time info for drag data
+  const getTimeInfo = () => {
+    if (!event.description) return { start: '09:00', end: '10:00' };
+    
+    const parts = event.description.split('|');
+    if (parts.length >= 1) {
+      const timesPart = parts[0].trim();
+      const times = timesPart.split('-').map(t => t.trim());
+      return {
+        start: times[0] || '09:00',
+        end: times[1] || '10:00'
+      };
+    }
+    
+    return { start: '09:00', end: '10:00' };
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    // Don't allow dragging if event is locked
+    if (isLocked) {
+      e.preventDefault();
+      return;
+    }
+    
+    // Set drag data with event information
+    const timeInfo = getTimeInfo();
+    const dragData = {
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      date: event.date,
+      timeStart: timeInfo.start,
+      timeEnd: timeInfo.end,
+      isLocked,
+      isTodo: hasTodo,
+      hasAlarm,
+      hasReminder,
+      color
+    };
+    
+    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = 'move';
+    
+    // Add a custom drag image or use default
+    // We could create a custom element here, but using default for now
+  };
+
   return (
     <div 
       className={cn(
         "calendar-event group", 
-        color
+        color,
+        !isLocked && "cursor-move"
       )}
       onClick={onClick}
+      draggable={!isLocked}
+      onDragStart={handleDragStart}
     >
       <div className="relative">
         {/* Lock/Unlock Button */}
@@ -51,6 +101,13 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
             <Unlock size={14} className="text-white/70" />
           }
         </button>
+
+        {/* Drag Handle (only shown if not locked) */}
+        {!isLocked && (
+          <div className="absolute top-0 right-1 opacity-70 hover:opacity-100">
+            <GripVertical size={14} className="text-white/70" />
+          </div>
+        )}
 
         {/* Event Title */}
         <div className="font-medium">{event.title}</div>

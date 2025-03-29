@@ -7,7 +7,7 @@ import EventForm from "@/components/calendar/EventForm";
 
 const MonthView = () => {
   const { twoDMonthArray } = useDateStore();
-  const { events, openEventSummary } = useEventStore();
+  const { events, openEventSummary, updateEvent } = useEventStore();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
 
@@ -27,6 +27,18 @@ const MonthView = () => {
       startTime: '09:00'
     });
     setFormOpen(true);
+  };
+  
+  // Handle event dropping in the month view
+  const handleEventDrop = (event: any, newDate: string) => {
+    // Create updated event with new date
+    const updatedEvent = {
+      ...event,
+      date: newDate
+    };
+    
+    // Update the event in the store
+    updateEvent(updatedEvent);
   };
 
   return (
@@ -51,6 +63,7 @@ const MonthView = () => {
                   events={getEventsForDay(day)}
                   onEventClick={openEventSummary}
                   onDayClick={handleDayClick}
+                  onEventDrop={handleEventDrop}
                 />
               ))}
             </Fragment>

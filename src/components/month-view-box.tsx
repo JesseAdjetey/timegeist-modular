@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
 import CalendarEvent from "./calendar/CalendarEvent";
 import { CalendarEventType } from "@/lib/store";
+import { toast } from "sonner";
 
 interface MonthViewBoxProps {
   day: dayjs.Dayjs | null;
@@ -11,6 +12,7 @@ interface MonthViewBoxProps {
   events?: CalendarEventType[];
   onEventClick?: (event: CalendarEventType) => void;
   onDayClick?: (day: dayjs.Dayjs) => void;
+  onEventDrop?: (event: any, date: string) => void;
 }
 
 const MonthViewBox: React.FC<MonthViewBoxProps> = ({
@@ -18,7 +20,8 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
   rowIndex,
   events = [],
   onEventClick,
-  onDayClick
+  onDayClick,
+  onEventDrop
 }) => {
   if (!day) {
     return <div className="h-full border-r border-t border-white/10 bg-secondary/30"></div>;
@@ -30,6 +33,36 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
   // Show max 3 events on month view
   const visibleEvents = events.slice(0, 3);
   const hasMoreEvents = events.length > 3;
+  
+  // Handle dropping an event onto this day
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    
+    try {
+      // Parse the drag data
+      const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      
+      // Don't process if the event is locked
+      if (data.isLocked) return;
+      
+      // Only update if the date actually changed
+      if (data.date === day.format('YYYY-MM-DD')) return;
+      
+      // Update the event with the new date
+      if (onEventDrop) {
+        onEventDrop(data, day.format('YYYY-MM-DD'));
+        toast.success(`Event moved to ${day.format("MMM D")}`);
+      }
+    } catch (error) {
+      console.error("Error handling drop:", error);
+      toast.error("Failed to move event");
+    }
+  };
+  
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
   
   return (
     <div 
@@ -44,6 +77,8 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
           onDayClick?.(day);
         }
       }}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
       {/* Day Header */}
       <div className="flex flex-col items-center py-1 border-b border-white/10">
