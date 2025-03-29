@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Edit2, Check, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Edit2, Check, Plus, X } from 'lucide-react';
 import { useSidebarStore, ModuleType } from '@/lib/store';
 import TodoModule from '../modules/TodoModule';
 import ModuleSelector from '../modules/ModuleSelector';
