@@ -7,31 +7,22 @@ interface ThemeProviderProps {
 }
 
 const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const { themeMode, backgroundColor } = useSettingsStore();
+  const { backgroundColor } = useSettingsStore();
 
   useEffect(() => {
-    // Apply theme mode
-    if (themeMode === 'light') {
-      document.documentElement.classList.add('light-mode');
-      document.documentElement.classList.remove('dark-mode');
-      
-      // Lighter background gradient for light mode with more subtle shift
-      const endColor = adjustColorBrightness(backgroundColor, 5);
-      document.body.style.background = `linear-gradient(to bottom right, ${backgroundColor}, ${endColor})`;
-    } else {
-      document.documentElement.classList.add('dark-mode');
-      document.documentElement.classList.remove('light-mode');
-      
-      // Darker background gradient for dark mode
-      const endColor = adjustColorBrightness(backgroundColor, -25);
-      document.body.style.background = `linear-gradient(to bottom right, ${backgroundColor}, ${endColor})`;
-    }
+    // Always use dark mode
+    document.documentElement.classList.add('dark-mode');
+    document.documentElement.classList.remove('light-mode');
+    
+    // Darker background gradient for dark mode
+    const endColor = adjustColorBrightness(backgroundColor, -25);
+    document.body.style.background = `linear-gradient(to bottom right, ${backgroundColor}, ${endColor})`;
 
     // Apply background color
     document.documentElement.style.setProperty('--background-start', backgroundColor);
     document.body.style.backgroundAttachment = 'fixed';
     
-  }, [themeMode, backgroundColor]);
+  }, [backgroundColor]);
 
   // Helper function to adjust color brightness
   const adjustColorBrightness = (hex: string, percent: number) => {

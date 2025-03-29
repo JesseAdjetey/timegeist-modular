@@ -1,5 +1,4 @@
 
-
 /* Calendar Event Colors */
 :root {
   --event-red: 354 76% 75%;
@@ -9,30 +8,24 @@
   --event-teal: 174 59% 65%;
   --event-orange: 24 89% 74%;
   --event-pink: 330 84% 85%;
-}
-
-/* Light mode specific styles */
-.light-mode {
-  color: #333;
-  --foreground: 240 10% 15%;
-  --muted-foreground: 240 5% 40%;
-  --border: 240 10% 75%;
-  --input: 240 10% 90%;
   
-  /* Improved contrast for light mode */
-  --background: 0 0% 100%;
-  --primary: 261 54% 35%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 262 83% 35%; 
-  --secondary-foreground: 0 0% 98%;
-  --muted: 210 20% 80%;
-  --accent: 261 54% 35%;
-  --accent-foreground: 0 0% 98%;
-  --ring: 261 54% 35%;
+  /* Dark mode specific styles */
+  --foreground: 213 31% 91%;
+  --muted-foreground: 215 20% 65%;
+  --border: 240 3% 25%;
+  --input: 215 27% 18%;
+  
+  --background: 240 21% 14%;
+  --primary: 261 54% 61%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 262 83% 58%; 
+  --secondary-foreground: 210 40% 98%;
+  --muted: 215 27% 16%;
+  --accent: 261 54% 61%;
+  --accent-foreground: 210 40% 98%;
+  --ring: 261 54% 61%;
 }
 
-/* Dark mode specific styles */
 .dark-mode {
   color: white;
 }
-

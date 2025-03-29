@@ -1,9 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { useSettingsStore } from '@/lib/stores/settings-store';
-import { Sun, Moon, Palette, ArrowLeft } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+import { Palette, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -21,17 +19,8 @@ const themeColors = [
   { name: 'Forest', value: '#064E3B' },
 ];
 
-// Light theme colors - updated for better contrast
-const lightThemeColors = [
-  { name: 'Lavender', value: '#E6E3FA' },
-  { name: 'Soft Blue', value: '#DEE8F7' },
-  { name: 'Mint', value: '#D6EDE7' },
-  { name: 'Peach', value: '#FAEAE0' },
-  { name: 'Rose', value: '#FAE8E9' },
-];
-
 const Settings = () => {
-  const { themeMode, backgroundColor, setThemeMode, setBackgroundColor } = useSettingsStore();
+  const { backgroundColor, setBackgroundColor } = useSettingsStore();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -39,29 +28,11 @@ const Settings = () => {
   useEffect(() => {
     document.documentElement.style.setProperty('--background-start', backgroundColor);
     
-    // Update the body gradient based on the background color and theme
-    const gradientShift = themeMode === 'light' ? 5 : -20;
+    // Update the body gradient based on the background color
+    const gradientShift = -20;
     document.body.style.background = `linear-gradient(to bottom right, ${backgroundColor}, ${adjustColorBrightness(backgroundColor, gradientShift)})`;
     document.body.style.backgroundAttachment = 'fixed';
-  }, [backgroundColor, themeMode]);
-  
-  const handleThemeChange = (value: 'dark' | 'light') => {
-    setThemeMode(value);
-    
-    // Set default background based on theme
-    if (value === 'light' && !lightThemeColors.some(color => color.value === backgroundColor)) {
-      // If switching to light mode with a dark color, set a default light color
-      setBackgroundColor(lightThemeColors[0].value);
-    } else if (value === 'dark' && !themeColors.some(color => color.value === backgroundColor)) {
-      // If switching to dark mode with a light color, set a default dark color
-      setBackgroundColor(themeColors[0].value);
-    }
-    
-    toast({
-      title: 'Theme Updated',
-      description: `Theme changed to ${value} mode`,
-    });
-  };
+  }, [backgroundColor]);
   
   const handleBackgroundChange = (color: string) => {
     setBackgroundColor(color);
@@ -90,9 +61,6 @@ const Settings = () => {
     return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
   };
 
-  // Determines which color palette to show based on theme mode
-  const displayedColors = themeMode === 'light' ? lightThemeColors : themeColors;
-
   return (
     <div className="container mx-auto max-w-4xl py-12 px-4">
       <div className="flex items-center mb-8">
@@ -108,31 +76,6 @@ const Settings = () => {
       </div>
       
       <div className="space-y-8">
-        {/* Theme Mode Selection */}
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <Sun className="mr-2" size={20} />
-            <Moon className="mr-2" size={20} />
-            Theme Mode
-          </h2>
-          
-          <RadioGroup 
-            defaultValue={themeMode}
-            onValueChange={(value) => handleThemeChange(value as 'dark' | 'light')}
-            className="flex gap-6 mt-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="dark" id="dark" />
-              <Label htmlFor="dark" className="cursor-pointer">Dark Mode</Label>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="light" id="light" />
-              <Label htmlFor="light" className="cursor-pointer">Light Mode</Label>
-            </div>
-          </RadioGroup>
-        </div>
-        
         {/* Background Color Selection */}
         <div className="glass-card p-6">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
@@ -141,7 +84,7 @@ const Settings = () => {
           </h2>
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
-            {displayedColors.map((color) => (
+            {themeColors.map((color) => (
               <div 
                 key={color.value}
                 onClick={() => handleBackgroundChange(color.value)}
@@ -149,9 +92,9 @@ const Settings = () => {
                   h-20 rounded-lg cursor-pointer transition-all duration-300 flex items-center justify-center
                   ${backgroundColor === color.value ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:scale-105'}
                 `}
-                style={{ background: `linear-gradient(to bottom right, ${color.value}, ${adjustColorBrightness(color.value, themeMode === 'light' ? -10 : -20)})` }}
+                style={{ background: `linear-gradient(to bottom right, ${color.value}, ${adjustColorBrightness(color.value, -20)})` }}
               >
-                <span className={`font-medium ${themeMode === 'light' ? 'text-gray-800 drop-shadow-sm' : 'text-white drop-shadow-md'}`}>
+                <span className="font-medium text-white drop-shadow-md">
                   {color.name}
                 </span>
               </div>

@@ -43,14 +43,6 @@
   
   /* Gradient text */
   .gradient-text {
-    @apply bg-gradient-to-r text-transparent bg-clip-text;
-  }
-  
-  .light-mode .gradient-text {
-    @apply from-purple-900 to-indigo-900;
-  }
-  
-  .dark-mode .gradient-text {
-    @apply from-purple-400 to-indigo-500;
+    @apply bg-gradient-to-r from-purple-400 to-indigo-500 text-transparent bg-clip-text;
   }
 }
