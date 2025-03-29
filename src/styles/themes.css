@@ -17,6 +17,17 @@
   --muted-foreground: 240 5% 40%;
   --border: 240 10% 85%;
   --input: 240 10% 90%;
+  
+  /* Improved contrast for light mode */
+  --background: 0 0% 100%;
+  --primary: 261 54% 45%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 262 83% 45%; 
+  --secondary-foreground: 0 0% 98%;
+  --muted: 210 20% 90%;
+  --accent: 261 54% 45%;
+  --accent-foreground: 0 0% 98%;
+  --ring: 261 54% 45%;
 }
 
 /* Dark mode specific styles */
