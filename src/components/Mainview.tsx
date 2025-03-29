@@ -65,12 +65,12 @@ const Mainview = () => {
         <SideBar />
       </div>
 
-      {/* Resizer - Updated with more visible styling */}
+      {/* Resizer */}
       <div
-        className="flex items-center justify-center w-6 cursor-ew-resize z-10 bg-gray-100 dark:bg-gray-800 hover:bg-purple-200 dark:hover:bg-purple-500/30"
+        className="flex items-center justify-center w-6 cursor-ew-resize z-10 hover:bg-purple-400/30 transition-colors"
         onMouseDown={startDrag}
       >
-        <div className="h-16 w-4 flex items-center justify-center bg-white/80 dark:bg-black/30 rounded-md shadow-md">
+        <div className="h-16 w-4 rounded-md flex items-center justify-center light-mode:bg-purple-200 light-mode:hover:bg-purple-300 dark-mode:bg-purple-600/30 dark-mode:hover:bg-purple-500/60">
           <GripVertical className="text-purple-500 h-10" />
         </div>
       </div>
