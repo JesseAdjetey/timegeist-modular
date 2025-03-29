@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useDateStore, useViewStore } from "@/lib/store";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -84,7 +85,7 @@ const Header = () => {
           <img 
             src="/lovable-uploads/50041269-e66c-4735-b847-3d4fef85beca.png" 
             alt="Malleabite Logo" 
-            className="h-10 w-10 rounded-lg shadow-md transition-transform duration-300 hover:animate-[gentle-rotate_1s_ease-in-out_infinite]" 
+            className="h-10 w-10 rounded-lg shadow-md transition-transform duration-300 hover:animate-[gentle-rotate_1s_ease-in-out]" 
           />
         </div>
         
