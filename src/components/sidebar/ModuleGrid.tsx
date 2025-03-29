@@ -1,11 +1,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { ModuleType } from '@/lib/store';
-import TodoModule from '../modules/TodoModule';
-import InvitesModule from '../modules/InvitesModule';
-import PomodoroModule from '../modules/PomodoroModule';
-import EisenhowerModule from '../modules/EisenhowerModule';
-import AlarmsModule from '../modules/AlarmsModule';
+import ModuleRenderer from './ModuleRenderer';
 
 interface ModuleGridProps {
   modules: ModuleType[];
@@ -38,55 +34,20 @@ const ModuleGrid: React.FC<ModuleGridProps> = ({ modules, onRemoveModule }) => {
     return () => resizeObserver.disconnect();
   }, []);
 
-  const renderModule = (type: ModuleType, index: number) => {
-    // Each module has a fixed width, regardless of sidebar width
-    const moduleStyle = {
-      width: `${MODULE_WIDTH}px`,
-      maxWidth: '100%'
-    };
-    
-    switch (type) {
-      case 'todo':
-        return (
-          <div key={index} style={moduleStyle} className="mb-4">
-            <TodoModule title="To-Do List" onRemove={() => onRemoveModule(index)} />
-          </div>
-        );
-      case 'pomodoro':
-        return (
-          <div key={index} style={moduleStyle} className="mb-4">
-            <PomodoroModule onRemove={() => onRemoveModule(index)} />
-          </div>
-        );
-      case 'alarms':
-        return (
-          <div key={index} style={moduleStyle} className="mb-4">
-            <AlarmsModule onRemove={() => onRemoveModule(index)} />
-          </div>
-        );
-      case 'eisenhower':
-        return (
-          <div key={index} style={moduleStyle} className="mb-4">
-            <EisenhowerModule onRemove={() => onRemoveModule(index)} />
-          </div>
-        );
-      case 'invites':
-        return (
-          <div key={index} style={moduleStyle} className="mb-4">
-            <InvitesModule onRemove={() => onRemoveModule(index)} />
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <div 
       ref={gridRef} 
       className={`${isTwoColumn ? 'grid grid-cols-2 gap-4 justify-items-center' : 'flex flex-col items-center'}`}
     >
-      {modules.map((moduleType, index) => renderModule(moduleType, index))}
+      {modules.map((moduleType, index) => (
+        <ModuleRenderer
+          key={index}
+          type={moduleType}
+          index={index}
+          moduleWidth={MODULE_WIDTH}
+          onRemove={() => onRemoveModule(index)}
+        />
+      ))}
     </div>
   );
 };
