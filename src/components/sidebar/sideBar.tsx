@@ -15,9 +15,13 @@ const SideBar = () => {
   const [isTwoColumn, setIsTwoColumn] = useState(false);
   const sidebarContentRef = useRef<HTMLDivElement>(null);
 
+  // Module dimensions
+  const MODULE_WIDTH = 320; // Fixed width for modules
+
   useEffect(() => {
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
+        // Check if there's enough space for two columns
         if (entry.contentRect.width > 700) {
           setIsTwoColumn(true);
         } else {
@@ -75,17 +79,43 @@ const SideBar = () => {
   };
 
   const renderModule = (type: ModuleType, index: number) => {
+    // Each module has a fixed width, regardless of sidebar width
+    const moduleStyle = {
+      width: `${MODULE_WIDTH}px`,
+      maxWidth: '100%'
+    };
+    
     switch (type) {
       case 'todo':
-        return <TodoModule key={index} title="To-Do List" onRemove={() => handleRemoveModule(index)} />;
+        return (
+          <div key={index} style={moduleStyle} className="mb-4">
+            <TodoModule title="To-Do List" onRemove={() => handleRemoveModule(index)} />
+          </div>
+        );
       case 'pomodoro':
-        return <div key={index} className="glass-card p-4 mb-4">Pomodoro Timer Module</div>;
+        return (
+          <div key={index} style={moduleStyle} className="glass-card p-4 mb-4">
+            Pomodoro Timer Module
+          </div>
+        );
       case 'alarms':
-        return <div key={index} className="glass-card p-4 mb-4">Alarms Module</div>;
+        return (
+          <div key={index} style={moduleStyle} className="glass-card p-4 mb-4">
+            Alarms Module
+          </div>
+        );
       case 'eisenhower':
-        return <div key={index} className="glass-card p-4 mb-4">Eisenhower Matrix Module</div>;
+        return (
+          <div key={index} style={moduleStyle} className="glass-card p-4 mb-4">
+            Eisenhower Matrix Module
+          </div>
+        );
       case 'invites':
-        return <InvitesModule key={index} onRemove={() => handleRemoveModule(index)} />;
+        return (
+          <div key={index} style={moduleStyle} className="mb-4">
+            <InvitesModule onRemove={() => handleRemoveModule(index)} />
+          </div>
+        );
       default:
         return null;
     }
@@ -149,7 +179,8 @@ const SideBar = () => {
       >
         <ModuleSelector onSelect={handleAddModule} />
         
-        <div className={`${isTwoColumn ? 'grid grid-cols-2 gap-4' : 'flex flex-col'}`}>
+        {/* Module container - uses grid for two columns or flex for one column */}
+        <div className={`${isTwoColumn ? 'grid grid-cols-2 gap-4 justify-items-center' : 'flex flex-col items-center'}`}>
           {pages[currentPageIndex]?.modules.map((moduleType, index) => 
             renderModule(moduleType, index)
           )}
@@ -157,7 +188,7 @@ const SideBar = () => {
         
         {/* New Page Creator */}
         {showNewPageInput ? (
-          <div className="glass-card p-4 relative">
+          <div className="glass-card p-4 relative mt-4 max-w-md mx-auto">
             <button 
               onClick={() => setShowNewPageInput(false)}
               className="absolute top-2 right-2 text-muted-foreground hover:text-primary"
@@ -186,7 +217,7 @@ const SideBar = () => {
         ) : (
           <button 
             onClick={() => setShowNewPageInput(true)}
-            className="flex items-center justify-center w-full p-2 glass-card text-primary hover:text-primary-foreground hover:bg-primary/30 transition-all"
+            className="flex items-center justify-center w-full p-2 mt-4 glass-card text-primary hover:text-primary-foreground hover:bg-primary/30 transition-all max-w-md mx-auto"
           >
             <Plus size={16} className="mr-2" />
             <span>New Page</span>

@@ -14,7 +14,7 @@ const Mainview = () => {
   const isDragging = useRef(false);
 
   // Set limits for sidebar width
-  const MIN_WIDTH = 320;
+  const MIN_WIDTH = 400;
   const MAX_WIDTH = 800;
 
   const startDrag = (e: React.MouseEvent) => {
@@ -63,7 +63,7 @@ const Mainview = () => {
 
       {/* Resizer */}
       <div
-        className="resizer"
+        className="w-2 cursor-ew-resize bg-gray-300 hover:bg-gray-400"
         onMouseDown={startDrag}
       ></div>
 
