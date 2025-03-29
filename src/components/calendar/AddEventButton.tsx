@@ -57,6 +57,7 @@ const AddEventButton = () => {
       </SheetTrigger>
       <SheetContent className="sm:max-w-md md:max-w-lg border-white/10 bg-background/95 backdrop-blur-xl overflow-y-auto pb-16">
         <EventForm 
+          open={true}
           onSave={handleSaveEvent} 
           onCancel={() => setOpen(false)}
           onUseAI={() => {

@@ -7,21 +7,28 @@ import EnhancedEventForm from "./EnhancedEventForm";
 
 interface EventFormProps {
   open: boolean;
-  onClose: () => void;
+  onClose?: () => void;
+  onCancel?: () => void; // Added this prop
   initialTime?: {
     date: Date;
     startTime: string;
   };
   onSave?: (event: any) => void;
+  onUseAI?: () => void; // Added this prop
 }
 
 const EventForm: React.FC<EventFormProps> = ({ 
   open, 
   onClose, 
+  onCancel,
   initialTime,
-  onSave: propOnSave
+  onSave: propOnSave,
+  onUseAI
 }) => {
   const { addEvent } = useEventStore();
+  
+  // Use onCancel or onClose, whichever is provided
+  const handleClose = onCancel || onClose;
   
   const handleSave = (event: any) => {
     // Generate a unique ID for the new event
@@ -35,11 +42,11 @@ const EventForm: React.FC<EventFormProps> = ({
     } else {
       addEvent(newEvent);
     }
-    onClose();
+    if (handleClose) handleClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose && handleClose()}>
       <DialogContent className="sm:max-w-[500px] bg-background/95 border-white/10">
         <EnhancedEventForm
           initialEvent={initialTime ? {
@@ -47,7 +54,8 @@ const EventForm: React.FC<EventFormProps> = ({
             description: `${initialTime.startTime} - ${getEndTime(initialTime.startTime)} | `
           } : undefined}
           onSave={handleSave}
-          onCancel={onClose}
+          onCancel={handleClose}
+          onUseAI={onUseAI}
         />
       </DialogContent>
     </Dialog>
