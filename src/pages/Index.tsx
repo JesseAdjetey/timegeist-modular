@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Mainview from '@/components/Mainview';
-import { useEffect } from 'react';
-import { useDateStore, useViewStore } from '@/lib/store';
+import { useDateStore, useViewStore } from "@/lib/store";
+import { useSettingsStore } from '@/lib/stores/settings-store';
 
 const Index = () => {
+  const { backgroundColor } = useSettingsStore();
+  
   // Initialize stores on client side
   useEffect(() => {
     // Hydrate zustand stores if needed
@@ -15,7 +17,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 to-indigo-900 text-white">
+    <div className="min-h-screen flex flex-col text-white">
       <Mainview />
     </div>
   );
