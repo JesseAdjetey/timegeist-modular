@@ -1,0 +1,25 @@
+
+/* Calendar Event Colors */
+:root {
+  --event-red: 354 76% 75%;
+  --event-green: 142 69% 58%;
+  --event-blue: 221 83% 75%;
+  --event-purple: 261 54% 70%;
+  --event-teal: 174 59% 65%;
+  --event-orange: 24 89% 74%;
+  --event-pink: 330 84% 85%;
+}
+
+/* Light mode specific styles */
+.light-mode {
+  color: #333;
+  --foreground: 240 10% 15%;
+  --muted-foreground: 240 5% 40%;
+  --border: 240 10% 85%;
+  --input: 240 10% 90%;
+}
+
+/* Dark mode specific styles */
+.dark-mode {
+  color: white;
+}

@@ -1,0 +1,56 @@
+
+@layer components {
+  /* Enhanced Gradient Border Animation - Now with reduced brightness */
+  .gradient-border {
+    position: relative;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: calc(var(--radius) + 2px);
+    background: linear-gradient(
+      90deg,
+      rgba(155, 135, 245, 0.4),
+      rgba(126, 105, 171, 0.4),
+      rgba(110, 89, 165, 0.4),
+      rgba(139, 92, 246, 0.4),
+      rgba(30, 174, 219, 0.4),
+      rgba(51, 195, 240, 0.4),
+      rgba(155, 135, 245,.4)
+    );
+    background-size: 300% 300%;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .gradient-border:hover::before {
+    opacity: 0.7;
+    animation: gradient-shift 3s ease infinite;
+  }
+
+  /* Custom cursor styles */
+  .cursor-glow {
+    cursor: none !important;
+  }
+  
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r text-transparent bg-clip-text;
+  }
+  
+  .light-mode .gradient-text {
+    @apply from-purple-600 to-indigo-600;
+  }
+  
+  .dark-mode .gradient-text {
+    @apply from-purple-400 to-indigo-500;
+  }
+}
