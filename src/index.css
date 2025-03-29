@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -114,7 +113,7 @@ body {
     @apply bg-gradient-to-br from-pink-400 to-pink-500;
   }
 
-  /* Enhanced Gradient Border Animation */
+  /* Enhanced Gradient Border Animation - Now with reduced brightness */
   .gradient-border {
     position: relative;
     border-radius: var(--radius);
@@ -131,13 +130,13 @@ body {
     border-radius: calc(var(--radius) + 2px);
     background: linear-gradient(
       90deg,
-      #9b87f5,
-      #7E69AB,
-      #6E59A5,
-      #8B5CF6,
-      #1EAEDB,
-      #33C3F0,
-      #9b87f5
+      rgba(155, 135, 245, 0.4),
+      rgba(126, 105, 171, 0.4),
+      rgba(110, 89, 165, 0.4),
+      rgba(139, 92, 246, 0.4),
+      rgba(30, 174, 219, 0.4),
+      rgba(51, 195, 240, 0.4),
+      rgba(155, 135, 245,.4)
     );
     background-size: 300% 300%;
     z-index: -1;
@@ -146,7 +145,7 @@ body {
   }
 
   .gradient-border:hover::before {
-    opacity: 1;
+    opacity: 0.7;
     animation: gradient-shift 3s ease infinite;
   }
 
@@ -175,18 +174,18 @@ body {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 2px solid rgb(139, 92, 246);
+  border: 2px solid rgba(139, 92, 246, 0.6);
   pointer-events: none;
   z-index: 9999;
   transform: translate(-50%, -50%);
   transition: width 0.3s, height 0.3s, background-color 0.3s;
-  opacity: 0.7;
+  opacity: 0.6;
   mix-blend-mode: screen;
 }
 
 #custom-cursor.expanded {
   width: 40px;
   height: 40px;
-  background-color: rgba(139, 92, 246, 0.2);
-  opacity: 0.9;
+  background-color: rgba(139, 92, 246, 0.15);
+  opacity: 0.7;
 }
