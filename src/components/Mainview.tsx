@@ -7,7 +7,6 @@ import DayView from "@/components/day-view";
 import WeekView from "@/components/week-view";
 import Header from "@/components/header/Header";
 import { GripVertical } from 'lucide-react';
-import DraggableLogo from "@/components/ai/DraggableLogo";
 
 const Mainview = () => {
   const { selectedView } = useViewStore();
@@ -85,9 +84,6 @@ const Mainview = () => {
           {selectedView === "Week" && <WeekView />}
         </div>
       </div>
-
-      {/* Draggable Logo */}
-      <DraggableLogo />
     </div>
   );
 };
