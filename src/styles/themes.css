@@ -24,8 +24,38 @@
   --accent: 261 54% 61%;
   --accent-foreground: 210 40% 98%;
   --ring: 261 54% 61%;
+  
+  /* Glass card styles */
+  --glass-bg: rgba(26, 22, 37, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
 .dark-mode {
   color: white;
+}
+
+/* Glass card */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 10px;
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(155, 135, 245, 0.5);
+  box-shadow: 0 0 0 2px rgba(155, 135, 245, 0.2);
 }
