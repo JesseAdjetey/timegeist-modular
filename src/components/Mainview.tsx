@@ -6,6 +6,7 @@ import { useViewStore } from "@/lib/store";
 import DayView from "@/components/day-view";
 import WeekView from "@/components/week-view";
 import Header from "@/components/header/Header";
+import { GripVertical } from 'lucide-react';
 
 const Mainview = () => {
   const { selectedView } = useViewStore();
@@ -20,6 +21,7 @@ const Mainview = () => {
   const startDrag = (e: React.MouseEvent) => {
     e.preventDefault();
     isDragging.current = true;
+    document.body.style.cursor = 'ew-resize';
 
     // Attach mousemove and mouseup listeners to the document
     document.addEventListener("mousemove", handleDrag);
@@ -38,6 +40,7 @@ const Mainview = () => {
 
   const stopDrag = () => {
     isDragging.current = false;
+    document.body.style.cursor = 'default';
     document.removeEventListener("mousemove", handleDrag);
     document.removeEventListener("mouseup", stopDrag);
   };
@@ -47,6 +50,7 @@ const Mainview = () => {
       // Cleanup event listeners when component unmounts
       document.removeEventListener("mousemove", handleDrag);
       document.removeEventListener("mouseup", stopDrag);
+      document.body.style.cursor = 'default';
     };
   }, []);
 
@@ -63,9 +67,13 @@ const Mainview = () => {
 
       {/* Resizer */}
       <div
-        className="w-1 cursor-ew-resize light-mode:bg-purple-200 light-mode:hover:bg-purple-400 dark-mode:bg-purple-600/30 dark-mode:hover:bg-purple-500/60 transition-colors"
+        className="flex items-center justify-center w-6 cursor-ew-resize z-10 hover:bg-purple-400/30 transition-colors"
         onMouseDown={startDrag}
-      ></div>
+      >
+        <div className="h-16 w-4 rounded-md flex items-center justify-center light-mode:bg-purple-200 light-mode:hover:bg-purple-300 dark-mode:bg-purple-600/30 dark-mode:hover:bg-purple-500/60">
+          <GripVertical className="text-purple-500 h-10" />
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="flex flex-col flex-1 h-screen">
