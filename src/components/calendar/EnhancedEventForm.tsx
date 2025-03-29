@@ -16,6 +16,9 @@ import {
 } from 'lucide-react';
 import { useDateStore } from '@/lib/store';
 import dayjs from 'dayjs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 interface EventFormProps {
   initialEvent?: Partial<CalendarEventType>;
@@ -33,7 +36,14 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
   const { userSelectedDate } = useDateStore();
   const [title, setTitle] = useState(initialEvent?.title || '');
   const [description, setDescription] = useState(initialEvent?.description?.split('|')[1]?.trim() || '');
-  const [date, setDate] = useState(initialEvent?.date || userSelectedDate.format('YYYY-MM-DD'));
+  
+  // Date state as Date object for the calendar
+  const [date, setDate] = useState<Date>(
+    initialEvent?.date 
+      ? new Date(initialEvent.date)
+      : userSelectedDate.toDate()
+  );
+  
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [isLocked, setIsLocked] = useState(initialEvent?.isLocked || false);
@@ -48,7 +58,7 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
       id: initialEvent?.id || 'temp-id', // Will be replaced with nanoid in the parent component
       title,
       description: `${startTime} - ${endTime} | ${description}`,
-      date,
+      date: dayjs(date).format('YYYY-MM-DD'),
       isLocked,
       isTodo,
       hasAlarm,
@@ -80,29 +90,58 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
         </div>
         
         {/* Date and time row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-md border border-white/10 bg-background/30">
-            <CalendarIcon size={18} className="text-primary/80" />
-            <span>{formattedDate}</span>
-          </div>
+        <div className="grid grid-cols-1 gap-3">
+          {/* Date picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left h-[42px] bg-background/30 border-white/10 hover:bg-white/10"
+              >
+                <CalendarIcon size={18} className="text-primary/80 mr-2" />
+                {formattedDate}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 border-white/10 bg-background/95">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={(newDate) => newDate && setDate(newDate)}
+                initialFocus
+                className="bg-background/95 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
           
-          <div className="flex items-center h-[42px] rounded-md border border-white/10 bg-background/30 overflow-hidden">
-            <Clock size={18} className="text-primary/80 ml-4" />
-            <Input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="border-0 bg-transparent h-full"
-              required
-            />
-            <div className="mx-1 text-white/50">-</div>
-            <Input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="border-0 bg-transparent h-full"
-              required
-            />
+          {/* Time selection */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col">
+              <label className="text-xs text-muted-foreground mb-1 ml-1">Start Time</label>
+              <div className="flex items-center h-[42px] rounded-md border border-white/10 bg-background/30 overflow-hidden">
+                <Clock size={18} className="text-primary/80 ml-3 mr-2" />
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="border-0 bg-transparent h-full p-0 focus-visible:ring-0"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="flex flex-col">
+              <label className="text-xs text-muted-foreground mb-1 ml-1">End Time</label>
+              <div className="flex items-center h-[42px] rounded-md border border-white/10 bg-background/30 overflow-hidden">
+                <Clock size={18} className="text-primary/80 ml-3 mr-2" />
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="border-0 bg-transparent h-full p-0 focus-visible:ring-0"
+                  required
+                />
+              </div>
+            </div>
           </div>
         </div>
         
