@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { nanoid } from 'nanoid';
 import { useEventStore } from '@/lib/store';
 import EnhancedEventForm from "./EnhancedEventForm";
@@ -48,6 +48,7 @@ const EventForm: React.FC<EventFormProps> = ({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose && handleClose()}>
       <DialogContent className="sm:max-w-[500px] bg-background/95 border-white/10">
+        <DialogTitle className="sr-only">Add Event</DialogTitle>
         <EnhancedEventForm
           initialEvent={initialTime ? {
             date: initialTime.date.toISOString().split('T')[0],

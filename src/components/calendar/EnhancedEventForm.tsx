@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CalendarEventType } from '@/lib/stores/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +35,33 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
 }) => {
   const { userSelectedDate } = useDateStore();
   const [title, setTitle] = useState(initialEvent?.title || '');
-  const [description, setDescription] = useState(initialEvent?.description?.split('|')[1]?.trim() || '');
+  
+  // Parse times from description if available
+  const parseTimeFromDescription = (description?: string) => {
+    if (!description) return { startTime: '09:00', endTime: '10:00', desc: '' };
+    
+    const parts = description.split('|');
+    if (parts.length >= 2) {
+      const timesPart = parts[0].trim();
+      const desc = parts[1].trim();
+      
+      const times = timesPart.split('-').map(t => t.trim());
+      
+      return {
+        startTime: times[0] || '09:00',
+        endTime: times[1] || '10:00',
+        desc
+      };
+    }
+    
+    return { startTime: '09:00', endTime: '10:00', desc: description };
+  };
+  
+  const { startTime, endTime, desc } = parseTimeFromDescription(initialEvent?.description);
+  
+  const [description, setDescription] = useState(desc);
+  const [timeStart, setTimeStart] = useState(startTime);
+  const [timeEnd, setTimeEnd] = useState(endTime);
   
   // Date state as Date object for the calendar
   const [date, setDate] = useState<Date>(
@@ -44,8 +70,6 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
       : userSelectedDate.toDate()
   );
   
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('10:00');
   const [isLocked, setIsLocked] = useState(initialEvent?.isLocked || false);
   const [isTodo, setIsTodo] = useState(initialEvent?.isTodo || false);
   const [hasAlarm, setHasAlarm] = useState(initialEvent?.hasAlarm || false);
@@ -57,7 +81,7 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
     const newEvent: CalendarEventType = {
       id: initialEvent?.id || 'temp-id', // Will be replaced with nanoid in the parent component
       title,
-      description: `${startTime} - ${endTime} | ${description}`,
+      description: `${timeStart} - ${timeEnd} | ${description}`,
       date: dayjs(date).format('YYYY-MM-DD'),
       isLocked,
       isTodo,
@@ -121,8 +145,8 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
                 <Clock size={18} className="text-primary/80 ml-3 mr-2" />
                 <Input
                   type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  value={timeStart}
+                  onChange={(e) => setTimeStart(e.target.value)}
                   className="border-0 bg-transparent h-full p-0 focus-visible:ring-0"
                   required
                 />
@@ -135,8 +159,8 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
                 <Clock size={18} className="text-primary/80 ml-3 mr-2" />
                 <Input
                   type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
+                  value={timeEnd}
+                  onChange={(e) => setTimeEnd(e.target.value)}
                   className="border-0 bg-transparent h-full p-0 focus-visible:ring-0"
                   required
                 />
