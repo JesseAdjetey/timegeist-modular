@@ -105,41 +105,49 @@ export const ToastDispatchContext = React.createContext<React.Dispatch<Action> |
 // Global dispatch function for timeouts
 let dispatch: React.Dispatch<Action>
 
-// Toast component that displays all toasts
+// Create a ToastProvider component that sets up the context
+export const ToastContext = React.createContext<{
+  toasts: ToasterToast[];
+  dispatch: React.Dispatch<Action>;
+}>({ toasts: [], dispatch: () => {} });
+
+// Toast provider component to be used in applications
 export function Toaster() {
   const [state, dispatchState] = React.useReducer(reducer, {
     toasts: [],
-  })
+  });
 
   // Set the global dispatch to the current dispatch
-  dispatch = dispatchState
+  dispatch = dispatchState;
 
   React.useEffect(() => {
     return () => {
       toastTimeouts.forEach((timeout) => {
-        clearTimeout(timeout)
-      })
-      toastTimeouts.clear()
-    }
-  }, [])
+        clearTimeout(timeout);
+      });
+      toastTimeouts.clear();
+    };
+  }, []);
   
   return (
-    <ToastProvider>
-      {state.toasts.map(function ({ id, title, description, action, ...props }) {
-        return (
-          <Toast key={id} {...props}>
-            <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
-              {description && (
-                <ToastDescription>{description}</ToastDescription>
-              )}
-            </div>
-            {action}
-            <ToastClose />
-          </Toast>
-        )
-      })}
-      <ToastViewport />
-    </ToastProvider>
-  )
+    <ToastDispatchContext.Provider value={dispatchState}>
+      <ToastProvider>
+        {state.toasts.map(function ({ id, title, description, action, ...props }) {
+          return (
+            <Toast key={id} {...props}>
+              <div className="grid gap-1">
+                {title && <ToastTitle>{title}</ToastTitle>}
+                {description && (
+                  <ToastDescription>{description}</ToastDescription>
+                )}
+              </div>
+              {action}
+              <ToastClose />
+            </Toast>
+          );
+        })}
+        <ToastViewport />
+      </ToastProvider>
+    </ToastDispatchContext.Provider>
+  );
 }

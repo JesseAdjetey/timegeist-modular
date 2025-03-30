@@ -58,7 +58,6 @@ export const useToast = () => {
 // Helper function to display toasts easily
 export function toast(props: Omit<ToasterToast, "id">) {
   if (typeof document !== "undefined") {
-    // This is a simple implementation for static usage
     const { toast } = useToast()
     return toast(props)
   }
