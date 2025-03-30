@@ -56,27 +56,25 @@ const WeekView = () => {
         {/* Time Column */}
         <TimeColumn />
 
-        {/* Days Columns */}
-        <div
-          className={cn(
-            "grid grid-cols-7"
-          )}
-        >
-          {weekDates.map(({ currentDate }, i) => (
-            <DayColumn
-              key={i}
-              currentDate={currentDate}
-              dayEvents={getEventsForDay(currentDate)}
-              currentTime={currentTime}
-              onTimeSlotClick={handleTimeSlotClick}
-              onDragOver={handleDragOver}
-              onDrop={(e, day, hour) => handleDrop(e, day, hour, updateEvent)}
-              openEventSummary={openEventSummary}
-              toggleEventLock={toggleEventLock}
-              updateEvent={updateEvent}
-            />
-          ))}
-        </div>
+        {/* Days Columns with ScrollArea for better scrolling */}
+        <ScrollArea className="h-full">
+          <div className="grid grid-cols-7 min-h-[1920px]">
+            {weekDates.map(({ currentDate }, i) => (
+              <DayColumn
+                key={i}
+                currentDate={currentDate}
+                dayEvents={getEventsForDay(currentDate)}
+                currentTime={currentTime}
+                onTimeSlotClick={handleTimeSlotClick}
+                onDragOver={handleDragOver}
+                onDrop={(e, day, hour) => handleDrop(e, day, hour, updateEvent)}
+                openEventSummary={openEventSummary}
+                toggleEventLock={toggleEventLock}
+                updateEvent={updateEvent}
+              />
+            ))}
+          </div>
+        </ScrollArea>
       </div>
 
       {/* Event Creation Dialog */}

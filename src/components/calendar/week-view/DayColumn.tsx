@@ -5,7 +5,7 @@ import { CalendarEventType } from "@/lib/stores/types";
 import dayjs from "dayjs";
 import CalendarEvent from "../CalendarEvent";
 import CurrentTimeIndicator from "./CurrentTimeIndicator";
-import { calculateEventHeight, calculateEventPosition, getTimeInfo, formatMinutesAsTime } from "../event-utils/touch-handlers";
+import { calculateEventHeight, calculateEventPosition, getTimeInfo } from "../event-utils/touch-handlers";
 import { useEventResize } from "@/hooks/use-event-resize";
 
 interface DayColumnProps {
@@ -56,7 +56,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
   const { handleResizeStart } = useEventResize(hourHeight, handleEventResize);
 
   return (
-    <div className="relative border-r border-white/10" ref={columnRef}>
+    <div className="relative border-r border-white/10 overflow-visible" ref={columnRef}>
       {getHours.map((hour, i) => (
         <div
           key={i}
@@ -83,12 +83,8 @@ const DayColumn: React.FC<DayColumnProps> = ({
             }}
             onClick={(e) => {
               e.stopPropagation();
-              openEventSummary(event);
-            }}
-            onMouseDown={(e) => {
-              // Handle resize start if clicking on resize handle
-              if (e.target instanceof HTMLElement && e.target.dataset.resizeHandle) {
-                handleResizeStart(e.nativeEvent, event);
+              if (!event.isLocked) {
+                openEventSummary(event);
               }
             }}
           >
@@ -102,6 +98,12 @@ const DayColumn: React.FC<DayColumnProps> = ({
               participants={event.participants}
               onClick={() => openEventSummary(event)}
               onLockToggle={(isLocked) => toggleEventLock(event.id, isLocked)}
+              onMouseDown={(e) => {
+                // Handle resize start when mouse down on the event
+                if (!event.isLocked) {
+                  handleResizeStart(e.nativeEvent, event);
+                }
+              }}
               onResize={updateEvent ? () => {} : undefined} // Just to show the resize handle
             />
           </div>
