@@ -6,6 +6,7 @@ import InvitesModule from '../modules/InvitesModule';
 import PomodoroModule from '../modules/PomodoroModule';
 import EisenhowerModule from '../modules/EisenhowerModule';
 import AlarmsModule from '../modules/AlarmsModule';
+import { GripVertical } from 'lucide-react';
 
 interface ModuleRendererProps {
   module: ModuleInstance;
@@ -13,6 +14,7 @@ interface ModuleRendererProps {
   moduleWidth: number;
   onRemove: () => void;
   onTitleChange: (title: string) => void;
+  isDragging?: boolean;
 }
 
 const ModuleRenderer: React.FC<ModuleRendererProps> = ({ 
@@ -20,7 +22,8 @@ const ModuleRenderer: React.FC<ModuleRendererProps> = ({
   index, 
   moduleWidth, 
   onRemove,
-  onTitleChange
+  onTitleChange,
+  isDragging = false
 }) => {
   // Each module has a fixed width
   const moduleStyle = {
@@ -28,55 +31,45 @@ const ModuleRenderer: React.FC<ModuleRendererProps> = ({
     maxWidth: '100%'
   };
   
+  // Add common drag handle to each module type
+  const moduleProps = {
+    title: module.title,
+    onRemove: onRemove,
+    onTitleChange: onTitleChange,
+    isDragging: isDragging
+  };
+  
+  const moduleClassName = `mb-4 gradient-border cursor-glow ${isDragging ? 'opacity-75' : ''}`;
+  
   switch (module.type) {
     case 'todo':
       return (
-        <div key={index} style={moduleStyle} className="mb-4 gradient-border cursor-glow">
-          <TodoModule 
-            title={module.title} 
-            onRemove={onRemove} 
-            onTitleChange={onTitleChange}
-          />
+        <div key={index} style={moduleStyle} className={moduleClassName}>
+          <TodoModule {...moduleProps} />
         </div>
       );
     case 'pomodoro':
       return (
-        <div key={index} style={moduleStyle} className="mb-4 gradient-border cursor-glow">
-          <PomodoroModule 
-            title={module.title}
-            onRemove={onRemove} 
-            onTitleChange={onTitleChange}
-          />
+        <div key={index} style={moduleStyle} className={moduleClassName}>
+          <PomodoroModule {...moduleProps} />
         </div>
       );
     case 'alarms':
       return (
-        <div key={index} style={moduleStyle} className="mb-4 gradient-border cursor-glow">
-          <AlarmsModule 
-            title={module.title}
-            onRemove={onRemove} 
-            onTitleChange={onTitleChange}
-          />
+        <div key={index} style={moduleStyle} className={moduleClassName}>
+          <AlarmsModule {...moduleProps} />
         </div>
       );
     case 'eisenhower':
       return (
-        <div key={index} style={moduleStyle} className="mb-4 gradient-border cursor-glow">
-          <EisenhowerModule 
-            title={module.title}
-            onRemove={onRemove} 
-            onTitleChange={onTitleChange}
-          />
+        <div key={index} style={moduleStyle} className={moduleClassName}>
+          <EisenhowerModule {...moduleProps} />
         </div>
       );
     case 'invites':
       return (
-        <div key={index} style={moduleStyle} className="mb-4 gradient-border cursor-glow">
-          <InvitesModule 
-            title={module.title}
-            onRemove={onRemove} 
-            onTitleChange={onTitleChange}
-          />
+        <div key={index} style={moduleStyle} className={moduleClassName}>
+          <InvitesModule {...moduleProps} />
         </div>
       );
     default:

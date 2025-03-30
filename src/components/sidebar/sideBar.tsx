@@ -15,7 +15,8 @@ const SideBar = () => {
     removeModule, 
     updatePageTitle, 
     addPage,
-    updateModuleTitle
+    updateModuleTitle,
+    reorderModules
   } = useSidebarStore();
   
   const sidebarContentRef = useRef<HTMLDivElement>(null);
@@ -42,6 +43,10 @@ const SideBar = () => {
 
   const handleUpdateModuleTitle = (moduleIndex: number, newTitle: string) => {
     updateModuleTitle(currentPageIndex, moduleIndex, newTitle);
+  };
+
+  const handleReorderModules = (fromIndex: number, toIndex: number) => {
+    reorderModules(currentPageIndex, fromIndex, toIndex);
   };
 
   const handleCreateNewPage = (title: string) => {
@@ -73,6 +78,7 @@ const SideBar = () => {
           modules={pages[currentPageIndex]?.modules || []}
           onRemoveModule={handleRemoveModule}
           onUpdateModuleTitle={handleUpdateModuleTitle}
+          onReorderModules={handleReorderModules}
         />
         
         {/* New Page Creator */}

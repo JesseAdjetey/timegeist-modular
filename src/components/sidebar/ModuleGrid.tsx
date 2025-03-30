@@ -9,12 +9,14 @@ interface ModuleGridProps {
   modules: ModuleInstance[];
   onRemoveModule: (index: number) => void;
   onUpdateModuleTitle: (index: number, title: string) => void;
+  onReorderModules: (fromIndex: number, toIndex: number) => void;
 }
 
 const ModuleGrid: React.FC<ModuleGridProps> = ({ 
   modules, 
   onRemoveModule,
-  onUpdateModuleTitle
+  onUpdateModuleTitle,
+  onReorderModules
 }) => {
   // Module dimensions - reduced width for better fit in sidebar
   const MODULE_WIDTH = 280; // Reduced from 320 to 280
@@ -23,6 +25,10 @@ const ModuleGrid: React.FC<ModuleGridProps> = ({
   const { isTwoColumn, containerRef } = useSidebarLayout({
     columnBreakpoint: 620 // Reduced from 700 to trigger two columns more easily
   });
+
+  // State for tracking drag operations
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Custom cursor effect
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -70,20 +76,63 @@ const ModuleGrid: React.FC<ModuleGridProps> = ({
     };
   }, [modules.length]); // Re-run when modules change
 
+  // Handle drag start
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  // Handle drag over
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null) return;
+    setDragOverIndex(index);
+  };
+
+  // Handle drop
+  const handleDrop = (targetIndex: number) => {
+    if (draggedIndex === null) return;
+    
+    // Only perform reorder if indexes are different
+    if (draggedIndex !== targetIndex) {
+      onReorderModules(draggedIndex, targetIndex);
+    }
+    
+    // Reset drag states
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  // Handle drag end (cleanup)
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   return (
     <div 
       ref={containerRef} 
       className={`${isTwoColumn ? 'grid grid-cols-2 gap-4 justify-items-center' : 'flex flex-col items-center'}`}
     >
       {modules.map((module, index) => (
-        <ModuleRenderer
+        <div
           key={index}
-          module={module}
-          index={index}
-          moduleWidth={MODULE_WIDTH}
-          onRemove={() => onRemoveModule(index)}
-          onTitleChange={(title) => onUpdateModuleTitle(index, title)}
-        />
+          draggable
+          onDragStart={() => handleDragStart(index)}
+          onDragOver={(e) => handleDragOver(e, index)}
+          onDrop={() => handleDrop(index)}
+          onDragEnd={handleDragEnd}
+          className={`${dragOverIndex === index ? 'ring-2 ring-primary ring-opacity-50' : ''} 
+                    ${draggedIndex === index ? 'opacity-50' : 'opacity-100'}`}
+        >
+          <ModuleRenderer
+            module={module}
+            index={index}
+            moduleWidth={MODULE_WIDTH}
+            onRemove={() => onRemoveModule(index)}
+            onTitleChange={(title) => onUpdateModuleTitle(index, title)}
+            isDragging={draggedIndex === index}
+          />
+        </div>
       ))}
     </div>
   );

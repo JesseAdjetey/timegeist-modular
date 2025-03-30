@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { ModuleInstance, ModuleType, SidebarPage } from "./types";
@@ -12,6 +11,7 @@ interface SidebarStoreType {
   removeModule: (pageIndex: number, moduleIndex: number) => void;
   updatePageTitle: (pageIndex: number, title: string) => void;
   updateModuleTitle: (pageIndex: number, moduleIndex: number, title: string) => void;
+  reorderModules: (pageIndex: number, fromIndex: number, toIndex: number) => void;
 }
 
 export const useSidebarStore = create<SidebarStoreType>()(
@@ -94,6 +94,18 @@ export const useSidebarStore = create<SidebarStoreType>()(
             const newPages = [...state.pages];
             if (newPages[pageIndex] && newPages[pageIndex].modules[moduleIndex]) {
               newPages[pageIndex].modules[moduleIndex].title = title;
+            }
+            return { pages: newPages };
+          });
+        },
+        reorderModules: (pageIndex, fromIndex, toIndex) => {
+          set(state => {
+            const newPages = [...state.pages];
+            if (newPages[pageIndex] && newPages[pageIndex].modules) {
+              const modules = [...newPages[pageIndex].modules];
+              const [movedModule] = modules.splice(fromIndex, 1);
+              modules.splice(toIndex, 0, movedModule);
+              newPages[pageIndex].modules = modules;
             }
             return { pages: newPages };
           });
