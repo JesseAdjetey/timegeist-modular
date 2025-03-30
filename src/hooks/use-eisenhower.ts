@@ -39,7 +39,7 @@ export function useEisenhower() {
       console.log('Fetching Eisenhower items for user:', user.id);
       
       const { data, error } = await supabase
-        .from('eisenhower_matrix_items')
+        .from('eisenhower_items')
         .select('id, text, quadrant')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -50,7 +50,7 @@ export function useEisenhower() {
       }
       
       console.log('Fetched Eisenhower items:', data);
-      setItems(data);
+      setItems(data || []);
     } catch (err: any) {
       console.error('Error fetching Eisenhower items:', err);
       setError(err.message || err.error_description || String(err));
@@ -81,7 +81,7 @@ export function useEisenhower() {
       };
       
       const { data, error } = await supabase
-        .from('eisenhower_matrix_items')
+        .from('eisenhower_items')
         .insert(newItem)
         .select();
       
@@ -99,7 +99,7 @@ export function useEisenhower() {
       console.log('Item successfully added with response:', data);
       
       if (data && data.length > 0) {
-        setItems(prevItems => [data[0], ...prevItems]);
+        setItems(prevItems => [data[0] as EisenhowerItem, ...prevItems]);
         
         const response = {
           success: true,
@@ -137,7 +137,7 @@ export function useEisenhower() {
       setItems(prevItems => prevItems.filter(item => item.id !== id));
       
       const { error } = await supabase
-        .from('eisenhower_matrix_items')
+        .from('eisenhower_items')
         .delete()
         .eq('id', id)
         .eq('user_id', user.id);
@@ -166,7 +166,7 @@ export function useEisenhower() {
       ));
       
       const { error } = await supabase
-        .from('eisenhower_matrix_items')
+        .from('eisenhower_items')
         .update({ quadrant })
         .eq('id', id)
         .eq('user_id', user.id);
@@ -199,7 +199,7 @@ export function useEisenhower() {
     const eisenhowerSubscription = supabase
       .channel('eisenhower-changes')
       .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'eisenhower_matrix_items', filter: `user_id=eq.${user?.id}` }, 
+        { event: '*', schema: 'public', table: 'eisenhower_items', filter: `user_id=eq.${user?.id}` }, 
         (payload) => {
           console.log('Realtime update received:', payload);
           // Only refetch when the user is authenticated
