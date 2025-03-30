@@ -1,6 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { useSettingsStore } from '@/lib/stores/settings-store';
+import { useLocation } from 'react-router-dom';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -8,17 +9,24 @@ interface ThemeProviderProps {
 
 const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const { backgroundColor } = useSettingsStore();
-
+  const location = useLocation();
+  
   useEffect(() => {
     // Always use dark mode
     document.documentElement.classList.add('dark-mode');
     document.documentElement.classList.remove('light-mode');
     
+    // Determine if we're on the auth page
+    const isAuthPage = location.pathname === '/auth';
+    
+    // Use the user's selected background color or a nice default for auth page
+    const baseColor = isAuthPage ? '#1E2746' : backgroundColor;
+    
     // Create a smoother, more appealing gradient
-    const endColor = adjustColorBrightness(backgroundColor, -40);
+    const endColor = adjustColorBrightness(baseColor, -40);
     
     // Apply background to body
-    document.body.style.background = `linear-gradient(135deg, ${backgroundColor}, ${endColor})`;
+    document.body.style.background = `linear-gradient(135deg, ${baseColor}, ${endColor})`;
     document.body.style.backgroundAttachment = 'fixed';
     document.body.style.backgroundSize = 'cover';
     document.body.style.height = '100vh';
@@ -26,7 +34,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     document.body.style.padding = '0';
     document.body.style.color = 'white';
     
-  }, [backgroundColor]);
+  }, [backgroundColor, location.pathname]);
 
   // Helper function to adjust color brightness
   const adjustColorBrightness = (hex: string, percent: number) => {
