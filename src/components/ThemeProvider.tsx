@@ -1,23 +1,22 @@
 
 import React, { useEffect } from 'react';
 import { useSettingsStore } from '@/lib/stores/settings-store';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
+  isAuthPage?: boolean;
 }
 
-const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, isAuthPage = false }) => {
   const { backgroundColor } = useSettingsStore();
-  const location = useLocation();
+  
+  // We'll use a prop instead of useLocation() so this component can be used outside Router context
   
   useEffect(() => {
     // Always use dark mode
     document.documentElement.classList.add('dark-mode');
     document.documentElement.classList.remove('light-mode');
-    
-    // Determine if we're on the auth page
-    const isAuthPage = location.pathname === '/auth';
     
     // Use the user's selected background color or a nice default for auth page
     const baseColor = isAuthPage ? '#1E2746' : backgroundColor;
@@ -34,7 +33,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     document.body.style.padding = '0';
     document.body.style.color = 'white';
     
-  }, [backgroundColor, location.pathname]);
+  }, [backgroundColor, isAuthPage]);
 
   // Helper function to adjust color brightness
   const adjustColorBrightness = (hex: string, percent: number) => {
