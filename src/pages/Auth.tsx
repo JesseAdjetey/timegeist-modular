@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AnimatedLogo from '@/components/auth/AnimatedLogo';
-import { Check, ChevronRight, Star, Award, Gift, Trophy, Timer, Calendar, BrainCircuit, Sparkles } from 'lucide-react';
+import { Check, ChevronRight, Star, Award, Gift, Trophy, Timer, Calendar, BrainCircuit, Sparkles, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ACHIEVEMENTS = [
@@ -16,7 +16,7 @@ const ACHIEVEMENTS = [
 ];
 
 const Auth = () => {
-  const { user, signIn, signUp, loading, error } = useAuth();
+  const { user, signIn, signUp, loading, error, clearError } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +29,7 @@ const Auth = () => {
     taskManagement: false,
     scheduling: false,
   });
+  const [emailSent, setEmailSent] = useState(false);
   
   // References for interactive elements
   const timeOrbsRef = useRef<HTMLDivElement>(null);
@@ -241,16 +242,47 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearError();
     
     try {
       if (isSignUp) {
-        await signUp(email, password, name);
+        const { success, isConfirmationEmailSent } = await signUp(email, password, name);
+        
+        if (success) {
+          // If signup was successful
+          if (isConfirmationEmailSent) {
+            // Show email confirmation notification
+            setEmailSent(true);
+            toast.success("Registration successful!", {
+              description: "Please check your email to confirm your account before signing in.",
+              icon: <Mail className="h-4 w-4" />,
+              duration: 5000,
+            });
+            
+            // Reset form and switch to sign in
+            setTimeout(() => {
+              setIsSignUp(false);
+              setEmailSent(false);
+            }, 500);
+          } else {
+            // Email confirmation not required, user already signed in
+            toast.success("Registration successful!", {
+              description: "Your account has been created and you're now signed in.",
+              duration: 3000,
+            });
+          }
+        }
       } else {
         await signIn(email, password);
       }
     } catch (err) {
       console.error('Authentication error:', err);
     }
+  };
+
+  const switchMode = () => {
+    setIsSignUp(!isSignUp);
+    clearError();
   };
 
   // If user is already logged in, redirect to home page
@@ -372,9 +404,20 @@ const Auth = () => {
                 {isSignUp ? 'Create Your Account' : 'Welcome Back'}
               </h2>
               
+              {emailSent && (
+                <div className="bg-green-500/20 border border-green-500/30 text-white p-4 rounded-lg mb-4 flex items-start gap-3">
+                  <Mail className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium">Confirmation email sent!</p>
+                    <p className="text-sm opacity-80">Please check your inbox and confirm your email before signing in.</p>
+                  </div>
+                </div>
+              )}
+              
               {error && (
-                <div className="bg-red-500/20 border border-red-500/30 text-white p-3 rounded-lg mb-4">
-                  {error}
+                <div className="bg-red-500/20 border border-red-500/30 text-white p-3 rounded-lg mb-4 flex items-center gap-2">
+                  <div className="h-5 w-5 text-red-400 flex-shrink-0">⚠️</div>
+                  <p>{error}</p>
                 </div>
               )}
               
@@ -441,7 +484,7 @@ const Auth = () => {
               <div className="mt-6 text-center">
                 <button
                   type="button"
-                  onClick={() => setIsSignUp(!isSignUp)}
+                  onClick={switchMode}
                   className="text-purple-300 hover:text-white transition-colors"
                 >
                   {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}

@@ -8,9 +8,10 @@ interface AuthContextType {
   user: User | null;
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name?: string) => Promise<void>;
+  signUp: (email: string, password: string, name?: string) => Promise<{success: boolean; isConfirmationEmailSent: boolean}>;
   loading: boolean;
   error: string | null;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,6 +41,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const clearError = () => setError(null);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -74,8 +77,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw signUpError;
       }
       
+      // Check if confirmation email was sent (this is true when email confirmation is enabled in Supabase)
+      const isConfirmationEmailSent = !data.session;
+      
+      return { success: true, isConfirmationEmailSent };
     } catch (error: any) {
       setError(error.message);
+      return { success: false, isConfirmationEmailSent: false };
     } finally {
       setLoading(false);
     }
@@ -101,6 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signOut,
     loading,
     error,
+    clearError,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
