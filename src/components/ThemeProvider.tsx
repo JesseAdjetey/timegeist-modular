@@ -1,17 +1,21 @@
 
 import React, { useEffect } from 'react';
 import { useSettingsStore } from '@/lib/stores/settings-store';
-import { useLocation, useNavigate } from 'react-router-dom';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
+  defaultTheme?: string;
+  storageKey?: string;
   isAuthPage?: boolean;
 }
 
-const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, isAuthPage = false }) => {
+const ThemeProvider: React.FC<ThemeProviderProps> = ({ 
+  children, 
+  defaultTheme = 'system', 
+  storageKey = 'ui-theme',
+  isAuthPage = false 
+}) => {
   const { backgroundColor } = useSettingsStore();
-  
-  // We'll use a prop instead of useLocation() so this component can be used outside Router context
   
   useEffect(() => {
     // Always use dark mode

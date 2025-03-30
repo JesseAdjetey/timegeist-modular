@@ -1,6 +1,6 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from './components/ThemeProvider';
+import ThemeProvider from './components/ThemeProvider';
 import { Toaster } from 'sonner';
 import { SupabaseRealTimeSetup } from './components/SupabaseRealTimeSetup';
 import './App.css';
