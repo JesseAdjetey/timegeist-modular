@@ -1,72 +1,16 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Separator } from "@/components/ui/separator";
-import { Profile } from '@/types/database';
-
-// Import the refactored components
-import ProfileHeader from '@/components/profile/ProfileHeader';
-import ProfileStats from '@/components/profile/ProfileStats';
-import ProfileDetails from '@/components/profile/ProfileDetails';
-import ProfileActions from '@/components/profile/ProfileActions';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { LogOut, User } from 'lucide-react';
 
 const UserProfile = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [alarmCount, setAlarmCount] = useState(0);
-  const [eventCount, setEventCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    
-    const fetchUserData = async () => {
-      setLoading(true);
-      try {
-        // Fetch user profile
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-          
-        if (profileError) throw profileError;
-        setProfile(profileData as Profile);
-        
-        // Fetch alarm count
-        const { count: alarmCount, error: alarmError } = await supabase
-          .from('alarms')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-          
-        if (alarmError) throw alarmError;
-        setAlarmCount(alarmCount || 0);
-        
-        // Fetch event count
-        const { count: eventCount, error: eventError } = await supabase
-          .from('events')
-          .select('*', { count: 'exact', head: true })
-          .eq('created_by', user.id);
-          
-        if (eventError) throw eventError;
-        setEventCount(eventCount || 0);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load user profile data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchUserData();
-  }, [user, toast]);
 
   const handleSignOut = async () => {
     try {
@@ -75,6 +19,7 @@ const UserProfile = () => {
         title: "Signed out",
         description: "You have been successfully signed out.",
       });
+      navigate('/auth');
     } catch (error) {
       toast({
         title: "Error",
@@ -84,21 +29,45 @@ const UserProfile = () => {
     }
   };
 
+  // Get user initials for avatar fallback
+  const getInitials = () => {
+    if (!user?.email) return '?';
+    return user.email.substring(0, 2).toUpperCase();
+  };
+
   return (
     <div className="p-6 bg-card rounded-lg shadow">
-      <ProfileHeader profile={profile} user={user} loading={loading} />
+      <div className="flex items-center gap-4 mb-6">
+        <Avatar className="h-16 w-16 border-2 border-primary">
+          <AvatarImage src={user?.user_metadata?.avatar_url} />
+          <AvatarFallback className="bg-primary text-primary-foreground text-lg font-medium">
+            {getInitials()}
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <h3 className="font-semibold text-lg">{user?.email}</h3>
+          <p className="text-sm text-muted-foreground">User ID: {user?.id?.substring(0, 8)}...</p>
+        </div>
+      </div>
       
-      <ProfileStats 
-        eventCount={eventCount} 
-        alarmCount={alarmCount} 
-        loading={loading} 
-      />
+      <div className="space-y-4 mt-4 bg-background/50 p-4 rounded-md">
+        <div className="grid grid-cols-3 text-sm">
+          <span className="font-medium">Email:</span>
+          <span className="col-span-2">{user?.email}</span>
+        </div>
+        
+        <div className="grid grid-cols-3 text-sm">
+          <span className="font-medium">Last Sign In:</span>
+          <span className="col-span-2">{user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'N/A'}</span>
+        </div>
+      </div>
       
-      <Separator className="my-4 bg-white/10" />
-      
-      <ProfileDetails user={user} loading={loading} />
-      
-      <ProfileActions onSignOut={handleSignOut} loading={loading} />
+      <div className="mt-6 flex justify-end">
+        <Button variant="destructive" onClick={handleSignOut} className="gap-2">
+          <LogOut size={16} />
+          Sign Out
+        </Button>
+      </div>
     </div>
   );
 };

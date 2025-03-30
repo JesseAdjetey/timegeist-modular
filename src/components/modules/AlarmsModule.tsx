@@ -1,10 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import ModuleContainer from './ModuleContainer';
-import { useAlarms } from './alarms/useAlarms';
-import AlarmList from './alarms/AlarmList';
-import AddAlarmForm from './alarms/AddAlarmForm';
-import { formatRecurringPattern, getWeekdayName, getMonthName } from './alarms/alarmUtils';
+import { Clock, Bell } from 'lucide-react';
+
+interface Alarm {
+  id: string;
+  title: string;
+  time: string;
+  isActive: boolean;
+}
 
 interface AlarmsModuleProps {
   title?: string;
@@ -13,6 +17,7 @@ interface AlarmsModuleProps {
   onMinimize?: () => void;
   isMinimized?: boolean;
   isDragging?: boolean;
+  initialAlarms?: Alarm[];
 }
 
 const AlarmsModule: React.FC<AlarmsModuleProps> = ({ 
@@ -21,54 +26,41 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
   onTitleChange,
   onMinimize,
   isMinimized = false,
-  isDragging = false
+  isDragging = false,
+  initialAlarms = [] 
 }) => {
-  const {
-    alarms,
-    loading,
-    newAlarmTitle,
-    setNewAlarmTitle,
-    newAlarmTime,
-    setNewAlarmTime,
-    newAlarmDate,
-    setNewAlarmDate,
-    isRecurring,
-    setIsRecurring,
-    recurringType,
-    setRecurringType,
-    recurringInterval,
-    setRecurringInterval,
-    recurringDays,
-    recurringMonths,
-    recurringDayOfMonth,
-    setRecurringDayOfMonth,
-    recurringEndDate,
-    setRecurringEndDate,
-    isAddAlarmOpen,
-    setIsAddAlarmOpen,
-    addAlarm,
-    toggleAlarm,
-    deleteAlarm,
-    toggleRecurringDay,
-    toggleRecurringMonth
-  } = useAlarms();
+  const [alarms, setAlarms] = useState<Alarm[]>(initialAlarms);
+  const [newAlarmTitle, setNewAlarmTitle] = useState('');
+  const [newAlarmTime, setNewAlarmTime] = useState('08:00');
 
-  if (isMinimized) {
-    return (
-      <ModuleContainer 
-        title={title} 
-        onRemove={onRemove}
-        onTitleChange={onTitleChange}
-        onMinimize={onMinimize}
-        isMinimized={isMinimized}
-        isDragging={isDragging}
-      >
-        <div className="flex justify-center items-center py-2">
-          <span className="text-sm opacity-70">{alarms.length} alarm{alarms.length !== 1 ? 's' : ''}</span>
-        </div>
-      </ModuleContainer>
-    );
-  }
+  const addAlarm = () => {
+    if (newAlarmTitle.trim()) {
+      const newAlarm: Alarm = {
+        id: Date.now().toString(),
+        title: newAlarmTitle,
+        time: newAlarmTime,
+        isActive: true
+      };
+      setAlarms([...alarms, newAlarm]);
+      setNewAlarmTitle('');
+    }
+  };
+
+  const toggleAlarm = (id: string) => {
+    setAlarms(alarms.map(alarm => 
+      alarm.id === id ? { ...alarm, isActive: !alarm.isActive } : alarm
+    ));
+  };
+
+  const deleteAlarm = (id: string) => {
+    setAlarms(alarms.filter(alarm => alarm.id !== id));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      addAlarm();
+    }
+  };
 
   return (
     <ModuleContainer 
@@ -79,41 +71,60 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
       isMinimized={isMinimized}
       isDragging={isDragging}
     >
-      <AlarmList 
-        alarms={alarms}
-        loading={loading}
-        onToggleAlarm={toggleAlarm}
-        onDeleteAlarm={deleteAlarm}
-        formatRecurringPattern={formatRecurringPattern}
-      />
+      <div className="max-h-60 overflow-y-auto mb-3">
+        {alarms.map(alarm => (
+          <div 
+            key={alarm.id}
+            className="flex items-center gap-2 bg-white/5 p-2 rounded-lg mb-2"
+          >
+            <div 
+              className={`w-4 h-4 rounded-full flex-shrink-0 ${alarm.isActive ? 'bg-primary' : 'bg-secondary'}`}
+              onClick={() => toggleAlarm(alarm.id)}
+            />
+            <div className="flex flex-col flex-1">
+              <span className="text-sm">{alarm.title}</span>
+              <span className="text-xs opacity-70 flex items-center gap-1">
+                <Clock size={12} />
+                {alarm.time}
+              </span>
+            </div>
+            <button 
+              onClick={() => deleteAlarm(alarm.id)}
+              className="text-destructive/70 hover:text-destructive"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
 
-      <AddAlarmForm 
-        isOpen={isAddAlarmOpen}
-        setIsOpen={setIsAddAlarmOpen}
-        newAlarmTitle={newAlarmTitle}
-        setNewAlarmTitle={setNewAlarmTitle}
-        newAlarmTime={newAlarmTime}
-        setNewAlarmTime={setNewAlarmTime}
-        newAlarmDate={newAlarmDate}
-        setNewAlarmDate={setNewAlarmDate}
-        isRecurring={isRecurring}
-        setIsRecurring={setIsRecurring}
-        recurringType={recurringType}
-        setRecurringType={setRecurringType}
-        recurringInterval={recurringInterval}
-        setRecurringInterval={setRecurringInterval}
-        recurringDays={recurringDays}
-        toggleRecurringDay={toggleRecurringDay}
-        recurringMonths={recurringMonths}
-        toggleRecurringMonth={toggleRecurringMonth}
-        recurringDayOfMonth={recurringDayOfMonth}
-        setRecurringDayOfMonth={setRecurringDayOfMonth}
-        recurringEndDate={recurringEndDate}
-        setRecurringEndDate={setRecurringEndDate}
-        addAlarm={addAlarm}
-        getWeekdayName={getWeekdayName}
-        getMonthName={getMonthName}
-      />
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newAlarmTitle}
+            onChange={(e) => setNewAlarmTitle(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="glass-input w-full"
+            placeholder="Alarm title..."
+          />
+          <input 
+            type="time"
+            value={newAlarmTime}
+            onChange={(e) => setNewAlarmTime(e.target.value)}
+            className="glass-input"
+          />
+        </div>
+        <button
+          onClick={addAlarm}
+          className="bg-primary px-3 py-1 w-full rounded-md hover:bg-primary/80 transition-colors"
+        >
+          <span className="flex items-center justify-center gap-1">
+            <Bell size={14} />
+            Add Alarm
+          </span>
+        </button>
+      </div>
     </ModuleContainer>
   );
 };
