@@ -84,7 +84,7 @@ const SavedModulesManager: React.FC<SavedModulesManagerProps> = ({ pageIndex }) 
                     className="p-1 rounded-full hover:bg-destructive/20"
                     aria-label="Remove module"
                   >
-                    <Minus size={16} className="text-destructive" />
+                    <Minus size={16} />
                   </button>
                 </div>
               </div>

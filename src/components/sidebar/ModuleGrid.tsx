@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useSidebarStore } from '@/lib/store';
 import ModuleRenderer from './ModuleRenderer';
 import { useSidebarLayout } from '@/hooks/use-sidebar-layout';
-import { ModuleInstance, ModuleType } from '@/lib/stores/types';
+import { ModuleInstance } from '@/lib/stores/types';
 import SavedModulesManager from './SavedModulesManager';
 
 interface ModuleGridProps {

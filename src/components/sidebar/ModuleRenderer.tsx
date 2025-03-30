@@ -32,7 +32,7 @@ const ModuleRenderer: React.FC<ModuleRendererProps> = ({
     maxWidth: '100%'
   };
   
-  // Add common drag handle to each module type
+  // Add common props to each module type
   const moduleProps = {
     title: module.title,
     onRemove: onRemove,
@@ -44,37 +44,34 @@ const ModuleRenderer: React.FC<ModuleRendererProps> = ({
   
   const moduleClassName = `mb-4 gradient-border cursor-glow ${isDragging ? 'opacity-75' : ''}`;
   
-  // If module is minimized, we'll still render it but with reduced height
-  const minimizedClassName = module.minimized ? 'h-12 overflow-hidden' : '';
-  
   switch (module.type) {
     case 'todo':
       return (
-        <div key={index} style={moduleStyle} className={`${moduleClassName} ${minimizedClassName}`}>
+        <div key={index} style={moduleStyle} className={moduleClassName}>
           <TodoModule {...moduleProps} />
         </div>
       );
     case 'pomodoro':
       return (
-        <div key={index} style={moduleStyle} className={`${moduleClassName} ${minimizedClassName}`}>
+        <div key={index} style={moduleStyle} className={moduleClassName}>
           <PomodoroModule {...moduleProps} />
         </div>
       );
     case 'alarms':
       return (
-        <div key={index} style={moduleStyle} className={`${moduleClassName} ${minimizedClassName}`}>
+        <div key={index} style={moduleStyle} className={moduleClassName}>
           <AlarmsModule {...moduleProps} />
         </div>
       );
     case 'eisenhower':
       return (
-        <div key={index} style={moduleStyle} className={`${moduleClassName} ${minimizedClassName}`}>
+        <div key={index} style={moduleStyle} className={moduleClassName}>
           <EisenhowerModule {...moduleProps} />
         </div>
       );
     case 'invites':
       return (
-        <div key={index} style={moduleStyle} className={`${moduleClassName} ${minimizedClassName}`}>
+        <div key={index} style={moduleStyle} className={moduleClassName}>
           <InvitesModule {...moduleProps} />
         </div>
       );
