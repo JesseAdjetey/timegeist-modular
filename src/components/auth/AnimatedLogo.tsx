@@ -61,7 +61,7 @@ const AnimatedLogo: React.FC<AnimatedLogoProps> = ({ className }) => {
     logoElement.style.animation = 'floatLogo 6s ease-in-out infinite';
 
     // Add clickable interaction
-    container.addEventListener('click', () => {
+    container.addEventListener('click', (event: MouseEvent) => {
       // Play a quick pulse animation on click
       logoElement.style.animation = 'none';
       setTimeout(() => {
@@ -70,7 +70,7 @@ const AnimatedLogo: React.FC<AnimatedLogoProps> = ({ className }) => {
       
       // Generate sparkles/particles on click
       for (let i = 0; i < 20; i++) {
-        createParticle(container, e.clientX, e.clientY);
+        createParticle(container, event.clientX, event.clientY);
       }
     });
 
