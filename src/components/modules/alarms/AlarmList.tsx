@@ -2,6 +2,7 @@
 import React from 'react';
 import AlarmItem from './AlarmItem';
 import { AlarmDisplay } from '@/types/database';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AlarmListProps {
   alarms: AlarmDisplay[];
@@ -27,17 +28,19 @@ const AlarmList: React.FC<AlarmListProps> = ({
   }
 
   return (
-    <div className="max-h-60 overflow-y-auto mb-3">
-      {alarms.map(alarm => (
-        <AlarmItem 
-          key={alarm.id}
-          alarm={alarm}
-          onToggle={onToggleAlarm}
-          onDelete={onDeleteAlarm}
-          formatRecurringPattern={formatRecurringPattern}
-        />
-      ))}
-    </div>
+    <ScrollArea className="max-h-60 overflow-y-auto mb-3">
+      <div className="space-y-2 pr-2">
+        {alarms.map(alarm => (
+          <AlarmItem 
+            key={alarm.id}
+            alarm={alarm}
+            onToggle={onToggleAlarm}
+            onDelete={onDeleteAlarm}
+            formatRecurringPattern={formatRecurringPattern}
+          />
+        ))}
+      </div>
+    </ScrollArea>
   );
 };
 

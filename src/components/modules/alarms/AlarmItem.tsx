@@ -2,6 +2,7 @@
 import React from 'react';
 import { Clock, RefreshCw, X } from 'lucide-react';
 import { AlarmDisplay } from '@/types/database';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AlarmItemProps {
   alarm: AlarmDisplay;
@@ -16,16 +17,37 @@ const AlarmItem: React.FC<AlarmItemProps> = ({
   onDelete,
   formatRecurringPattern
 }) => {
+  const handleToggle = () => {
+    onToggle(alarm.id, alarm.is_active);
+    console.log(`Toggling alarm ${alarm.id} to ${!alarm.is_active}`);
+  };
+  
+  const handleDelete = () => {
+    console.log(`Deleting alarm ${alarm.id}`);
+    onDelete(alarm.id);
+  };
+  
   return (
     <div 
-      className="flex items-center gap-2 bg-white/5 p-2 rounded-lg mb-2"
+      className="flex items-center gap-2 bg-white/5 p-2 rounded-lg"
     >
-      <div 
-        className={`w-4 h-4 rounded-full flex-shrink-0 cursor-pointer ${
-          alarm.is_active ? 'bg-primary' : 'bg-secondary'
-        }`}
-        onClick={() => onToggle(alarm.id, alarm.is_active)}
-      />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div 
+            className={`w-4 h-4 rounded-full flex-shrink-0 cursor-pointer ${
+              alarm.is_active ? 'bg-primary' : 'bg-secondary'
+            }`}
+            onClick={handleToggle}
+            role="button"
+            aria-pressed={alarm.is_active}
+            aria-label={`Toggle alarm ${alarm.is_active ? 'off' : 'on'}`}
+          />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{alarm.is_active ? 'Active' : 'Inactive'}</p>
+        </TooltipContent>
+      </Tooltip>
+      
       <div className="flex flex-col flex-1">
         <span className="text-sm">{alarm.title}</span>
         <span className="text-xs opacity-70 flex items-center gap-1">
@@ -40,8 +62,9 @@ const AlarmItem: React.FC<AlarmItemProps> = ({
         </span>
       </div>
       <button 
-        onClick={() => onDelete(alarm.id)}
+        onClick={handleDelete}
         className="text-destructive/70 hover:text-destructive"
+        aria-label="Delete alarm"
       >
         <X size={16} />
       </button>
