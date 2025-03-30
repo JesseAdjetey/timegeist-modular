@@ -16,7 +16,7 @@ const Mainview = () => {
 
   // Set limits for sidebar width
   const MIN_WIDTH = 400;
-  const MAX_WIDTH = 900; // Updated from 800 to 900
+  const MAX_WIDTH = 1000; // Updated from 900 to 1000
 
   // Detect touch device on mount
   useEffect(() => {
