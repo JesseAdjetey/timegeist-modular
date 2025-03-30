@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ThemeProvider from './components/ThemeProvider';
 import { Toaster } from 'sonner';
 import { SupabaseRealTimeSetup } from './components/SupabaseRealTimeSetup';
+import { AuthProvider } from './contexts/AuthContext';
 import './App.css';
 import Index from './pages/Index';
 import Auth from './pages/Auth';
@@ -24,11 +25,13 @@ const AppRoutes = () => {
 function App() {
   return (
     <Router>
-      <ThemeProvider defaultTheme="system" storageKey="ui-theme">
-        <SupabaseRealTimeSetup />
-        <Toaster position="top-right" />
-        <AppRoutes />
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider defaultTheme="system" storageKey="ui-theme">
+          <SupabaseRealTimeSetup />
+          <Toaster position="top-right" />
+          <AppRoutes />
+        </ThemeProvider>
+      </AuthProvider>
     </Router>
   );
 }
