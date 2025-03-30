@@ -27,23 +27,28 @@ const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) =>
       // Don't process if the event is locked
       if (data.isLocked) return;
       
-      // Calculate new time - keep the same duration but update the start time
-      const oldStart = data.timeStart;
-      const oldEnd = data.timeEnd;
+      // Calculate precise drop position to snap to 30-minute intervals
+      const rect = e.currentTarget.getBoundingClientRect();
+      const relativeY = e.clientY - rect.top;
+      const hourHeight = rect.height;
+      const minutesWithinHour = Math.floor((relativeY / hourHeight) * 60);
       
-      // Calculate duration in minutes
-      const oldStartParts = oldStart.split(':').map(Number);
-      const oldEndParts = oldEnd.split(':').map(Number);
+      // Snap to nearest 30-minute interval (0 or 30)
+      const snappedMinutes = minutesWithinHour < 30 ? 0 : 30;
+      
+      // Set new start time to the hour with snapped minutes
+      const baseHour = hour.hour();
+      const newStartTime = `${baseHour.toString().padStart(2, '0')}:${snappedMinutes.toString().padStart(2, '0')}`;
+      
+      // Calculate new end time by preserving duration
+      const oldStartParts = data.timeStart.split(':').map(Number);
+      const oldEndParts = data.timeEnd.split(':').map(Number);
       const oldStartMinutes = oldStartParts[0] * 60 + oldStartParts[1];
       const oldEndMinutes = oldEndParts[0] * 60 + oldEndParts[1];
       const durationMinutes = oldEndMinutes - oldStartMinutes;
       
-      // Set new start time to the hour of the drop target
-      const newStartTime = hour.format("HH:00");
-      
       // Calculate new end time
-      const newStartParts = newStartTime.split(':').map(Number);
-      const newStartMinutes = newStartParts[0] * 60 + newStartParts[1];
+      const newStartMinutes = baseHour * 60 + snappedMinutes;
       const newEndMinutes = newStartMinutes + durationMinutes;
       
       const newEndHours = Math.floor(newEndMinutes / 60) % 24;

@@ -30,9 +30,12 @@ export const handleDrop = (
     const hourHeight = rect.height;
     const minutesWithinHour = Math.floor((relativeY / hourHeight) * 60);
     
-    // Get the base hour and add the minutes
+    // Snap to nearest 30-minute interval (0 or 30)
+    const snappedMinutes = minutesWithinHour < 30 ? 0 : 30;
+    
+    // Get the base hour and add the snapped minutes
     const baseHour = hour.hour();
-    const totalMinutes = baseHour * 60 + minutesWithinHour;
+    const totalMinutes = baseHour * 60 + snappedMinutes;
     
     // Format as HH:MM
     const newStartTime = formatMinutesAsTime(totalMinutes);
