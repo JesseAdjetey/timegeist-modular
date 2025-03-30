@@ -31,12 +31,14 @@ export function useTodos() {
         return;
       }
       
+      // Use simpler query to avoid potential policy issues
       const { data, error } = await supabase
         .from('todo_items')
-        .select('*')
+        .select('id, title, completed, created_at, completed_at, event_id')
         .order('created_at', { ascending: false });
       
       if (error) {
+        console.error('Error details:', error);
         throw error;
       }
       
@@ -52,9 +54,11 @@ export function useTodos() {
       }));
       
       setTodos(transformedTodos);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching todos:', err);
       setError('Failed to fetch todos');
+      // Still set the todos to an empty array so the UI doesn't break
+      setTodos([]);
     } finally {
       setLoading(false);
     }
@@ -63,10 +67,13 @@ export function useTodos() {
   // Add a new todo to Supabase
   const addTodo = async (title: string) => {
     try {
-      if (!user || !title.trim()) return;
+      if (!user || !title.trim()) return null;
       
+      const newTodoId = nanoid();
+      
+      // Create a simpler todo item without unnecessary fields
       const newTodo = {
-        id: nanoid(),
+        id: newTodoId,
         title: title.trim(),
         completed: false,
         order_position: todos.length + 1
@@ -77,13 +84,19 @@ export function useTodos() {
         .insert(newTodo);
       
       if (error) {
+        console.error('Error details:', error);
         throw error;
       }
       
-      // Refetch todos to ensure we have the latest data
-      fetchTodos();
-      return newTodo.id;
-    } catch (err) {
+      // Optimistically add the todo to the state
+      setTodos(prevTodos => [{
+        ...newTodo,
+        created_at: new Date().toISOString(),
+        isCalendarEvent: false
+      }, ...prevTodos]);
+      
+      return newTodoId;
+    } catch (err: any) {
       console.error('Error adding todo:', err);
       toast.error('Failed to add todo');
       return null;
@@ -95,21 +108,28 @@ export function useTodos() {
     try {
       if (!user) return;
       
+      // Optimistically update the UI
+      setTodos(todos.map(todo => 
+        todo.id === id ? { ...todo, completed: !completed } : todo
+      ));
+      
       const { error } = await supabase
         .from('todo_items')
-        .update({ completed })
+        .update({ completed: !completed })
         .eq('id', id);
       
       if (error) {
+        console.error('Error details:', error);
         throw error;
       }
+    } catch (err: any) {
+      console.error('Error updating todo:', err);
+      toast.error('Failed to update todo');
       
+      // Revert the optimistic update
       setTodos(todos.map(todo => 
         todo.id === id ? { ...todo, completed } : todo
       ));
-    } catch (err) {
-      console.error('Error updating todo:', err);
-      toast.error('Failed to update todo');
     }
   };
 
@@ -118,19 +138,24 @@ export function useTodos() {
     try {
       if (!user) return;
       
+      // Optimistically update the UI
+      setTodos(todos.filter(todo => todo.id !== id));
+      
       const { error } = await supabase
         .from('todo_items')
         .delete()
         .eq('id', id);
       
       if (error) {
+        console.error('Error details:', error);
         throw error;
       }
-      
-      setTodos(todos.filter(todo => todo.id !== id));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting todo:', err);
       toast.error('Failed to delete todo');
+      
+      // Refetch todos to restore the correct state
+      fetchTodos();
     }
   };
 
@@ -145,13 +170,14 @@ export function useTodos() {
         .eq('id', todoId);
       
       if (error) {
+        console.error('Error details:', error);
         throw error;
       }
       
       setTodos(todos.map(todo => 
         todo.id === todoId ? { ...todo, isCalendarEvent: true, eventId } : todo
       ));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error linking todo to event:', err);
       toast.error('Failed to link todo to event');
     }
@@ -159,7 +185,12 @@ export function useTodos() {
 
   // Load todos when component mounts or user changes
   useEffect(() => {
-    fetchTodos();
+    if (user) {
+      fetchTodos();
+    } else {
+      setTodos([]);
+      setLoading(false);
+    }
     
     // Set up real-time subscription for todos
     const todosSubscription = supabase
@@ -167,7 +198,10 @@ export function useTodos() {
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'todo_items' }, 
         () => {
-          fetchTodos();
+          // Only refetch when the user is authenticated
+          if (user) {
+            fetchTodos();
+          }
         }
       )
       .subscribe();
