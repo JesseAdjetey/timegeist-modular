@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { CalendarEventType } from "@/lib/stores/types";
 import dayjs from "dayjs";
@@ -46,8 +47,6 @@ export const handleDrop = (
         // Get the base hour and add the snapped minutes
         const baseHour = hour.hour();
         const startTime = `${baseHour.toString().padStart(2, '0')}:${snappedMinutes.toString().padStart(2, '0')}`;
-        
-        console.log("Opening event form with todo data:", data, "time:", startTime);
         
         // Open the event form with the todo data
         openEventForm(data, day.toDate(), startTime);

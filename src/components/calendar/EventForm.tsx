@@ -45,7 +45,6 @@ const EventForm: React.FC<EventFormProps> = ({
       
       // If we have todo data, add it
       if (todoData) {
-        console.log("Setting todo data in event form:", todoData);
         event = {
           ...event,
           title: todoData.text,
@@ -60,7 +59,7 @@ const EventForm: React.FC<EventFormProps> = ({
     } else {
       setInitialEvent(undefined);
     }
-  }, [initialTime, todoData, open]);
+  }, [initialTime, todoData]);
 
   const handleSave = (event: any) => {
     // Generate a unique ID for the new event
