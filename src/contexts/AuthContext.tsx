@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   session: Session | null;
@@ -26,6 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -34,6 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -52,8 +55,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         throw error;
       }
+      toast({
+        title: "Success!",
+        description: "You have been signed in successfully.",
+      });
     } catch (error: any) {
       setError(error.message);
+      toast({
+        title: "Error signing in",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -80,9 +92,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Check if confirmation email was sent (this is true when email confirmation is enabled in Supabase)
       const isConfirmationEmailSent = !data.session;
       
+      toast({
+        title: "Account created!",
+        description: isConfirmationEmailSent 
+          ? "Please check your email to confirm your account." 
+          : "Your account has been created successfully.",
+      });
+      
       return { success: true, isConfirmationEmailSent };
     } catch (error: any) {
       setError(error.message);
+      toast({
+        title: "Error creating account",
+        description: error.message,
+        variant: "destructive",
+      });
       return { success: false, isConfirmationEmailSent: false };
     } finally {
       setLoading(false);
@@ -94,8 +118,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       setError(null);
       await supabase.auth.signOut();
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully.",
+      });
     } catch (error: any) {
       setError(error.message);
+      toast({
+        title: "Error signing out",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

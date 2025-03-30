@@ -3,24 +3,21 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, UserCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const UserProfile = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast({
-        title: "Signed out",
-        description: "You have been successfully signed out.",
-      });
       navigate('/auth');
     } catch (error) {
+      console.error('Error signing out:', error);
       toast({
         title: "Error",
         description: "There was an issue signing out.",
@@ -45,7 +42,7 @@ const UserProfile = () => {
           </AvatarFallback>
         </Avatar>
         <div>
-          <h3 className="font-semibold text-lg">{user?.email}</h3>
+          <h3 className="font-semibold text-lg">{user?.user_metadata?.full_name || user?.email}</h3>
           <p className="text-sm text-muted-foreground">User ID: {user?.id?.substring(0, 8)}...</p>
         </div>
       </div>
@@ -59,6 +56,11 @@ const UserProfile = () => {
         <div className="grid grid-cols-3 text-sm">
           <span className="font-medium">Last Sign In:</span>
           <span className="col-span-2">{user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'N/A'}</span>
+        </div>
+        
+        <div className="grid grid-cols-3 text-sm">
+          <span className="font-medium">Created:</span>
+          <span className="col-span-2">{user?.created_at ? new Date(user.created_at).toLocaleString() : 'N/A'}</span>
         </div>
       </div>
       

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AnimatedLogo from '@/components/auth/AnimatedLogo';
 import { Check, ChevronRight, Star, Award, Gift, Trophy, Timer, Calendar, BrainCircuit, Sparkles, Mail } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 const ACHIEVEMENTS = [
   { id: 'first_visit', title: 'First Visit', icon: Star, description: 'Welcome to Malleabite!' },
@@ -207,11 +207,11 @@ const Auth = () => {
     
     setUnlockedAchievements(prev => [...prev, id]);
     
-    // Show achievement notification with the icon from achievement
-    toast("Achievement Unlocked!", {
+    // Show achievement notification
+    toast({
+      title: "Achievement Unlocked!",
       description: achievement.title,
-      icon: <achievement.icon className="h-4 w-4 text-yellow-400" />,
-      duration: 4000,
+      variant: "default"
     });
     
     // Increment progress
@@ -253,23 +253,12 @@ const Auth = () => {
           if (isConfirmationEmailSent) {
             // Show email confirmation notification
             setEmailSent(true);
-            toast.success("Registration successful!", {
-              description: "Please check your email to confirm your account before signing in.",
-              icon: <Mail className="h-4 w-4" />,
-              duration: 5000,
-            });
             
             // Reset form and switch to sign in
             setTimeout(() => {
               setIsSignUp(false);
               setEmailSent(false);
             }, 500);
-          } else {
-            // Email confirmation not required, user already signed in
-            toast.success("Registration successful!", {
-              description: "Your account has been created and you're now signed in.",
-              duration: 3000,
-            });
           }
         }
       } else {
