@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { LogOut, User } from 'lucide-react';
 
 const UserProfile = () => {
   const { user, signOut } = useAuth();
@@ -35,21 +36,21 @@ const UserProfile = () => {
   };
 
   return (
-    <div className="p-4 bg-card rounded-lg shadow">
-      <div className="flex items-center gap-4 mb-4">
-        <Avatar className="h-14 w-14">
+    <div className="p-6 bg-card rounded-lg shadow">
+      <div className="flex items-center gap-4 mb-6">
+        <Avatar className="h-16 w-16 border-2 border-primary">
           <AvatarImage src={user?.user_metadata?.avatar_url} />
-          <AvatarFallback className="bg-primary text-primary-foreground">
+          <AvatarFallback className="bg-primary text-primary-foreground text-lg font-medium">
             {getInitials()}
           </AvatarFallback>
         </Avatar>
         <div>
-          <h3 className="font-semibold">{user?.email}</h3>
+          <h3 className="font-semibold text-lg">{user?.email}</h3>
           <p className="text-sm text-muted-foreground">User ID: {user?.id?.substring(0, 8)}...</p>
         </div>
       </div>
       
-      <div className="space-y-3 mt-4">
+      <div className="space-y-4 mt-4 bg-background/50 p-4 rounded-md">
         <div className="grid grid-cols-3 text-sm">
           <span className="font-medium">Email:</span>
           <span className="col-span-2">{user?.email}</span>
@@ -61,8 +62,9 @@ const UserProfile = () => {
         </div>
       </div>
       
-      <div className="mt-4 flex justify-end">
-        <Button variant="destructive" onClick={handleSignOut}>
+      <div className="mt-6 flex justify-end">
+        <Button variant="destructive" onClick={handleSignOut} className="gap-2">
+          <LogOut size={16} />
           Sign Out
         </Button>
       </div>
