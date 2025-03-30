@@ -70,8 +70,9 @@ export function useCalendarEvents() {
             };
           }
           
-          // Extract participant codes from the data
-          const participants = participantsData?.map(p => p.participant_code) || [];
+          // Since we no longer have participant_code field, we'll use user_id as the participant identifier
+          // This assumes that user_id is the field we want to use for participants
+          const participants = participantsData?.map(p => p.user_id) || [];
           
           // Transform the data to match CalendarEventType
           return {
@@ -151,12 +152,13 @@ export function useCalendarEvents() {
         
         // If there are participants, add them
         if (event.participants && event.participants.length > 0) {
-          const participantPromises = event.participants.map(code => 
+          const participantPromises = event.participants.map(userId => 
             supabase
               .from('event_participants')
               .insert({
                 event_id: newEventId,
-                participant_code: code
+                user_id: userId,
+                role: 'attendee'
               })
           );
           
