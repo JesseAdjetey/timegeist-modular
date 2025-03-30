@@ -1,17 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import ModuleContainer from './ModuleContainer';
-import { Clock, Bell, X, Calendar, RefreshCw } from 'lucide-react';
+import { Clock, Bell, X, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { nanoid } from 'nanoid';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
 interface Alarm {
@@ -63,7 +59,6 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
   const [recurringEndDate, setRecurringEndDate] = useState<string | undefined>(undefined);
   const [isAddAlarmOpen, setIsAddAlarmOpen] = useState(false);
 
-  // Fetch alarms from Supabase
   useEffect(() => {
     if (!user) return;
     
@@ -77,8 +72,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
         
         if (error) throw error;
         
-        // Transform data to match our local state structure
-        const transformedData = data.map(alarm => ({
+        const transformedData = data?.map(alarm => ({
           id: alarm.id,
           title: alarm.title || 'Unnamed Alarm',
           description: alarm.description,
@@ -92,7 +86,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
           recurring_end_date: alarm.recurring_end_date,
           event_id: alarm.event_id,
           is_active: !alarm.is_snoozed
-        }));
+        })) || [];
         
         setAlarms(transformedData);
       } catch (error) {
@@ -108,7 +102,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
     };
     
     fetchAlarms();
-  }, [user]);
+  }, [user, toast]);
 
   const addAlarm = async () => {
     if (!user) {
@@ -130,10 +124,8 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
     }
     
     try {
-      // Format date and time for Supabase
       const alarmTime = new Date(`${newAlarmDate}T${newAlarmTime}`);
       
-      // Prepare recurring data based on recurring type
       let recurringData = {};
       if (isRecurring) {
         recurringData = {
@@ -142,7 +134,6 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
           recurring_interval: recurringInterval
         };
         
-        // Add specific recurring data based on type
         if (recurringType === 'weekly') {
           recurringData = {
             ...recurringData,
@@ -160,7 +151,6 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
           };
         }
         
-        // Add end date if specified
         if (recurringEndDate) {
           recurringData = {
             ...recurringData,
@@ -169,7 +159,6 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
         }
       }
       
-      // Create the alarm in Supabase
       const { data, error } = await supabase
         .from('alarms')
         .insert({
@@ -183,31 +172,32 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
       
       if (error) throw error;
       
-      // Add the new alarm to local state
-      const newAlarm: Alarm = {
-        id: data.id,
-        title: data.title,
-        alarm_time: new Date(data.alarm_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        is_recurring: data.is_recurring || false,
-        recurring_type: data.recurring_type,
-        recurring_interval: data.recurring_interval,
-        recurring_days: data.recurring_days,
-        recurring_months: data.recurring_months,
-        recurring_day_of_month: data.recurring_day_of_month,
-        recurring_end_date: data.recurring_end_date,
-        event_id: data.event_id,
-        is_active: true
-      };
-      
-      setAlarms([...alarms, newAlarm]);
-      setNewAlarmTitle('');
-      setIsRecurring(false);
-      setIsAddAlarmOpen(false);
-      
-      toast({
-        title: "Alarm created",
-        description: `${newAlarmTitle} has been set${isRecurring ? ' with recurrence' : ''}`,
-      });
+      if (data) {
+        const newAlarm: Alarm = {
+          id: data.id,
+          title: data.title,
+          alarm_time: new Date(data.alarm_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          is_recurring: data.is_recurring || false,
+          recurring_type: data.recurring_type,
+          recurring_interval: data.recurring_interval,
+          recurring_days: data.recurring_days,
+          recurring_months: data.recurring_months,
+          recurring_day_of_month: data.recurring_day_of_month,
+          recurring_end_date: data.recurring_end_date,
+          event_id: data.event_id,
+          is_active: true
+        };
+        
+        setAlarms([...alarms, newAlarm]);
+        setNewAlarmTitle('');
+        setIsRecurring(false);
+        setIsAddAlarmOpen(false);
+        
+        toast({
+          title: "Alarm created",
+          description: `${newAlarmTitle} has been set${isRecurring ? ' with recurrence' : ''}`,
+        });
+      }
     } catch (error) {
       console.error("Error adding alarm:", error);
       toast({
@@ -265,19 +255,16 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
     }
   };
 
-  // Get weekday name from number (0-6, Sunday-Saturday)
   const getWeekdayName = (dayNum: number) => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return days[dayNum];
   };
-  
-  // Get month name from number (1-12, Jan-Dec)
+
   const getMonthName = (monthNum: number) => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return months[monthNum - 1];
   };
-  
-  // Handle recurring day selection for weekly pattern
+
   const toggleRecurringDay = (dayNum: number) => {
     setRecurringDays(
       recurringDays.includes(dayNum)
@@ -285,8 +272,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
         : [...recurringDays, dayNum]
     );
   };
-  
-  // Handle recurring month selection for yearly pattern
+
   const toggleRecurringMonth = (monthNum: number) => {
     setRecurringMonths(
       recurringMonths.includes(monthNum)
@@ -294,8 +280,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
         : [...recurringMonths, monthNum]
     );
   };
-  
-  // Format recurring pattern for display
+
   const formatRecurringPattern = (alarm: Alarm) => {
     if (!alarm.is_recurring) return null;
     
@@ -345,7 +330,6 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
     return pattern;
   };
 
-  // Render the recurring options based on type
   const renderRecurringOptions = () => {
     if (!isRecurring) return null;
     

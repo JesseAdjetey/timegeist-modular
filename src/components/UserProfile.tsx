@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, User, Calendar, Clock, Settings, Shield } from 'lucide-react';
+import { LogOut, Calendar, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from "@/components/ui/separator";
 
@@ -72,7 +71,7 @@ const UserProfile = () => {
     };
     
     fetchUserData();
-  }, [user]);
+  }, [user, toast]);
 
   const handleSignOut = async () => {
     try {
@@ -91,7 +90,6 @@ const UserProfile = () => {
     }
   };
 
-  // Get user initials for avatar fallback
   const getInitials = () => {
     if (profile?.full_name) {
       return profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -102,7 +100,6 @@ const UserProfile = () => {
     return '?';
   };
 
-  // Format ISO date to readable format
   const formatDate = (isoString?: string) => {
     if (!isoString) return 'N/A';
     return new Date(isoString).toLocaleDateString(undefined, {
@@ -112,7 +109,6 @@ const UserProfile = () => {
     });
   };
 
-  // Format time to readable format
   const formatTime = (isoString?: string) => {
     if (!isoString) return '';
     return new Date(isoString).toLocaleTimeString(undefined, {
@@ -194,12 +190,11 @@ const UserProfile = () => {
       
       <div className="mt-6 flex justify-between">
         <Button variant="outline" onClick={() => navigate('/settings')} className="gap-2">
-          <Settings size={16} />
-          Settings
+          <span className="mr-1">Settings</span>
         </Button>
         
         <Button variant="destructive" onClick={handleSignOut} className="gap-2">
-          <LogOut size={16} />
+          <LogOut size={16} className="mr-1" />
           Sign Out
         </Button>
       </div>
