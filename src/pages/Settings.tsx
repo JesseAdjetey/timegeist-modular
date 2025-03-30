@@ -21,7 +21,7 @@ const Settings = () => {
         <h1 className="text-2xl font-bold">Settings</h1>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-1">
         <div>
           <h2 className="text-xl font-bold mb-4">Appearance</h2>
           <div className="p-4 bg-card rounded-lg shadow">
