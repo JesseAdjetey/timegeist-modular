@@ -12,7 +12,7 @@ export const SupabaseRealTimeSetup = () => {
       setIsConfiguring(true);
       
       // First, run the SQL migration
-      const { error: migrationError } = await supabase.rpc('run_realtime_migration');
+      const { error: migrationError } = await supabase.rpc('run_realtime_migration', {});
       
       if (migrationError) {
         console.error('Error running migration:', migrationError);
