@@ -105,12 +105,6 @@ export const ToastDispatchContext = React.createContext<React.Dispatch<Action> |
 // Global dispatch function for timeouts
 let dispatch: React.Dispatch<Action>
 
-// Create a ToastProvider component that sets up the context
-export const ToastContext = React.createContext<{
-  toasts: ToasterToast[];
-  dispatch: React.Dispatch<Action>;
-}>({ toasts: [], dispatch: () => {} });
-
 // Toast provider component to be used in applications
 export function Toaster() {
   const [state, dispatchState] = React.useReducer(reducer, {
