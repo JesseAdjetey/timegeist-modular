@@ -31,6 +31,8 @@ export function useTodos() {
         return;
       }
       
+      console.log('Fetching todos for user:', user.id);
+      
       // Directly query just the todo_items table without any joins to avoid policy issues
       const { data, error } = await supabase
         .from('todo_items')
@@ -41,6 +43,8 @@ export function useTodos() {
         console.error('Error details:', error);
         throw error;
       }
+      
+      console.log('Fetched todos:', data);
       
       // Transform the data to match our TodoItem interface
       const transformedTodos = data.map(item => ({
@@ -71,13 +75,18 @@ export function useTodos() {
       
       const newTodoId = nanoid();
       
-      // Create a basic todo item with minimal fields
+      console.log('Adding new todo:', title);
+      
+      // Create a basic todo item including all required fields
       const newTodo = {
         id: newTodoId,
         title: title.trim(),
-        completed: false, 
+        completed: false,
+        order_position: 0, // Add the required field with a default value
         user_id: user.id // Add the user ID to ensure ownership
       };
+      
+      console.log('Inserting todo with data:', newTodo);
       
       const { error } = await supabase
         .from('todo_items')
@@ -87,6 +96,8 @@ export function useTodos() {
         console.error('Error details:', error);
         throw error;
       }
+      
+      console.log('Todo successfully added');
       
       // Only optimistically update the UI if the database operation succeeded
       setTodos(prevTodos => [{
@@ -188,8 +199,10 @@ export function useTodos() {
   // Load todos when component mounts or user changes
   useEffect(() => {
     if (user) {
+      console.log('User is authenticated, fetching todos');
       fetchTodos();
     } else {
+      console.log('No user, clearing todos');
       setTodos([]);
       setLoading(false);
     }
@@ -199,7 +212,8 @@ export function useTodos() {
       .channel('todos-changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'todo_items' }, 
-        () => {
+        (payload) => {
+          console.log('Realtime update received:', payload);
           // Only refetch when the user is authenticated
           if (user) {
             fetchTodos();
@@ -209,6 +223,7 @@ export function useTodos() {
       .subscribe();
       
     return () => {
+      console.log('Cleaning up subscription');
       supabase.removeChannel(todosSubscription);
     };
   }, [user]);
