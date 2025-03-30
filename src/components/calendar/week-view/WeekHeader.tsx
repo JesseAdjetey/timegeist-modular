@@ -1,19 +1,19 @@
 
 import React from "react";
-import { getWeekDays, isCurrentDay } from "@/lib/getTime";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
 
 interface WeekHeaderProps {
-  userSelectedDate: dayjs.Dayjs;
+  weekDates: { currentDate: dayjs.Dayjs; today: boolean }[];
+  currentMonth: number;
 }
 
-const WeekHeader: React.FC<WeekHeaderProps> = ({ userSelectedDate }) => {
+const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDates, currentMonth }) => {
   return (
     <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] place-items-center px-4 py-2 bg-secondary/50 border-b border-white/10">
       <div className="w-16 text-muted-foreground text-sm font-medium">GMT</div>
 
-      {getWeekDays(userSelectedDate).map(({ currentDate, today }, index) => (
+      {weekDates.map(({ currentDate, today }, index) => (
         <div key={index} className="flex flex-col items-center">
           <div
             className={cn(
