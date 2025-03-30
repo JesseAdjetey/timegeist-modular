@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import ModuleContainer from './ModuleContainer';
 import { cn } from '@/lib/utils';
@@ -32,7 +31,6 @@ const TodoModule: React.FC<TodoModuleProps> = ({
   const { todos, loading, error, addTodo, toggleTodo, linkTodoToEvent, refetchTodos, lastResponse } = useTodos();
   const { user } = useAuth();
   
-  // Clear status message after 5 seconds
   useEffect(() => {
     if (submitStatus) {
       const timer = setTimeout(() => {
@@ -42,16 +40,13 @@ const TodoModule: React.FC<TodoModuleProps> = ({
     }
   }, [submitStatus]);
   
-  // Refetch todos when the user changes (login/logout)
   useEffect(() => {
     if (user) {
       refetchTodos();
     }
   }, [user, refetchTodos]);
 
-  // Find todo items that are already calendar events
   useEffect(() => {
-    // Check for todo items that have been added to the calendar
     const todoEvents = events.filter(event => event.todoId);
     
     if (todoEvents.length > 0 && todos.length > 0) {
@@ -97,7 +92,6 @@ const TodoModule: React.FC<TodoModuleProps> = ({
   };
 
   const handleDragStart = (e: React.DragEvent, item: TodoItem) => {
-    // Set data transfer with todo item data
     const todoData = {
       id: item.id,
       text: item.title,
@@ -106,18 +100,15 @@ const TodoModule: React.FC<TodoModuleProps> = ({
     
     console.log("Starting drag with data:", todoData);
     
-    // Set the drag data as JSON string
     e.dataTransfer.setData('application/json', JSON.stringify(todoData));
     e.dataTransfer.effectAllowed = 'move';
     
-    // Add visual feedback for dragging
     if (e.currentTarget) {
       e.currentTarget.classList.add('opacity-50');
     }
   };
   
   const handleDragEnd = (e: React.DragEvent) => {
-    // Remove visual feedback
     if (e.currentTarget) {
       e.currentTarget.classList.remove('opacity-50');
     }

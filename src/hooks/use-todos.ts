@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { nanoid } from 'nanoid';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -91,13 +90,11 @@ export function useTodos() {
         return response;
       }
       
-      const newTodoId = nanoid();
-      
       console.log('Adding new todo:', title);
       
       // Create a todo item with user_id explicitly set
+      // Note: Removed id field to let Supabase generate it
       const newTodo = {
-        id: newTodoId,
         title: title.trim(),
         completed: false,
         order_position: 0,
@@ -125,18 +122,29 @@ export function useTodos() {
       console.log('Todo successfully added with response:', data);
       
       // Only optimistically update the UI if the database operation succeeded
-      setTodos(prevTodos => [{
-        id: newTodoId,
-        title: title.trim(),
-        completed: false,
-        created_at: new Date().toISOString(),
-        isCalendarEvent: false
-      }, ...prevTodos]);
+      // Use the ID returned from Supabase for the new todo item
+      if (data && data.length > 0) {
+        setTodos(prevTodos => [{
+          id: data[0].id,
+          title: title.trim(),
+          completed: false,
+          created_at: new Date().toISOString(),
+          isCalendarEvent: false
+        }, ...prevTodos]);
+        
+        const response = {
+          success: true,
+          message: 'Todo added successfully',
+          todoId: data[0].id,
+          data
+        };
+        setLastResponse(response);
+        return response;
+      }
       
       const response = {
         success: true,
-        message: 'Todo added successfully',
-        todoId: newTodoId,
+        message: 'Todo added but ID not returned',
         data
       };
       setLastResponse(response);
