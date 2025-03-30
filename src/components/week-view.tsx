@@ -1,91 +1,84 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { getWeekDays } from "@/lib/getTime";
+import { useDateStore, useEventStore } from "@/lib/store";
 import dayjs from "dayjs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-import { useDateStore, useEventStore } from "@/lib/store";
-import { getHours } from "@/lib/getTime";
-import EventForm from "./calendar/EventForm";
-import { useToast } from "@/hooks/use-toast";
+import AddEventButton from "@/components/calendar/AddEventButton";
+import EventForm from "@/components/calendar/EventForm";
 import WeekHeader from "./calendar/week-view/WeekHeader";
 import TimeColumn from "./calendar/week-view/TimeColumn";
 import DayColumn from "./calendar/week-view/DayColumn";
 import { handleDragOver, handleDrop } from "./calendar/week-view/DragDropHandlers";
 
 const WeekView = () => {
-  const { toast } = useToast();
-  const { weekDates, currentMonth } = useDateStore();
-  const { events, openEventSummary, toggleEventLock, updateEvent } = useEventStore();
-  const [showEventDialog, setShowEventDialog] = useState(false);
-  const [selectedDateTime, setSelectedDateTime] = useState<{
-    date: Date;
-    startTime: string;
-  } | null>(null);
   const [currentTime, setCurrentTime] = useState(dayjs());
+  const { userSelectedDate } = useDateStore();
+  const { events, openEventSummary, toggleEventLock, updateEvent } = useEventStore();
+  const [formOpen, setFormOpen] = useState(false);
+  const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
 
-  // Update current time every minute
-  React.useEffect(() => {
-    const timer = setInterval(() => {
+  useEffect(() => {
+    const interval = setInterval(() => {
       setCurrentTime(dayjs());
-    }, 60000);
-    return () => clearInterval(timer);
+    }, 60000); // Update every minute
+    return () => clearInterval(interval);
   }, []);
 
-  // Handle click on time slot to create new event
-  const handleTimeSlotClick = (day: dayjs.Dayjs, hour: dayjs.Dayjs) => {
-    setSelectedDateTime({
-      date: day.toDate(),
-      startTime: hour.format("HH:00"),
-    });
-    setShowEventDialog(true);
+  const getEventsForDay = (day: dayjs.Dayjs) => {
+    const dayStr = day.format('YYYY-MM-DD');
+    return events.filter(event => event.date === dayStr);
   };
 
-  // Get events for each day
-  const getEventsForDay = (currentDate: dayjs.Dayjs) => {
-    const date = currentDate.format("YYYY-MM-DD");
-    return events.filter((event) => event.date === date);
+  const handleTimeSlotClick = (day: dayjs.Dayjs, hour: dayjs.Dayjs) => {
+    setSelectedTime({
+      date: day.toDate(),
+      startTime: hour.format("HH:00")
+    });
+    setFormOpen(true);
   };
 
   return (
-    <div>
-      {/* Week Header with dates */}
-      <WeekHeader weekDates={weekDates} currentMonth={currentMonth} />
+    <>
+      <div className="glass m-4 rounded-xl overflow-hidden">
+        <WeekHeader userSelectedDate={userSelectedDate} />
 
-      {/* Main grid with time slots */}
-      <div className="grid grid-cols-[auto_1fr] h-[calc(100vh-12rem)] overflow-hidden rounded-xl bg-background/70 border border-white/10">
-        {/* Time Column */}
-        <TimeColumn />
+        {/* Time Column & Corresponding Boxes of time per each date */}
+        <ScrollArea className="h-[80vh]">
+          <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] px-4 py-2">
+            {/* Time Column */}
+            <TimeColumn />
 
-        {/* Days Columns with ScrollArea for better scrolling */}
-        <ScrollArea className="h-full">
-          <div className="grid grid-cols-7 min-h-[1920px]">
-            {weekDates.map(({ currentDate }, i) => (
-              <DayColumn
-                key={i}
-                currentDate={currentDate}
-                dayEvents={getEventsForDay(currentDate)}
-                currentTime={currentTime}
-                onTimeSlotClick={handleTimeSlotClick}
-                onDragOver={handleDragOver}
-                onDrop={(e, day, hour) => handleDrop(e, day, hour, updateEvent)}
-                openEventSummary={openEventSummary}
-                toggleEventLock={toggleEventLock}
-                updateEvent={updateEvent}
-              />
-            ))}
+            {/* Week Days Corresponding Boxes */}
+            {getWeekDays(userSelectedDate).map(({ currentDate }, index) => {
+              const dayEvents = getEventsForDay(currentDate);
+              
+              return (
+                <DayColumn
+                  key={index}
+                  currentDate={currentDate}
+                  dayEvents={dayEvents}
+                  currentTime={currentTime}
+                  onTimeSlotClick={handleTimeSlotClick}
+                  onDragOver={handleDragOver}
+                  onDrop={(e, day, hour) => handleDrop(e, day, hour, updateEvent)}
+                  openEventSummary={openEventSummary}
+                  toggleEventLock={toggleEventLock}
+                />
+              );
+            })}
           </div>
         </ScrollArea>
       </div>
+      <AddEventButton />
 
-      {/* Event Creation Dialog */}
-      {showEventDialog && selectedDateTime && (
-        <EventForm
-          open={showEventDialog}
-          onClose={() => setShowEventDialog(false)}
-          initialTime={selectedDateTime}
-        />
-      )}
-    </div>
+      {/* Event Form Dialog */}
+      <EventForm 
+        open={formOpen} 
+        onClose={() => setFormOpen(false)}
+        initialTime={selectedTime}
+      />
+    </>
   );
 };
 

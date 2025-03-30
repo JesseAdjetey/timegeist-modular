@@ -1,12 +1,11 @@
 
-import React, { useRef } from "react";
+import React from "react";
 import { getHours, isCurrentDay } from "@/lib/getTime";
 import { CalendarEventType } from "@/lib/stores/types";
 import dayjs from "dayjs";
 import CalendarEvent from "../CalendarEvent";
 import CurrentTimeIndicator from "./CurrentTimeIndicator";
 import { calculateEventHeight, calculateEventPosition, getTimeInfo } from "../event-utils/touch-handlers";
-import { useEventResize } from "@/hooks/use-event-resize";
 
 interface DayColumnProps {
   currentDate: dayjs.Dayjs;
@@ -17,7 +16,6 @@ interface DayColumnProps {
   onDrop: (e: React.DragEvent, day: dayjs.Dayjs, hour: dayjs.Dayjs) => void;
   openEventSummary: (event: CalendarEventType) => void;
   toggleEventLock: (id: string, isLocked: boolean) => void;
-  updateEvent?: (event: CalendarEventType) => void;
 }
 
 const DayColumn: React.FC<DayColumnProps> = ({
@@ -29,34 +27,11 @@ const DayColumn: React.FC<DayColumnProps> = ({
   onDrop,
   openEventSummary,
   toggleEventLock,
-  updateEvent
 }) => {
   const hourHeight = 80; // The height in pixels of each hour cell
-  const columnRef = useRef<HTMLDivElement>(null);
-
-  // Setup resize handling
-  const handleEventResize = (event: CalendarEventType, newEndTime: string) => {
-    if (!updateEvent) return;
-    
-    // Get the current description and separate time and details
-    const timeInfo = getTimeInfo(event.description);
-    const descriptionParts = event.description.split('|');
-    const descriptionText = descriptionParts.length > 1 ? descriptionParts[1].trim() : '';
-    
-    // Create updated description with new end time
-    const updatedDescription = `${timeInfo.start} - ${newEndTime} | ${descriptionText}`;
-    
-    // Update the event
-    updateEvent({
-      ...event,
-      description: updatedDescription
-    });
-  };
-
-  const { handleResizeStart } = useEventResize(hourHeight, handleEventResize);
 
   return (
-    <div className="relative border-r border-white/10 overflow-visible" ref={columnRef}>
+    <div className="relative border-r border-white/10">
       {getHours.map((hour, i) => (
         <div
           key={i}
@@ -83,9 +58,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
             }}
             onClick={(e) => {
               e.stopPropagation();
-              if (!event.isLocked) {
-                openEventSummary(event);
-              }
+              openEventSummary(event);
             }}
           >
             <CalendarEvent
@@ -98,13 +71,6 @@ const DayColumn: React.FC<DayColumnProps> = ({
               participants={event.participants}
               onClick={() => openEventSummary(event)}
               onLockToggle={(isLocked) => toggleEventLock(event.id, isLocked)}
-              onMouseDown={(e) => {
-                // Handle resize start when mouse down on the event
-                if (!event.isLocked) {
-                  handleResizeStart(e.nativeEvent, event);
-                }
-              }}
-              onResize={updateEvent ? () => {} : undefined} // Just to show the resize handle
             />
           </div>
         );
