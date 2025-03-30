@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import AddEventButton from "@/components/calendar/AddEventButton";
 import EventForm from "@/components/calendar/EventForm";
+import EventDetails from "@/components/calendar/EventDetails";
 import WeekHeader from "./calendar/week-view/WeekHeader";
 import TimeColumn from "./calendar/week-view/TimeColumn";
 import DayColumn from "./calendar/week-view/DayColumn";
@@ -14,7 +15,7 @@ import { handleDragOver, handleDrop } from "./calendar/week-view/DragDropHandler
 const WeekView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const { userSelectedDate } = useDateStore();
-  const { events, openEventSummary, toggleEventLock, updateEvent } = useEventStore();
+  const { events, openEventSummary, toggleEventLock, updateEvent, isEventSummaryOpen, closeEventSummary } = useEventStore();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
 
@@ -77,6 +78,12 @@ const WeekView = () => {
         open={formOpen} 
         onClose={() => setFormOpen(false)}
         initialTime={selectedTime}
+      />
+
+      {/* Event Details Dialog */}
+      <EventDetails
+        open={isEventSummaryOpen}
+        onClose={closeEventSummary}
       />
     </>
   );

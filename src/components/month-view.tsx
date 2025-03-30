@@ -4,10 +4,11 @@ import MonthViewBox from "@/components/month-view-box";
 import { useDateStore, useEventStore } from "@/lib/store";
 import AddEventButton from "@/components/calendar/AddEventButton";
 import EventForm from "@/components/calendar/EventForm";
+import EventDetails from "@/components/calendar/EventDetails";
 
 const MonthView = () => {
   const { twoDMonthArray } = useDateStore();
-  const { events, openEventSummary, updateEvent } = useEventStore();
+  const { events, openEventSummary, updateEvent, isEventSummaryOpen, closeEventSummary } = useEventStore();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
   
@@ -96,6 +97,12 @@ const MonthView = () => {
         open={formOpen} 
         onClose={() => setFormOpen(false)}
         initialTime={selectedTime}
+      />
+
+      {/* Event Details Dialog */}
+      <EventDetails
+        open={isEventSummaryOpen}
+        onClose={closeEventSummary}
       />
     </>
   );

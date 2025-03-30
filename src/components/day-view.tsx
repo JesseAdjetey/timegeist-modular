@@ -4,13 +4,14 @@ import dayjs from "dayjs";
 import { useDateStore, useEventStore } from "@/lib/store";
 import AddEventButton from "@/components/calendar/AddEventButton";
 import EventForm from "@/components/calendar/EventForm";
+import EventDetails from "@/components/calendar/EventDetails";
 import DayHeader from "./day-view/DayHeader";
 import TimeSlotsGrid from "./day-view/TimeSlotsGrid";
 
 const DayView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const { userSelectedDate } = useDateStore();
-  const { events } = useEventStore();
+  const { events, isEventSummaryOpen, closeEventSummary } = useEventStore();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
 
@@ -57,6 +58,12 @@ const DayView = () => {
         open={formOpen} 
         onClose={() => setFormOpen(false)}
         initialTime={selectedTime}
+      />
+
+      {/* Event Details Dialog */}
+      <EventDetails
+        open={isEventSummaryOpen}
+        onClose={closeEventSummary}
       />
     </>
   );

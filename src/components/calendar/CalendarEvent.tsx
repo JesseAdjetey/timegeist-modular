@@ -17,6 +17,7 @@ interface CalendarEventProps {
   participants?: string[];
   onClick?: () => void;
   onLockToggle?: (locked: boolean) => void;
+  onMouseDown?: (e: React.MouseEvent) => void;
 }
 
 const CalendarEvent: React.FC<CalendarEventProps> = ({
@@ -28,7 +29,8 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
   hasTodo = false,
   participants = [],
   onClick,
-  onLockToggle
+  onLockToggle,
+  onMouseDown
 }) => {
   const {
     isDragging,
@@ -60,6 +62,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onMouseDown={onMouseDown}
     >
       <div className="relative">
         {/* Lock/Unlock Button */}

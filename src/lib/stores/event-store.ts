@@ -78,7 +78,9 @@ export const useEventStore = create<EventStore>()(
         },
         deleteEvent: (id) => {
           set(state => ({
-            events: state.events.filter(e => e.id !== id)
+            events: state.events.filter(e => e.id !== id),
+            isEventSummaryOpen: false,
+            selectedEvent: null
           }));
         },
         openPopover: () => {
