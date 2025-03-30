@@ -1,6 +1,6 @@
 
 import React, { ReactNode, useState } from 'react';
-import { Minus, Edit, Check, Maximize, Minimize } from 'lucide-react';
+import { Minus, Edit, Check, Eye, EyeOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface ModuleContainerProps {
@@ -80,9 +80,13 @@ const ModuleContainer: React.FC<ModuleContainerProps> = ({
             <button 
               onClick={onMinimize}
               className="hover:bg-white/10 p-1 rounded-full transition-all"
-              aria-label={isMinimized ? "Maximize module" : "Minimize module"}
+              aria-label={isMinimized ? "Show module" : "Hide module"}
             >
-              {isMinimized ? <Maximize size={16} /> : <Minimize size={16} />}
+              {isMinimized ? (
+                <Eye size={16} className="text-primary" />
+              ) : (
+                <EyeOff size={16} className="text-muted-foreground" />
+              )}
             </button>
           )}
           {onRemove && (
