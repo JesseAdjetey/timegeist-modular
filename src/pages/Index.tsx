@@ -2,11 +2,8 @@
 import React, { useEffect } from 'react';
 import Mainview from '@/components/Mainview';
 import { useDateStore, useViewStore } from "@/lib/store";
-import { useSettingsStore } from '@/lib/stores/settings-store';
 
 const Index = () => {
-  const { backgroundColor } = useSettingsStore();
-  
   // Initialize stores on client side
   useEffect(() => {
     // Hydrate zustand stores if needed

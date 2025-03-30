@@ -14,13 +14,16 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     document.documentElement.classList.add('dark-mode');
     document.documentElement.classList.remove('light-mode');
     
-    // Darker background gradient for dark mode
+    // Create a smoother, more appealing gradient
     const endColor = adjustColorBrightness(backgroundColor, -25);
-    document.body.style.background = `linear-gradient(to bottom right, ${backgroundColor}, ${endColor})`;
-
-    // Apply background color
-    document.documentElement.style.setProperty('--background-start', backgroundColor);
+    
+    // Apply background to body
+    document.body.style.background = `linear-gradient(135deg, ${backgroundColor}, ${endColor})`;
     document.body.style.backgroundAttachment = 'fixed';
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.height = '100vh';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
     
   }, [backgroundColor]);
 
