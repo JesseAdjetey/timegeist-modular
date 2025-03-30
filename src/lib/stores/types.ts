@@ -24,4 +24,5 @@ export type CalendarEventType = {
   hasReminder?: boolean;
   participants?: string[];
   color?: string;
+  todoId?: string; // Added todoId property to reference the original todo item
 };
