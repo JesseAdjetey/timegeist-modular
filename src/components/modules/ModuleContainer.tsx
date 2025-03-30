@@ -1,6 +1,6 @@
 
 import React, { ReactNode, useState } from 'react';
-import { Minus, Edit, Check } from 'lucide-react';
+import { Minus, Edit, Check, Maximize, Minimize } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface ModuleContainerProps {
@@ -8,13 +8,17 @@ interface ModuleContainerProps {
   children: ReactNode;
   onRemove?: () => void;
   onTitleChange?: (newTitle: string) => void;
+  onMinimize?: () => void;
+  isMinimized?: boolean;
 }
 
 const ModuleContainer: React.FC<ModuleContainerProps> = ({ 
   title, 
   children, 
   onRemove,
-  onTitleChange 
+  onTitleChange,
+  onMinimize,
+  isMinimized = false
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(title);
@@ -63,25 +67,36 @@ const ModuleContainer: React.FC<ModuleContainerProps> = ({
           <h3 className="text-lg font-semibold text-primary">{title}</h3>
         )}
         <div className="flex gap-1">
-          {onTitleChange && (
+          {onTitleChange && !isMinimized && (
             <button 
               onClick={handleEditClick}
               className="hover:bg-white/10 p-1 rounded-full transition-all"
+              aria-label="Edit module title"
             >
               <Edit size={16} />
+            </button>
+          )}
+          {onMinimize && (
+            <button 
+              onClick={onMinimize}
+              className="hover:bg-white/10 p-1 rounded-full transition-all"
+              aria-label={isMinimized ? "Maximize module" : "Minimize module"}
+            >
+              {isMinimized ? <Maximize size={16} /> : <Minimize size={16} />}
             </button>
           )}
           {onRemove && (
             <button 
               onClick={onRemove}
               className="hover:bg-white/10 p-1 rounded-full transition-all"
+              aria-label="Remove module"
             >
               <Minus size={16} />
             </button>
           )}
         </div>
       </div>
-      <div className="module-content">{children}</div>
+      {!isMinimized && <div className="module-content">{children}</div>}
     </div>
   );
 };

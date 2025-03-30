@@ -79,6 +79,7 @@ const SideBar = () => {
           onRemoveModule={handleRemoveModule}
           onUpdateModuleTitle={handleUpdateModuleTitle}
           onReorderModules={handleReorderModules}
+          pageIndex={currentPageIndex}
         />
         
         {/* New Page Creator */}

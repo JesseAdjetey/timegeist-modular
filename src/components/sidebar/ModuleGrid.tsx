@@ -4,19 +4,22 @@ import { useSidebarStore } from '@/lib/store';
 import ModuleRenderer from './ModuleRenderer';
 import { useSidebarLayout } from '@/hooks/use-sidebar-layout';
 import { ModuleInstance, ModuleType } from '@/lib/stores/types';
+import SavedModulesManager from './SavedModulesManager';
 
 interface ModuleGridProps {
   modules: ModuleInstance[];
   onRemoveModule: (index: number) => void;
   onUpdateModuleTitle: (index: number, title: string) => void;
   onReorderModules: (fromIndex: number, toIndex: number) => void;
+  pageIndex: number;
 }
 
 const ModuleGrid: React.FC<ModuleGridProps> = ({ 
   modules, 
   onRemoveModule,
   onUpdateModuleTitle,
-  onReorderModules
+  onReorderModules,
+  pageIndex
 }) => {
   // Module dimensions - reduced width for better fit in sidebar
   const MODULE_WIDTH = 280; // Reduced from 320 to 280
@@ -32,6 +35,9 @@ const ModuleGrid: React.FC<ModuleGridProps> = ({
 
   // Custom cursor effect
   const cursorRef = useRef<HTMLDivElement>(null);
+  
+  // Access the toggleModuleMinimized function from the store
+  const { toggleModuleMinimized } = useSidebarStore();
 
   useEffect(() => {
     // Create the custom cursor element
@@ -108,32 +114,44 @@ const ModuleGrid: React.FC<ModuleGridProps> = ({
     setDragOverIndex(null);
   };
 
+  // Handle toggle minimize for a module
+  const handleToggleMinimize = (index: number) => {
+    toggleModuleMinimized(pageIndex, index);
+  };
+
   return (
-    <div 
-      ref={containerRef} 
-      className={`${isTwoColumn ? 'grid grid-cols-2 gap-4 justify-items-center' : 'flex flex-col items-center'}`}
-    >
-      {modules.map((module, index) => (
-        <div
-          key={index}
-          draggable
-          onDragStart={() => handleDragStart(index)}
-          onDragOver={(e) => handleDragOver(e, index)}
-          onDrop={() => handleDrop(index)}
-          onDragEnd={handleDragEnd}
-          className={`${dragOverIndex === index ? 'ring-2 ring-primary ring-opacity-50' : ''} 
-                    ${draggedIndex === index ? 'opacity-50' : 'opacity-100'}`}
-        >
-          <ModuleRenderer
-            module={module}
-            index={index}
-            moduleWidth={MODULE_WIDTH}
-            onRemove={() => onRemoveModule(index)}
-            onTitleChange={(title) => onUpdateModuleTitle(index, title)}
-            isDragging={draggedIndex === index}
-          />
-        </div>
-      ))}
+    <div className="flex flex-col">
+      {/* Saved Modules Manager */}
+      <SavedModulesManager pageIndex={pageIndex} />
+      
+      {/* Module Grid */}
+      <div 
+        ref={containerRef} 
+        className={`${isTwoColumn ? 'grid grid-cols-2 gap-4 justify-items-center' : 'flex flex-col items-center'}`}
+      >
+        {modules.map((module, index) => (
+          <div
+            key={index}
+            draggable
+            onDragStart={() => handleDragStart(index)}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDrop={() => handleDrop(index)}
+            onDragEnd={handleDragEnd}
+            className={`${dragOverIndex === index ? 'ring-2 ring-primary ring-opacity-50' : ''} 
+                      ${draggedIndex === index ? 'opacity-50' : 'opacity-100'}`}
+          >
+            <ModuleRenderer
+              module={module}
+              index={index}
+              moduleWidth={MODULE_WIDTH}
+              onRemove={() => onRemoveModule(index)}
+              onTitleChange={(title) => onUpdateModuleTitle(index, title)}
+              onToggleMinimize={() => handleToggleMinimize(index)}
+              isDragging={draggedIndex === index}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
