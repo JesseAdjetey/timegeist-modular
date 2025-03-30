@@ -31,7 +31,7 @@ export function useTodos() {
         return;
       }
       
-      // Use simpler query to avoid potential policy issues
+      // Directly query just the todo_items table without any joins to avoid policy issues
       const { data, error } = await supabase
         .from('todo_items')
         .select('id, title, completed, created_at, completed_at, event_id')
@@ -71,12 +71,12 @@ export function useTodos() {
       
       const newTodoId = nanoid();
       
-      // Create a simpler todo item without unnecessary fields
+      // Create a basic todo item with minimal fields
       const newTodo = {
         id: newTodoId,
         title: title.trim(),
-        completed: false,
-        order_position: todos.length + 1
+        completed: false, 
+        user_id: user.id // Add the user ID to ensure ownership
       };
       
       const { error } = await supabase
@@ -88,9 +88,11 @@ export function useTodos() {
         throw error;
       }
       
-      // Optimistically add the todo to the state
+      // Only optimistically update the UI if the database operation succeeded
       setTodos(prevTodos => [{
-        ...newTodo,
+        id: newTodoId,
+        title: title.trim(),
+        completed: false,
         created_at: new Date().toISOString(),
         isCalendarEvent: false
       }, ...prevTodos]);
@@ -109,7 +111,7 @@ export function useTodos() {
       if (!user) return;
       
       // Optimistically update the UI
-      setTodos(todos.map(todo => 
+      setTodos(prevTodos => prevTodos.map(todo => 
         todo.id === id ? { ...todo, completed: !completed } : todo
       ));
       
@@ -127,7 +129,7 @@ export function useTodos() {
       toast.error('Failed to update todo');
       
       // Revert the optimistic update
-      setTodos(todos.map(todo => 
+      setTodos(prevTodos => prevTodos.map(todo => 
         todo.id === id ? { ...todo, completed } : todo
       ));
     }
@@ -139,7 +141,7 @@ export function useTodos() {
       if (!user) return;
       
       // Optimistically update the UI
-      setTodos(todos.filter(todo => todo.id !== id));
+      setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
       
       const { error } = await supabase
         .from('todo_items')
@@ -174,7 +176,7 @@ export function useTodos() {
         throw error;
       }
       
-      setTodos(todos.map(todo => 
+      setTodos(prevTodos => prevTodos.map(todo => 
         todo.id === todoId ? { ...todo, isCalendarEvent: true, eventId } : todo
       ));
     } catch (err: any) {
