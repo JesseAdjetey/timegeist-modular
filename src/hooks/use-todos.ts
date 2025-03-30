@@ -15,10 +15,18 @@ export interface TodoItem {
   eventId?: string;
 }
 
+export interface TodoResponse {
+  success: boolean;
+  message: string;
+  todoId?: string;
+  error?: any;
+}
+
 export function useTodos() {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastResponse, setLastResponse] = useState<TodoResponse | null>(null);
   const { user } = useAuth();
 
   // Fetch todos from Supabase
@@ -74,7 +82,14 @@ export function useTodos() {
   // Add a new todo to Supabase
   const addTodo = async (title: string) => {
     try {
-      if (!user || !title.trim()) return null;
+      if (!user || !title.trim()) {
+        const response = {
+          success: false,
+          message: !user ? 'User not authenticated' : 'Title cannot be empty',
+        };
+        setLastResponse(response);
+        return response;
+      }
       
       const newTodoId = nanoid();
       
@@ -91,16 +106,23 @@ export function useTodos() {
       
       console.log('Inserting todo with data:', newTodo);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('todo_items')
-        .insert(newTodo);
+        .insert(newTodo)
+        .select();
       
       if (error) {
         console.error('Error details:', error);
-        throw error;
+        const response = {
+          success: false,
+          message: `Failed to add todo: ${error.message}`,
+          error
+        };
+        setLastResponse(response);
+        return response;
       }
       
-      console.log('Todo successfully added');
+      console.log('Todo successfully added with response:', data);
       
       // Only optimistically update the UI if the database operation succeeded
       setTodos(prevTodos => [{
@@ -111,11 +133,23 @@ export function useTodos() {
         isCalendarEvent: false
       }, ...prevTodos]);
       
-      return newTodoId;
+      const response = {
+        success: true,
+        message: 'Todo added successfully',
+        todoId: newTodoId,
+        data
+      };
+      setLastResponse(response);
+      return response;
     } catch (err: any) {
       console.error('Error adding todo:', err);
-      toast.error('Failed to add todo');
-      return null;
+      const response = {
+        success: false,
+        message: `Error adding todo: ${err.message || String(err)}`,
+        error: err
+      };
+      setLastResponse(response);
+      return response;
     }
   };
 
@@ -242,6 +276,7 @@ export function useTodos() {
     toggleTodo,
     deleteTodo,
     linkTodoToEvent,
-    refetchTodos: fetchTodos
+    refetchTodos: fetchTodos,
+    lastResponse
   };
 }

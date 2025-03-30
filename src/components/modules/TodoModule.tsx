@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import ModuleContainer from './ModuleContainer';
 import { cn } from '@/lib/utils';
-import { Calendar, Circle, CheckCircle, Loader2 } from 'lucide-react';
+import { Calendar, Circle, CheckCircle, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEventStore } from '@/lib/store';
 import { useTodos, TodoItem } from '@/hooks/use-todos';
@@ -27,9 +27,20 @@ const TodoModule: React.FC<TodoModuleProps> = ({
   isDragging
 }) => {
   const [newItem, setNewItem] = useState("");
+  const [submitStatus, setSubmitStatus] = useState<{success?: boolean; message?: string} | null>(null);
   const { addEvent, events } = useEventStore();
-  const { todos, loading, error, addTodo, toggleTodo, linkTodoToEvent, refetchTodos } = useTodos();
+  const { todos, loading, error, addTodo, toggleTodo, linkTodoToEvent, refetchTodos, lastResponse } = useTodos();
   const { user } = useAuth();
+  
+  // Clear status message after 5 seconds
+  useEffect(() => {
+    if (submitStatus) {
+      const timer = setTimeout(() => {
+        setSubmitStatus(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [submitStatus]);
   
   // Refetch todos when the user changes (login/logout)
   useEffect(() => {
@@ -57,8 +68,21 @@ const TodoModule: React.FC<TodoModuleProps> = ({
 
   const handleAddItem = async () => {
     if (newItem.trim()) {
-      await addTodo(newItem.trim());
-      setNewItem("");
+      setSubmitStatus(null);
+      const response = await addTodo(newItem.trim());
+      
+      if (response.success) {
+        setNewItem("");
+        setSubmitStatus({
+          success: true,
+          message: response.message
+        });
+      } else {
+        setSubmitStatus({
+          success: false,
+          message: response.message
+        });
+      }
     }
   };
 
@@ -182,6 +206,20 @@ const TodoModule: React.FC<TodoModuleProps> = ({
           ))
         )}
       </div>
+
+      {submitStatus && (
+        <div className={cn(
+          "text-sm p-2 mb-2 rounded-md flex items-center",
+          submitStatus.success ? "bg-green-500/20 text-green-300" : "bg-red-500/20 text-red-300"
+        )}>
+          {submitStatus.success ? (
+            <CheckCircle2 size={16} className="mr-1" />
+          ) : (
+            <AlertCircle size={16} className="mr-1" />
+          )}
+          {submitStatus.message}
+        </div>
+      )}
 
       <div className="flex gap-2">
         <input
