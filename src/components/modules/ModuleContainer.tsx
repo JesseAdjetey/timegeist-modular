@@ -10,6 +10,7 @@ interface ModuleContainerProps {
   onTitleChange?: (newTitle: string) => void;
   onMinimize?: () => void;
   isMinimized?: boolean;
+  isDragging?: boolean;
 }
 
 const ModuleContainer: React.FC<ModuleContainerProps> = ({ 
@@ -18,7 +19,8 @@ const ModuleContainer: React.FC<ModuleContainerProps> = ({
   onRemove,
   onTitleChange,
   onMinimize,
-  isMinimized = false
+  isMinimized = false,
+  isDragging = false
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(title);

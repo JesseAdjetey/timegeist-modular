@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import ModuleContainer from './ModuleContainer';
 import { Clock, Bell } from 'lucide-react';
@@ -13,6 +14,9 @@ interface AlarmsModuleProps {
   title?: string;
   onRemove?: () => void;
   onTitleChange?: (title: string) => void;
+  onMinimize?: () => void;
+  isMinimized?: boolean;
+  isDragging?: boolean;
   initialAlarms?: Alarm[];
 }
 
@@ -20,6 +24,9 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
   title = "Alarms",
   onRemove, 
   onTitleChange,
+  onMinimize,
+  isMinimized = false,
+  isDragging = false,
   initialAlarms = [] 
 }) => {
   const [alarms, setAlarms] = useState<Alarm[]>(initialAlarms);
@@ -60,6 +67,9 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
       title={title} 
       onRemove={onRemove}
       onTitleChange={onTitleChange}
+      onMinimize={onMinimize}
+      isMinimized={isMinimized}
+      isDragging={isDragging}
     >
       <div className="max-h-60 overflow-y-auto mb-3">
         {alarms.map(alarm => (
