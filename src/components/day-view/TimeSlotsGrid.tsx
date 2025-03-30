@@ -10,7 +10,7 @@ interface TimeSlotsGridProps {
   currentTime: dayjs.Dayjs;
   events: CalendarEventType[];
   onTimeSlotClick: (hour: dayjs.Dayjs) => void;
-  addEvent: (event: CalendarEventType) => void;
+  addEvent: (event: CalendarEventType) => Promise<any>;
   openEventForm?: (todoData: any, hour: dayjs.Dayjs) => void;
 }
 

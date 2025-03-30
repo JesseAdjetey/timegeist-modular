@@ -8,6 +8,7 @@ import EventDetails from "@/components/calendar/EventDetails";
 import DayHeader from "./day-view/DayHeader";
 import TimeSlotsGrid from "./day-view/TimeSlotsGrid";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
+import { CalendarEventType } from "@/lib/stores/types";
 
 const DayView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
@@ -51,6 +52,11 @@ const DayView = () => {
     setFormOpen(true);
   };
 
+  // This is a wrapper function to make the type match what TimeSlotsGrid expects
+  const handleAddEvent = async (event: CalendarEventType) => {
+    return await addEvent(event);
+  };
+
   return (
     <>
       <div className="glass m-4 rounded-xl overflow-hidden gradient-border cursor-glow">
@@ -64,7 +70,7 @@ const DayView = () => {
           currentTime={currentTime}
           events={dayEvents}
           onTimeSlotClick={handleTimeSlotClick}
-          addEvent={addEvent}
+          addEvent={handleAddEvent}
           openEventForm={openEventForm}
         />
       </div>

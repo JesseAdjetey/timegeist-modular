@@ -33,50 +33,63 @@ export function useCalendarEvents() {
       
       console.log('Fetching calendar events for user:', user.id);
       
-      const { data, error } = await supabase
+      // First fetch the calendar events
+      const { data: eventsData, error: eventsError } = await supabase
         .from('calendar_events')
-        .select(`
-          id, 
-          title, 
-          date, 
-          description, 
-          color,
-          is_locked,
-          is_todo,
-          has_alarm,
-          has_reminder,
-          todo_id,
-          event_participants(participant_code)
-        `)
+        .select('*')
         .eq('user_id', user.id);
       
-      if (error) {
-        console.error('Error details:', error);
-        throw error;
+      if (eventsError) {
+        console.error('Error details:', eventsError);
+        throw eventsError;
       }
       
-      console.log('Fetched calendar events:', data);
+      if (!eventsData) {
+        console.log('No calendar events found');
+        setEvents([]);
+        setLoading(false);
+        return;
+      }
       
-      // Transform the data to match CalendarEventType
-      const transformedEvents = data?.map(event => {
-        const participants = event.event_participants?.map(p => p.participant_code) || [];
-        
-        return {
-          id: event.id,
-          title: event.title,
-          date: event.date,
-          description: event.description,
-          color: event.color || 'bg-blue-400/70',
-          isLocked: event.is_locked || false,
-          isTodo: event.is_todo || false,
-          hasAlarm: event.has_alarm || false,
-          hasReminder: event.has_reminder || false,
-          todoId: event.todo_id,
-          participants: participants.length > 0 ? participants : undefined
-        } as CalendarEventType;
-      }) || [];
+      console.log('Fetched calendar events:', eventsData);
       
-      setEvents(transformedEvents);
+      // For each event, fetch participants separately
+      const eventsWithParticipants = await Promise.all(
+        eventsData.map(async (event) => {
+          // Fetch participants for this event
+          const { data: participantsData, error: participantsError } = await supabase
+            .from('event_participants')
+            .select('participant_code')
+            .eq('event_id', event.id);
+          
+          if (participantsError) {
+            console.error('Error fetching participants:', participantsError);
+            return {
+              ...event,
+              participants: undefined
+            };
+          }
+          
+          const participants = participantsData?.map(p => p.participant_code) || [];
+          
+          // Transform the data to match CalendarEventType
+          return {
+            id: event.id,
+            title: event.title,
+            date: event.date,
+            description: event.description,
+            color: event.color || 'bg-blue-400/70',
+            isLocked: event.is_locked || false,
+            isTodo: event.is_todo || false,
+            hasAlarm: event.has_alarm || false,
+            hasReminder: event.has_reminder || false,
+            todoId: event.todo_id,
+            participants: participants.length > 0 ? participants : undefined
+          } as CalendarEventType;
+        })
+      );
+      
+      setEvents(eventsWithParticipants);
     } catch (err: any) {
       console.error('Error fetching calendar events:', err);
       setError(err.message || err.error_description || String(err));
