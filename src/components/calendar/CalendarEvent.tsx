@@ -19,6 +19,7 @@ interface CalendarEventProps {
   onClick?: () => void;
   onLockToggle?: (locked: boolean) => void;
   onResize?: (event: CalendarEventType, newEndTime: string) => void;
+  onMouseDown?: (e: React.MouseEvent) => void; // Add the missing prop
 }
 
 const CalendarEvent: React.FC<CalendarEventProps> = ({
@@ -31,7 +32,8 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
   participants = [],
   onClick,
   onLockToggle,
-  onResize
+  onResize,
+  onMouseDown
 }) => {
   const {
     isDragging,
@@ -57,6 +59,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
         isDragging && "opacity-70"
       )}
       onClick={(e) => handleClick(e, onClick)}
+      onMouseDown={onMouseDown} // Add the onMouseDown handler
       draggable={!isLocked}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
