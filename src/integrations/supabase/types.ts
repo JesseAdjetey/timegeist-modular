@@ -428,6 +428,7 @@ export type Database = {
           order_position: number
           title: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           completed?: boolean | null
@@ -438,6 +439,7 @@ export type Database = {
           order_position: number
           title: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           completed?: boolean | null
@@ -448,6 +450,7 @@ export type Database = {
           order_position?: number
           title?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
