@@ -1,9 +1,12 @@
+
 import React from "react";
 import dayjs from "dayjs";
 import CalendarEvent from "../calendar/CalendarEvent";
 import { useEventStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useEventResize } from "@/hooks/use-event-resize";
+import { getTimeInfo } from "@/components/calendar/event-utils/touch-handlers";
 
 interface TimeSlotProps {
   hour: dayjs.Dayjs;
@@ -13,6 +16,7 @@ interface TimeSlotProps {
 
 const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) => {
   const { openEventSummary, toggleEventLock, updateEvent } = useEventStore();
+  const hourHeight = 80; // Match the height in the week view
 
   // Handle dropping an event onto a time slot
   const handleDrop = (e: React.DragEvent) => {
@@ -76,6 +80,25 @@ const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) =>
     e.dataTransfer.dropEffect = 'move';
   };
 
+  // Setup resize handling
+  const handleEventResize = (event: any, newEndTime: string) => {
+    // Get the current description and separate time and details
+    const timeInfo = getTimeInfo(event.description);
+    const descriptionParts = event.description.split('|');
+    const descriptionText = descriptionParts.length > 1 ? descriptionParts[1].trim() : '';
+    
+    // Create updated description with new end time
+    const updatedDescription = `${timeInfo.start} - ${newEndTime} | ${descriptionText}`;
+    
+    // Update the event
+    updateEvent({
+      ...event,
+      description: updatedDescription
+    });
+  };
+
+  const { handleResizeStart } = useEventResize(hourHeight, handleEventResize);
+
   return (
     <div
       className="relative flex h-20 border-t border-white/10 hover:bg-white/5 gradient-border cursor-glow"
@@ -93,6 +116,12 @@ const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) =>
             e.stopPropagation();
             openEventSummary(event);
           }}
+          onMouseDown={(e) => {
+            // Handle resize start if clicking on resize handle
+            if (e.target instanceof HTMLElement && e.target.dataset.resizeHandle) {
+              handleResizeStart(e.nativeEvent, event);
+            }
+          }}
         >
           <CalendarEvent
             event={event}
@@ -104,6 +133,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) =>
             participants={event.participants}
             onClick={() => openEventSummary(event)}
             onLockToggle={(isLocked) => toggleEventLock(event.id, isLocked)}
+            onResize={handleEventResize}
           />
         </div>
       ))}

@@ -5,6 +5,7 @@ import { useEventDrag } from '@/hooks/use-event-drag';
 import EventIndicators from './event-components/EventIndicators';
 import EventLockToggle from './event-components/EventLockToggle';
 import DragHandle from './event-components/DragHandle';
+import ResizeHandle from './event-components/ResizeHandle';
 import { CalendarEventType } from '@/lib/store';
 
 interface CalendarEventProps {
@@ -17,6 +18,7 @@ interface CalendarEventProps {
   participants?: string[];
   onClick?: () => void;
   onLockToggle?: (locked: boolean) => void;
+  onResize?: (event: CalendarEventType, newEndTime: string) => void;
 }
 
 const CalendarEvent: React.FC<CalendarEventProps> = ({
@@ -28,7 +30,8 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
   hasTodo = false,
   participants = [],
   onClick,
-  onLockToggle
+  onLockToggle,
+  onResize
 }) => {
   const {
     isDragging,
@@ -85,6 +88,9 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
           participants={participants}
         />
       </div>
+      
+      {/* Resize Handle (only shown if not locked) */}
+      {!isLocked && onResize && <ResizeHandle />}
     </div>
   );
 };
