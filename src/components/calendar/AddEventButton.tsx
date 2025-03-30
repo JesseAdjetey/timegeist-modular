@@ -8,12 +8,14 @@ import { useEventStore } from "@/lib/store";
 import { nanoid } from "@/lib/utils";
 import { CalendarEventType } from "@/lib/stores/types";
 import { toast } from "@/components/ui/use-toast";
+import { useCalendarEvents } from "@/hooks/use-calendar-events";
 
 const AddEventButton = () => {
-  const { addEvent } = useEventStore();
+  const { addEvent: storeAddEvent } = useEventStore();
+  const { addEvent: dbAddEvent } = useCalendarEvents();
   const [open, setOpen] = useState(false);
 
-  const handleSaveEvent = (event: CalendarEventType) => {
+  const handleSaveEvent = async (event: CalendarEventType) => {
     // Generate a random color for the event
     const colors = [
       'bg-[hsl(var(--event-red))]',
@@ -27,20 +29,39 @@ const AddEventButton = () => {
     
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
     
-    // Create the event with a generated ID
+    // Create the event with a temporary ID (will be replaced by DB)
     const newEvent = {
       ...event,
       id: nanoid(),
-      color: randomColor,
+      color: event.color || randomColor,
     };
     
-    addEvent(newEvent);
-    setOpen(false);
-    
-    toast({
-      title: "Event Added",
-      description: `${event.title} has been added to your calendar.`,
-    });
+    try {
+      // Add to database and update store if successful
+      const response = await dbAddEvent(newEvent);
+      
+      if (response.success) {
+        setOpen(false);
+        
+        toast({
+          title: "Event Added",
+          description: `${event.title} has been added to your calendar.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to add event",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error adding event:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add event. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

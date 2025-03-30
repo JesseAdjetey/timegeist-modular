@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useEventStore } from '@/lib/store';
@@ -7,6 +6,7 @@ import { Button } from '../ui/button';
 import { CalendarEventType } from '@/lib/stores/types';
 import { Calendar, Clock, Sparkles } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { useCalendarEvents } from '@/hooks/use-calendar-events';
 
 interface EventDetailsProps {
   open: boolean;
@@ -14,12 +14,13 @@ interface EventDetailsProps {
 }
 
 const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
-  const { selectedEvent, updateEvent, deleteEvent, closeEventSummary } = useEventStore();
+  const { selectedEvent, closeEventSummary } = useEventStore();
+  const { updateEvent, removeEvent } = useCalendarEvents();
   const [isEditing, setIsEditing] = useState(false);
 
   if (!selectedEvent) return null;
 
-  const handleSave = (updatedEvent: CalendarEventType) => {
+  const handleSave = async (updatedEvent: CalendarEventType) => {
     // Keep the same ID and color
     const event = {
       ...updatedEvent,
@@ -27,14 +28,32 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
       color: selectedEvent.color
     };
     
-    updateEvent(event);
-    setIsEditing(false);
-    onClose();
+    try {
+      await updateEvent(event);
+      setIsEditing(false);
+      onClose();
+    } catch (error) {
+      console.error('Error updating event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update event. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDelete = () => {
-    deleteEvent(selectedEvent.id);
-    onClose();
+  const handleDelete = async () => {
+    try {
+      await removeEvent(selectedEvent.id);
+      onClose();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete event. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleReschedule = () => {

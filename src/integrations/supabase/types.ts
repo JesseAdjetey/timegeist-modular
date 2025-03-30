@@ -91,6 +91,54 @@ export type Database = {
           },
         ]
       }
+      calendar_events: {
+        Row: {
+          color: string | null
+          created_at: string
+          date: string
+          description: string
+          has_alarm: boolean | null
+          has_reminder: boolean | null
+          id: string
+          is_locked: boolean | null
+          is_todo: boolean | null
+          title: string
+          todo_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          date: string
+          description: string
+          has_alarm?: boolean | null
+          has_reminder?: boolean | null
+          id?: string
+          is_locked?: boolean | null
+          is_todo?: boolean | null
+          title: string
+          todo_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          date?: string
+          description?: string
+          has_alarm?: boolean | null
+          has_reminder?: boolean | null
+          id?: string
+          is_locked?: boolean | null
+          is_todo?: boolean | null
+          title?: string
+          todo_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       eisenhower_items: {
         Row: {
           created_at: string
@@ -484,6 +532,15 @@ export type Database = {
         | "not_urgent_important"
         | "urgent_not_important"
         | "not_urgent_not_important"
+      event_color:
+        | "bg-red-500/70"
+        | "bg-green-500/70"
+        | "bg-blue-400/70"
+        | "bg-purple-500/70"
+        | "bg-yellow-500/70"
+        | "bg-teal-500/70"
+        | "bg-orange-500/70"
+        | "bg-pink-500/70"
     }
     CompositeTypes: {
       [_ in never]: never

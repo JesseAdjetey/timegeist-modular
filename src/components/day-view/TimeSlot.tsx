@@ -8,12 +8,13 @@ import { toast } from "sonner";
 import { getTimeInfo } from "../calendar/event-utils/touch-handlers";
 import { nanoid } from "nanoid";
 import { CalendarEventType } from "@/lib/stores/types";
+import { useCalendarEvents } from "@/hooks/use-calendar-events";
 
 interface TimeSlotProps {
   hour: dayjs.Dayjs;
   events: any[];
   onTimeSlotClick: (hour: dayjs.Dayjs) => void;
-  addEvent?: (event: CalendarEventType) => void;
+  addEvent?: (event: CalendarEventType) => Promise<any>;
   openEventForm?: (todoData: any, hour: dayjs.Dayjs) => void;
 }
 
@@ -24,7 +25,8 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   addEvent,
   openEventForm
 }) => {
-  const { openEventSummary, toggleEventLock, updateEvent } = useEventStore();
+  const { openEventSummary, toggleEventLock } = useEventStore();
+  const { updateEvent } = useCalendarEvents();
 
   // Handle dropping an event onto a time slot
   const handleDrop = (e: React.DragEvent) => {
@@ -51,7 +53,9 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
           return;
         }
         
-        handleTodoDrop(data, hour);
+        if (addEvent) {
+          handleTodoDrop(data, hour);
+        }
         return;
       }
       
@@ -102,7 +106,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       
       console.log("Updating event with new time:", updatedEvent);
       
-      // Update the event in the store
+      // Update the event in the database
       updateEvent(updatedEvent);
       
       // Show success message
@@ -115,7 +119,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   };
 
   // Handle dropping a todo item onto the calendar
-  const handleTodoDrop = (todoData: any, hour: dayjs.Dayjs) => {
+  const handleTodoDrop = async (todoData: any, hour: dayjs.Dayjs) => {
     console.log("Handling todo drop in TimeSlot", todoData);
     if (!addEvent || !todoData || !todoData.id || !todoData.text) {
       console.error("Invalid todo data or missing addEvent function:", todoData, addEvent);
@@ -128,7 +132,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
     
     // Create a new calendar event from the todo item
     const newEvent: CalendarEventType = {
-      id: nanoid(),
+      id: nanoid(), // This will be replaced by the database
       title: todoData.text,
       date: dayjs().format('YYYY-MM-DD'), // Current date
       description: `${startTime} - ${endTime} | ${todoData.text}`,
@@ -139,11 +143,19 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
     
     console.log("Adding new event from todo:", newEvent);
     
-    // Add the event to the store
-    addEvent(newEvent);
-    
-    // Show success message
-    toast.success(`Todo "${todoData.text}" added to calendar at ${startTime}`);
+    try {
+      // Add to database
+      const response = await addEvent(newEvent);
+      
+      if (response.success) {
+        toast.success(`Todo "${todoData.text}" added to calendar at ${startTime}`);
+      } else {
+        toast.error(`Failed to add todo: ${response.message}`);
+      }
+    } catch (error) {
+      console.error("Error adding event from todo:", error);
+      toast.error("Failed to add todo to calendar");
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {

@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import ThemeProvider from '@/components/ThemeProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import EventDataProvider from '@/contexts/EventDataProvider';
 
 // A wrapper component to determine if the current page is the auth page
 const AppRoutes = () => {
@@ -32,7 +33,9 @@ function App() {
     <AuthProvider>
       <ToastProvider>
         <Router>
-          <AppRoutes />
+          <EventDataProvider>
+            <AppRoutes />
+          </EventDataProvider>
         </Router>
       </ToastProvider>
     </AuthProvider>

@@ -4,6 +4,7 @@ import { CalendarEventType } from "@/lib/stores/types";
 import dayjs from "dayjs";
 import { formatMinutesAsTime, getTimeInMinutes } from "../event-utils/touch-handlers";
 import { nanoid } from "nanoid";
+import { useCalendarEvents } from "@/hooks/use-calendar-events";
 
 export const handleDragOver = (e: React.DragEvent) => {
   e.preventDefault();
@@ -14,8 +15,8 @@ export const handleDrop = (
   e: React.DragEvent, 
   day: dayjs.Dayjs, 
   hour: dayjs.Dayjs,
-  updateEvent: (event: CalendarEventType) => void,
-  addEvent?: (event: CalendarEventType) => void,
+  updateEventFn: (event: CalendarEventType) => Promise<void>,
+  addEventFn?: (event: CalendarEventType) => Promise<any>,
   openEventForm?: (todoData: any, date: Date, timeStart: string) => void
 ) => {
   e.preventDefault();
@@ -53,7 +54,9 @@ export const handleDrop = (
         return;
       }
       
-      handleTodoDrop(data, day, hour, addEvent);
+      if (addEventFn) {
+        handleTodoDrop(data, day, hour, addEventFn);
+      }
       return;
     }
     
@@ -96,7 +99,7 @@ export const handleDrop = (
     };
     
     // Update the event in the store
-    updateEvent(updatedEvent);
+    updateEventFn(updatedEvent);
     
     // Show success message
     toast.success(`Event moved to ${day.format("MMM D")} at ${newStartTime}`);
@@ -108,13 +111,13 @@ export const handleDrop = (
 };
 
 // Handle dropping a todo item onto the calendar
-const handleTodoDrop = (
+const handleTodoDrop = async (
   todoData: any,
   day: dayjs.Dayjs,
   hour: dayjs.Dayjs,
-  addEvent?: (event: CalendarEventType) => void
+  addEventFn: (event: CalendarEventType) => Promise<any>
 ) => {
-  if (!addEvent || !todoData || !todoData.id || !todoData.text) {
+  if (!addEventFn || !todoData || !todoData.id || !todoData.text) {
     console.error("Invalid todo data or missing addEvent function:", todoData);
     return;
   }
@@ -125,7 +128,7 @@ const handleTodoDrop = (
   
   // Create a new calendar event from the todo item
   const newEvent: CalendarEventType = {
-    id: nanoid(),
+    id: nanoid(), // This will be replaced by the database
     title: todoData.text,
     date: day.format('YYYY-MM-DD'),
     description: `${startTime} - ${endTime} | ${todoData.text}`,
@@ -136,9 +139,18 @@ const handleTodoDrop = (
   
   console.log("Week view adding new event from todo:", newEvent);
   
-  // Add the event to the store
-  addEvent(newEvent);
-  
-  // Show success message
-  toast.success(`Todo "${todoData.text}" added to calendar at ${startTime}`);
+  try {
+    // Add the event to the database
+    const response = await addEventFn(newEvent);
+    
+    if (response.success) {
+      // Show success message
+      toast.success(`Todo "${todoData.text}" added to calendar at ${startTime}`);
+    } else {
+      toast.error(`Failed to add todo: ${response.message}`);
+    }
+  } catch (error) {
+    console.error("Error adding event from todo:", error);
+    toast.error("Failed to add todo to calendar");
+  }
 };

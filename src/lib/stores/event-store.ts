@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import dayjs from "dayjs";
 import { CalendarEventType } from "./types";
+import { supabase } from "@/integrations/supabase/client";
 
 type EventStore = {
   events: CalendarEventType[];
@@ -18,49 +19,22 @@ type EventStore = {
   openEventSummary: (event: CalendarEventType) => void;
   closeEventSummary: () => void;
   toggleEventLock: (id: string, isLocked: boolean) => void;
+  isInitialized: boolean;
+  setIsInitialized: (value: boolean) => void;
 };
 
 export const useEventStore = create<EventStore>()(
   devtools(
     persist(
       (set, get) => ({
-        events: [
-          {
-            id: '1',
-            title: 'Gym',
-            date: dayjs().format('YYYY-MM-DD'),
-            description: '6:00 - 7:30 | Workout session',
-            color: 'bg-green-500/70',
-            isLocked: false
-          },
-          {
-            id: '2',
-            title: 'Design Meeting',
-            date: dayjs().format('YYYY-MM-DD'),
-            description: '9:00 - 10:30 | Product team sync',
-            color: 'bg-blue-400/70',
-            participants: ['JD', 'MK', 'AR'],
-            isLocked: true
-          },
-          {
-            id: '3',
-            title: 'Lunch with Team',
-            date: dayjs().format('YYYY-MM-DD'),
-            description: '12:30 - 13:30 | Restaurant downtown',
-            color: 'bg-purple-500/70'
-          },
-          {
-            id: '4',
-            title: 'Presentation',
-            date: dayjs().add(1, 'day').format('YYYY-MM-DD'),
-            description: '14:00 - 15:00 | Client pitch',
-            color: 'bg-red-500/70',
-            isLocked: true
-          }
-        ],
+        events: [],
         isPopoverOpen: false,
         isEventSummaryOpen: false,
         selectedEvent: null,
+        isInitialized: false,
+        setIsInitialized: (value) => {
+          set({ isInitialized: value });
+        },
         setEvents: (events) => {
           set({ events });
         },
@@ -73,14 +47,18 @@ export const useEventStore = create<EventStore>()(
           set(state => ({
             events: state.events.map(e => 
               e.id === event.id ? { ...e, ...event } : e
-            )
+            ),
+            // If the updated event is the selected event, update selectedEvent too
+            selectedEvent: state.selectedEvent?.id === event.id 
+              ? { ...state.selectedEvent, ...event } 
+              : state.selectedEvent
           }));
         },
         deleteEvent: (id) => {
           set(state => ({
             events: state.events.filter(e => e.id !== id),
-            isEventSummaryOpen: false,
-            selectedEvent: null
+            isEventSummaryOpen: state.selectedEvent?.id === id ? false : state.isEventSummaryOpen,
+            selectedEvent: state.selectedEvent?.id === id ? null : state.selectedEvent
           }));
         },
         openPopover: () => {
@@ -99,7 +77,11 @@ export const useEventStore = create<EventStore>()(
           set(state => ({
             events: state.events.map(event => 
               event.id === id ? { ...event, isLocked } : event
-            )
+            ),
+            // If the updated event is the selected event, update selectedEvent too
+            selectedEvent: state.selectedEvent?.id === id 
+              ? { ...state.selectedEvent, isLocked } 
+              : state.selectedEvent
           }));
         }
       }),

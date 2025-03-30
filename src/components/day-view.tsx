@@ -7,11 +7,13 @@ import EventForm from "@/components/calendar/EventForm";
 import EventDetails from "@/components/calendar/EventDetails";
 import DayHeader from "./day-view/DayHeader";
 import TimeSlotsGrid from "./day-view/TimeSlotsGrid";
+import { useCalendarEvents } from "@/hooks/use-calendar-events";
 
 const DayView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const { userSelectedDate } = useDateStore();
-  const { events, isEventSummaryOpen, closeEventSummary, addEvent } = useEventStore();
+  const { isEventSummaryOpen, closeEventSummary } = useEventStore();
+  const { events, addEvent } = useCalendarEvents();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
   const [todoData, setTodoData] = useState<any>(null);

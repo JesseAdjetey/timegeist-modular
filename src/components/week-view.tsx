@@ -11,11 +11,13 @@ import WeekHeader from "./calendar/week-view/WeekHeader";
 import TimeColumn from "./calendar/week-view/TimeColumn";
 import DayColumn from "./calendar/week-view/DayColumn";
 import { handleDragOver, handleDrop } from "./calendar/week-view/DragDropHandlers";
+import { useCalendarEvents } from "@/hooks/use-calendar-events";
 
 const WeekView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const { userSelectedDate } = useDateStore();
-  const { events, openEventSummary, toggleEventLock, updateEvent, addEvent, isEventSummaryOpen, closeEventSummary } = useEventStore();
+  const { openEventSummary, toggleEventLock, isEventSummaryOpen, closeEventSummary } = useEventStore();
+  const { events, updateEvent, addEvent } = useCalendarEvents();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
   const [todoData, setTodoData] = useState<any>(null);

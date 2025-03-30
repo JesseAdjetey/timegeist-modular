@@ -1,3 +1,4 @@
+
 import React, { Fragment, useState, useEffect } from "react";
 import MonthViewBox from "@/components/month-view-box";
 import { useDateStore, useEventStore } from "@/lib/store";
@@ -5,10 +6,12 @@ import AddEventButton from "@/components/calendar/AddEventButton";
 import EventForm from "@/components/calendar/EventForm";
 import EventDetails from "@/components/calendar/EventDetails";
 import dayjs from "dayjs";
+import { useCalendarEvents } from "@/hooks/use-calendar-events";
 
 const MonthView = () => {
   const { twoDMonthArray } = useDateStore();
-  const { events, openEventSummary, updateEvent, addEvent, isEventSummaryOpen, closeEventSummary } = useEventStore();
+  const { openEventSummary, isEventSummaryOpen, closeEventSummary } = useEventStore();
+  const { events, updateEvent, addEvent } = useCalendarEvents();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
   const [todoData, setTodoData] = useState<any>(null);
@@ -59,13 +62,13 @@ const MonthView = () => {
     setFormOpen(true);
   };
   
-  const handleEventDrop = (event: any, newDate: string) => {
+  const handleEventDrop = async (event: any, newDate: string) => {
     const updatedEvent = {
       ...event,
       date: newDate
     };
     
-    updateEvent(updatedEvent);
+    await updateEvent(updatedEvent);
   };
 
   return (
