@@ -15,7 +15,8 @@ export const handleDrop = (
   day: dayjs.Dayjs, 
   hour: dayjs.Dayjs,
   updateEvent: (event: CalendarEventType) => void,
-  addEvent?: (event: CalendarEventType) => void
+  addEvent?: (event: CalendarEventType) => void,
+  openEventForm?: (todoData: any, date: Date, timeStart: string) => void
 ) => {
   e.preventDefault();
   
@@ -32,6 +33,26 @@ export const handleDrop = (
     
     // Handle todo item drag
     if (data.source === 'todo-module') {
+      // If we have the openEventForm function, use it instead of immediately creating an event
+      if (openEventForm) {
+        // Calculate precise drop time based on cursor position
+        const rect = e.currentTarget.getBoundingClientRect();
+        const relativeY = e.clientY - rect.top;
+        const hourHeight = rect.height;
+        const minutesWithinHour = Math.floor((relativeY / hourHeight) * 60);
+        
+        // Snap to nearest 30-minute interval (0 or 30)
+        const snappedMinutes = minutesWithinHour < 30 ? 0 : 30;
+        
+        // Get the base hour and add the snapped minutes
+        const baseHour = hour.hour();
+        const startTime = `${baseHour.toString().padStart(2, '0')}:${snappedMinutes.toString().padStart(2, '0')}`;
+        
+        // Open the event form with the todo data
+        openEventForm(data, day.toDate(), startTime);
+        return;
+      }
+      
       handleTodoDrop(data, day, hour, addEvent);
       return;
     }

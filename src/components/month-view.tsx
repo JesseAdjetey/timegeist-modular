@@ -11,6 +11,7 @@ const MonthView = () => {
   const { events, openEventSummary, updateEvent, addEvent, isEventSummaryOpen, closeEventSummary } = useEventStore();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
+  const [todoData, setTodoData] = useState<any>(null);
   
   useEffect(() => {
     // Add global CSS to style elements while being dragged via touch
@@ -42,9 +43,21 @@ const MonthView = () => {
     if (!day) return;
     
     // Default to 9 AM when clicking on a day in month view
+    setTodoData(null); // Reset todo data
     setSelectedTime({
       date: day.toDate(),
       startTime: '09:00'
+    });
+    setFormOpen(true);
+  };
+  
+  // Handle opening event form with todo data
+  const openEventForm = (todoData: any, day: dayjs.Dayjs) => {
+    console.log("Opening event form with todo data in month view:", todoData, day.format("YYYY-MM-DD"));
+    setTodoData(todoData);
+    setSelectedTime({
+      date: day.toDate(),
+      startTime: '09:00' // Default to 9 AM for month view
     });
     setFormOpen(true);
   };
@@ -85,6 +98,7 @@ const MonthView = () => {
                   onDayClick={handleDayClick}
                   onEventDrop={handleEventDrop}
                   addEvent={addEvent}
+                  openEventForm={openEventForm}
                 />
               ))}
             </Fragment>
@@ -96,8 +110,12 @@ const MonthView = () => {
       {/* Event Form Dialog */}
       <EventForm 
         open={formOpen} 
-        onClose={() => setFormOpen(false)}
+        onClose={() => {
+          setFormOpen(false);
+          setTodoData(null);
+        }}
         initialTime={selectedTime}
+        todoData={todoData}
       />
 
       {/* Event Details Dialog */}

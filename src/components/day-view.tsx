@@ -14,6 +14,7 @@ const DayView = () => {
   const { events, isEventSummaryOpen, closeEventSummary, addEvent } = useEventStore();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
+  const [todoData, setTodoData] = useState<any>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -29,6 +30,18 @@ const DayView = () => {
   );
 
   const handleTimeSlotClick = (hour: dayjs.Dayjs) => {
+    setTodoData(null); // Reset todo data
+    setSelectedTime({
+      date: userSelectedDate.toDate(),
+      startTime: hour.format("HH:00")
+    });
+    setFormOpen(true);
+  };
+  
+  // Function to open event form with todo data
+  const openEventForm = (todoData: any, hour: dayjs.Dayjs) => {
+    console.log("Opening event form with todo data in day view:", todoData, hour.format("HH:mm"));
+    setTodoData(todoData);
     setSelectedTime({
       date: userSelectedDate.toDate(),
       startTime: hour.format("HH:00")
@@ -50,6 +63,7 @@ const DayView = () => {
           events={dayEvents}
           onTimeSlotClick={handleTimeSlotClick}
           addEvent={addEvent}
+          openEventForm={openEventForm}
         />
       </div>
       <AddEventButton />
@@ -57,8 +71,12 @@ const DayView = () => {
       {/* Event Form Dialog */}
       <EventForm 
         open={formOpen} 
-        onClose={() => setFormOpen(false)}
+        onClose={() => {
+          setFormOpen(false);
+          setTodoData(null);
+        }}
         initialTime={selectedTime}
+        todoData={todoData}
       />
 
       {/* Event Details Dialog */}

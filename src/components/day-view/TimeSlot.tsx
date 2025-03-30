@@ -13,10 +13,18 @@ interface TimeSlotProps {
   hour: dayjs.Dayjs;
   events: any[];
   onTimeSlotClick: (hour: dayjs.Dayjs) => void;
+  addEvent?: (event: CalendarEventType) => void;
+  openEventForm?: (todoData: any, hour: dayjs.Dayjs) => void;
 }
 
-const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) => {
-  const { openEventSummary, toggleEventLock, updateEvent, addEvent } = useEventStore();
+const TimeSlot: React.FC<TimeSlotProps> = ({ 
+  hour, 
+  events, 
+  onTimeSlotClick,
+  addEvent,
+  openEventForm
+}) => {
+  const { openEventSummary, toggleEventLock, updateEvent } = useEventStore();
 
   // Handle dropping an event onto a time slot
   const handleDrop = (e: React.DragEvent) => {
@@ -35,6 +43,12 @@ const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) =>
       
       // Handle todo item drag
       if (data.source === 'todo-module') {
+        if (openEventForm) {
+          // Open event form with todo data
+          openEventForm(data, hour);
+          return;
+        }
+        
         handleTodoDrop(data, hour);
         return;
       }
@@ -95,7 +109,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) =>
 
   // Handle dropping a todo item onto the calendar
   const handleTodoDrop = (todoData: any, hour: dayjs.Dayjs) => {
-    if (!todoData || !todoData.id || !todoData.text) {
+    if (!addEvent || !todoData || !todoData.id || !todoData.text) {
       console.error("Invalid todo data:", todoData);
       return;
     }

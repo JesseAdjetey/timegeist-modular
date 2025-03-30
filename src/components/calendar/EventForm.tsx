@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { nanoid } from 'nanoid';
 import { useEventStore } from '@/lib/store';
@@ -14,6 +14,7 @@ interface EventFormProps {
     date: Date;
     startTime: string;
   };
+  todoData?: any;
   onSave?: (event: any) => void;
   onUseAI?: () => void;
 }
@@ -23,14 +24,43 @@ const EventForm: React.FC<EventFormProps> = ({
   onClose, 
   onCancel,
   initialTime,
+  todoData,
   onSave: propOnSave,
   onUseAI
 }) => {
   const { addEvent } = useEventStore();
+  const [initialEvent, setInitialEvent] = useState<any>(undefined);
   
   // Use onCancel or onClose, whichever is provided
   const handleClose = onCancel || onClose;
   
+  // Prepare initial event data when props change
+  useEffect(() => {
+    if (initialTime) {
+      // Start with time data
+      let event: any = {
+        date: initialTime.date.toISOString().split('T')[0],
+        description: `${initialTime.startTime} - ${getEndTime(initialTime.startTime)} | `
+      };
+      
+      // If we have todo data, add it
+      if (todoData) {
+        event = {
+          ...event,
+          title: todoData.text,
+          description: `${initialTime.startTime} - ${getEndTime(initialTime.startTime)} | ${todoData.text}`,
+          isTodo: true,
+          todoId: todoData.id,
+          color: 'bg-purple-500/70', // Special color for todo events
+        };
+      }
+      
+      setInitialEvent(event);
+    } else {
+      setInitialEvent(undefined);
+    }
+  }, [initialTime, todoData]);
+
   const handleSave = (event: any) => {
     // Generate a unique ID for the new event
     const newEvent = {
@@ -42,6 +72,19 @@ const EventForm: React.FC<EventFormProps> = ({
       propOnSave(newEvent);
     } else {
       addEvent(newEvent);
+      
+      // Show a success message
+      if (todoData) {
+        toast({
+          title: "Success",
+          description: `Todo "${todoData.text}" added to calendar`,
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Event added to calendar",
+        });
+      }
     }
     if (handleClose) handleClose();
   };
@@ -58,10 +101,7 @@ const EventForm: React.FC<EventFormProps> = ({
       <DialogContent className="sm:max-w-[500px] bg-background/95 border-white/10">
         <DialogTitle className="sr-only">Add Event</DialogTitle>
         <EnhancedEventForm
-          initialEvent={initialTime ? {
-            date: initialTime.date.toISOString().split('T')[0],
-            description: `${initialTime.startTime} - ${getEndTime(initialTime.startTime)} | `
-          } : undefined}
+          initialEvent={initialEvent}
           onSave={handleSave}
           onCancel={handleClose}
           onUseAI={onUseAI || handleUseAI}

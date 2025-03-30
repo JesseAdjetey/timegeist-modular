@@ -15,6 +15,7 @@ interface MonthViewBoxProps {
   onDayClick?: (day: dayjs.Dayjs) => void;
   onEventDrop?: (event: any, date: string) => void;
   addEvent?: (event: CalendarEventType) => void;
+  openEventForm?: (todoData: any, day: dayjs.Dayjs) => void;
 }
 
 const MonthViewBox: React.FC<MonthViewBoxProps> = ({
@@ -24,7 +25,8 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
   onEventClick,
   onDayClick,
   onEventDrop,
-  addEvent
+  addEvent,
+  openEventForm
 }) => {
   const boxRef = useRef<HTMLDivElement>(null);
   
@@ -103,24 +105,32 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
       console.log("Month view received drop data:", data);
       
       // Handle todo item drag
-      if (data.source === 'todo-module' && addEvent) {
-        // Create a new calendar event from the todo item
-        const newEvent: CalendarEventType = {
-          id: nanoid(),
-          title: data.text,
-          date: day.format('YYYY-MM-DD'),
-          description: `09:00 - 10:00 | ${data.text}`,
-          color: 'bg-purple-500/70',
-          isTodo: true,
-          todoId: data.id
-        };
+      if (data.source === 'todo-module') {
+        if (openEventForm && day) {
+          // Open event form with todo data
+          openEventForm(data, day);
+          return;
+        }
         
-        console.log("Month view adding new event from todo:", newEvent);
-        
-        // Add the event to the store
-        addEvent(newEvent);
-        
-        toast.success(`Todo "${data.text}" added to calendar on ${day.format("MMM D")}`);
+        if (addEvent && day) {
+          // Create a new calendar event from the todo item
+          const newEvent: CalendarEventType = {
+            id: nanoid(),
+            title: data.text,
+            date: day.format('YYYY-MM-DD'),
+            description: `09:00 - 10:00 | ${data.text}`,
+            color: 'bg-purple-500/70',
+            isTodo: true,
+            todoId: data.id
+          };
+          
+          console.log("Month view adding new event from todo:", newEvent);
+          
+          // Add the event to the store
+          addEvent(newEvent);
+          
+          toast.success(`Todo "${data.text}" added to calendar on ${day.format("MMM D")}`);
+        }
         return;
       }
       

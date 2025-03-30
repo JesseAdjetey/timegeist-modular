@@ -18,6 +18,7 @@ const WeekView = () => {
   const { events, openEventSummary, toggleEventLock, updateEvent, addEvent, isEventSummaryOpen, closeEventSummary } = useEventStore();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
+  const [todoData, setTodoData] = useState<any>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -32,9 +33,21 @@ const WeekView = () => {
   };
 
   const handleTimeSlotClick = (day: dayjs.Dayjs, hour: dayjs.Dayjs) => {
+    setTodoData(null); // Reset todo data
     setSelectedTime({
       date: day.toDate(),
       startTime: hour.format("HH:00")
+    });
+    setFormOpen(true);
+  };
+  
+  // Function to open the event form with todo data
+  const openEventForm = (todoData: any, date: Date, startTime: string) => {
+    console.log("Opening event form with todo data:", todoData, date, startTime);
+    setTodoData(todoData);
+    setSelectedTime({
+      date: date,
+      startTime: startTime
     });
     setFormOpen(true);
   };
@@ -62,7 +75,7 @@ const WeekView = () => {
                   currentTime={currentTime}
                   onTimeSlotClick={handleTimeSlotClick}
                   onDragOver={handleDragOver}
-                  onDrop={(e, day, hour) => handleDrop(e, day, hour, updateEvent, addEvent)}
+                  onDrop={(e, day, hour) => handleDrop(e, day, hour, updateEvent, addEvent, openEventForm)}
                   openEventSummary={openEventSummary}
                   toggleEventLock={toggleEventLock}
                 />
@@ -76,8 +89,12 @@ const WeekView = () => {
       {/* Event Form Dialog */}
       <EventForm 
         open={formOpen} 
-        onClose={() => setFormOpen(false)}
+        onClose={() => {
+          setFormOpen(false);
+          setTodoData(null);
+        }}
         initialTime={selectedTime}
+        todoData={todoData}
       />
 
       {/* Event Details Dialog */}
