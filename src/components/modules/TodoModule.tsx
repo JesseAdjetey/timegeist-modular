@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ModuleContainer from './ModuleContainer';
 import { cn } from '@/lib/utils';
 import { Calendar, Circle, CheckCircle } from 'lucide-react';
@@ -7,13 +7,14 @@ import { toast } from 'sonner';
 import { useEventStore } from '@/lib/store';
 import { nanoid } from 'nanoid';
 import dayjs from 'dayjs';
+import { CalendarEventType } from '@/lib/stores/types';
 
 interface TodoItem {
   id: string;
   text: string;
   completed: boolean;
   isCalendarEvent: boolean;
-  eventId?: string; // Reference to the calendar event if it exists
+  eventId?: string;
 }
 
 interface TodoModuleProps {
@@ -37,12 +38,34 @@ const TodoModule: React.FC<TodoModuleProps> = ({
 }) => {
   const [items, setItems] = useState<TodoItem[]>(initialItems);
   const [newItem, setNewItem] = useState("");
-  const { addEvent } = useEventStore();
+  const { addEvent, events } = useEventStore();
+
+  // Find todo items that are already calendar events
+  useEffect(() => {
+    // Check for todo items that have been added to the calendar
+    const todoEvents = events.filter(event => event.todoId);
+    
+    if (todoEvents.length > 0) {
+      setItems(prevItems => 
+        prevItems.map(item => {
+          const matchingEvent = todoEvents.find(event => event.todoId === item.id);
+          if (matchingEvent && !item.isCalendarEvent) {
+            return {
+              ...item,
+              isCalendarEvent: true,
+              eventId: matchingEvent.id
+            };
+          }
+          return item;
+        })
+      );
+    }
+  }, [events]);
 
   const addItem = () => {
     if (newItem.trim()) {
       const newTodoItem: TodoItem = {
-        id: Date.now().toString(),
+        id: nanoid(),
         text: newItem.trim(),
         completed: false,
         isCalendarEvent: false
@@ -69,22 +92,26 @@ const TodoModule: React.FC<TodoModuleProps> = ({
     const todoData = {
       id: item.id,
       text: item.text,
-      isTodo: true,
       source: 'todo-module'
     };
     
+    console.log("Starting drag with data:", todoData);
+    
+    // Set the drag data as JSON string
     e.dataTransfer.setData('application/json', JSON.stringify(todoData));
     e.dataTransfer.effectAllowed = 'copy';
     
     // Add visual feedback for dragging
-    const dragIcon = document.createElement('div');
-    dragIcon.className = 'invisible';
-    document.body.appendChild(dragIcon);
-    e.dataTransfer.setDragImage(dragIcon, 0, 0);
-    
-    setTimeout(() => {
-      document.body.removeChild(dragIcon);
-    }, 0);
+    if (e.currentTarget) {
+      e.currentTarget.classList.add('opacity-50');
+    }
+  };
+  
+  const handleDragEnd = (e: React.DragEvent) => {
+    // Remove visual feedback
+    if (e.currentTarget) {
+      e.currentTarget.classList.remove('opacity-50');
+    }
   };
   
   // Mark a todo item as a calendar event
@@ -123,8 +150,9 @@ const TodoModule: React.FC<TodoModuleProps> = ({
           <div 
             key={item.id}
             className="flex items-center gap-2 bg-white/5 p-2 rounded-lg mb-2 group cursor-pointer"
-            draggable
+            draggable={true}
             onDragStart={(e) => handleDragStart(e, item)}
+            onDragEnd={handleDragEnd}
           >
             <div 
               className="cursor-pointer flex-shrink-0" 

@@ -93,7 +93,14 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
     
     try {
       // Parse the drag data
-      const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      const dataString = e.dataTransfer.getData('application/json');
+      if (!dataString) {
+        console.error("No data found in drag event");
+        return;
+      }
+      
+      const data = JSON.parse(dataString);
+      console.log("Month view received drop data:", data);
       
       // Handle todo item drag
       if (data.source === 'todo-module' && addEvent) {
@@ -107,6 +114,8 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
           isTodo: true,
           todoId: data.id
         };
+        
+        console.log("Month view adding new event from todo:", newEvent);
         
         // Add the event to the store
         addEvent(newEvent);

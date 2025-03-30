@@ -24,7 +24,14 @@ const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) =>
     
     try {
       // Get the drag data
-      const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      const dataString = e.dataTransfer.getData('application/json');
+      if (!dataString) {
+        console.error("No data found in drag event");
+        return;
+      }
+      
+      const data = JSON.parse(dataString);
+      console.log("Received drop data:", data);
       
       // Handle todo item drag
       if (data.source === 'todo-module') {
@@ -88,6 +95,11 @@ const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) =>
 
   // Handle dropping a todo item onto the calendar
   const handleTodoDrop = (todoData: any, hour: dayjs.Dayjs) => {
+    if (!todoData || !todoData.id || !todoData.text) {
+      console.error("Invalid todo data:", todoData);
+      return;
+    }
+    
     // Format time strings
     const startTime = hour.format("HH:00");
     const endTime = hour.add(1, 'hour').format("HH:00");
@@ -102,6 +114,8 @@ const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) =>
       isTodo: true, // Mark as a todo event
       todoId: todoData.id // Reference back to original todo
     };
+    
+    console.log("Adding new event from todo:", newEvent);
     
     // Add the event to the store
     addEvent(newEvent);
