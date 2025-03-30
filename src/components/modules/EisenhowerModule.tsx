@@ -40,22 +40,22 @@ const EisenhowerModule: React.FC<EisenhowerModuleProps> = ({
   const { user } = useAuth();
 
   const quadrantConfig: Record<EisenhowerItem['quadrant'], QuadrantConfig> = {
-    'urgent-important': {
+    'urgent_important': {
       title: 'Urgent & Important',
       className: 'bg-red-500/20',
       description: 'Do these tasks immediately'
     },
-    'not-urgent-important': {
+    'not_urgent_important': {
       title: 'Not Urgent & Important',
       className: 'bg-yellow-500/20',
       description: 'Schedule time to do these tasks'
     },
-    'urgent-not-important': {
+    'urgent_not_important': {
       title: 'Urgent & Not Important',
       className: 'bg-blue-500/20',
       description: 'Delegate these tasks if possible'
     },
-    'not-urgent-not-important': {
+    'not_urgent_not_important': {
       title: 'Not Urgent & Not Important',
       className: 'bg-green-500/20',
       description: 'Eliminate these tasks if possible'
@@ -136,9 +136,9 @@ const EisenhowerModule: React.FC<EisenhowerModuleProps> = ({
     
     const config = quadrantConfig[focusedQuadrant];
     const quadrantItems = getQuadrantItems(focusedQuadrant);
-    const textColorClass = focusedQuadrant === 'urgent-important' ? 'text-red-400' : 
-                          focusedQuadrant === 'not-urgent-important' ? 'text-yellow-400' : 
-                          focusedQuadrant === 'urgent-not-important' ? 'text-blue-400' : 
+    const textColorClass = focusedQuadrant === 'urgent_important' ? 'text-red-400' : 
+                          focusedQuadrant === 'not_urgent_important' ? 'text-yellow-400' : 
+                          focusedQuadrant === 'urgent_not_important' ? 'text-blue-400' : 
                           'text-green-400';
     
     return (
@@ -251,9 +251,9 @@ const EisenhowerModule: React.FC<EisenhowerModuleProps> = ({
               onClick={() => setFocusedQuadrant(quadrantType)}
             >
               <div className={`text-xs font-medium mb-1 ${
-                quadrantType === 'urgent-important' ? 'text-red-400' : 
-                quadrantType === 'not-urgent-important' ? 'text-yellow-400' : 
-                quadrantType === 'urgent-not-important' ? 'text-blue-400' : 
+                quadrantType === 'urgent_important' ? 'text-red-400' : 
+                quadrantType === 'not_urgent_important' ? 'text-yellow-400' : 
+                quadrantType === 'urgent_not_important' ? 'text-blue-400' : 
                 'text-green-400'
               }`}>
                 {config.title}

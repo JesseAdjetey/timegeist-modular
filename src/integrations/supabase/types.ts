@@ -93,28 +93,37 @@ export type Database = {
       }
       eisenhower_items: {
         Row: {
-          event_id: string
-          importance: number | null
+          created_at: string
+          event_id: string | null
+          id: string
           quadrant: Database["public"]["Enums"]["eisenhower_quadrant"]
-          urgency: number | null
+          text: string
+          updated_at: string
+          user_id: string | null
         }
         Insert: {
-          event_id: string
-          importance?: number | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
           quadrant: Database["public"]["Enums"]["eisenhower_quadrant"]
-          urgency?: number | null
+          text: string
+          updated_at?: string
+          user_id?: string | null
         }
         Update: {
-          event_id?: string
-          importance?: number | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
           quadrant?: Database["public"]["Enums"]["eisenhower_quadrant"]
-          urgency?: number | null
+          text?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "eisenhower_items_event_id_fkey"
             columns: ["event_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
           },

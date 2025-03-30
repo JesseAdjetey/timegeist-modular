@@ -7,8 +7,11 @@ import { toast } from 'sonner';
 export interface EisenhowerItem {
   id: string;
   text: string;
-  quadrant: 'urgent-important' | 'not-urgent-important' | 'urgent-not-important' | 'not-urgent-not-important';
+  quadrant: 'urgent_important' | 'not_urgent_important' | 'urgent_not_important' | 'not_urgent_not_important';
   user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  event_id?: string;
 }
 
 interface EisenhowerResponse {
@@ -40,7 +43,7 @@ export function useEisenhower() {
       
       const { data, error } = await supabase
         .from('eisenhower_items')
-        .select('id, text, quadrant')
+        .select('id, text, quadrant, created_at, event_id')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
