@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import MonthView from "@/components/month-view";
 import SideBar from "@/components/sidebar/sideBar";
@@ -17,7 +16,7 @@ const Mainview = () => {
 
   // Set limits for sidebar width
   const MIN_WIDTH = 400;
-  const MAX_WIDTH = 800;
+  const MAX_WIDTH = 900; // Updated from 800 to 900
 
   // Detect touch device on mount
   useEffect(() => {
