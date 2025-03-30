@@ -53,35 +53,37 @@ const WeekView = () => {
   };
 
   return (
-    <div className="glass m-4 rounded-xl overflow-hidden flex flex-col h-[calc(100vh-8rem)]">
-      <WeekHeader userSelectedDate={userSelectedDate} />
+    <>
+      <div className="glass m-4 rounded-xl overflow-hidden">
+        <WeekHeader userSelectedDate={userSelectedDate} />
 
-      {/* Time Column & Corresponding Boxes of time per each date */}
-      <ScrollArea className="flex-1">
-        <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] px-4 py-2">
-          {/* Time Column */}
-          <TimeColumn />
+        {/* Time Column & Corresponding Boxes of time per each date */}
+        <ScrollArea className="h-[80vh]">
+          <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] px-4 py-2">
+            {/* Time Column */}
+            <TimeColumn />
 
-          {/* Week Days Corresponding Boxes */}
-          {getWeekDays(userSelectedDate).map(({ currentDate }, index) => {
-            const dayEvents = getEventsForDay(currentDate);
-            
-            return (
-              <DayColumn
-                key={index}
-                currentDate={currentDate}
-                dayEvents={dayEvents}
-                currentTime={currentTime}
-                onTimeSlotClick={handleTimeSlotClick}
-                onDragOver={handleDragOver}
-                onDrop={(e, day, hour) => handleDrop(e, day, hour, updateEvent, addEvent, openEventForm)}
-                openEventSummary={openEventSummary}
-                toggleEventLock={toggleEventLock}
-              />
-            );
-          })}
-        </div>
-      </ScrollArea>
+            {/* Week Days Corresponding Boxes */}
+            {getWeekDays(userSelectedDate).map(({ currentDate }, index) => {
+              const dayEvents = getEventsForDay(currentDate);
+              
+              return (
+                <DayColumn
+                  key={index}
+                  currentDate={currentDate}
+                  dayEvents={dayEvents}
+                  currentTime={currentTime}
+                  onTimeSlotClick={handleTimeSlotClick}
+                  onDragOver={handleDragOver}
+                  onDrop={(e, day, hour) => handleDrop(e, day, hour, updateEvent, addEvent, openEventForm)}
+                  openEventSummary={openEventSummary}
+                  toggleEventLock={toggleEventLock}
+                />
+              );
+            })}
+          </div>
+        </ScrollArea>
+      </div>
       <AddEventButton />
 
       {/* Event Form Dialog */}
@@ -100,7 +102,7 @@ const WeekView = () => {
         open={isEventSummaryOpen}
         onClose={closeEventSummary}
       />
-    </div>
+    </>
   );
 };
 

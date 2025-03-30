@@ -1,4 +1,3 @@
-
 import React, { Fragment, useState, useEffect } from "react";
 import MonthViewBox from "@/components/month-view-box";
 import { useDateStore, useEventStore } from "@/lib/store";
@@ -70,8 +69,8 @@ const MonthView = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col">
-      <div className="glass m-4 rounded-xl overflow-hidden flex-1 flex flex-col">
+    <>
+      <div className="glass m-4 rounded-xl overflow-hidden">
         <div className="grid grid-cols-7 text-center py-2 bg-secondary/50 border-b border-white/10">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
             <div key={day} className="text-sm font-medium">
@@ -80,7 +79,7 @@ const MonthView = () => {
           ))}
         </div>
         
-        <section className="grid grid-cols-7 grid-rows-5 flex-1">
+        <section className="grid grid-cols-7 grid-rows-5 lg:h-[85vh]">
           {twoDMonthArray.map((row, i) => (
             <Fragment key={i}>
               {row.map((day, index) => (
@@ -116,7 +115,7 @@ const MonthView = () => {
         open={isEventSummaryOpen}
         onClose={closeEventSummary}
       />
-    </div>
+    </>
   );
 };
 
