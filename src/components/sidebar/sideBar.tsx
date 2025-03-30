@@ -55,7 +55,7 @@ const SideBar = () => {
   };
 
   return (
-    <div className="glass-sidebar h-full overflow-hidden flex flex-col bg-black/20">
+    <div className="h-full overflow-hidden flex flex-col bg-black/20 backdrop-blur-md">
       {/* Header with page title and navigation */}
       <PageHeader 
         title={pages[currentPageIndex]?.title || 'Untitled'}
@@ -69,7 +69,7 @@ const SideBar = () => {
       {/* Page modules with responsive grid */}
       <div 
         ref={sidebarContentRef} 
-        className="flex-1 overflow-y-auto p-4"
+        className="flex-1 overflow-y-auto py-3"
       >
         <ModuleSelector onSelect={handleAddModule} />
         
@@ -83,7 +83,9 @@ const SideBar = () => {
         />
         
         {/* New Page Creator */}
-        <NewPageCreator onCreatePage={handleCreateNewPage} />
+        <div className="px-3 mt-4">
+          <NewPageCreator onCreatePage={handleCreateNewPage} />
+        </div>
       </div>
     </div>
   );

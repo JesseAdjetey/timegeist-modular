@@ -23,20 +23,45 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({
     document.documentElement.classList.remove('light-mode');
     
     // Use the user's selected background color or a nice default for auth page
-    const baseColor = isAuthPage ? '#1E2746' : backgroundColor;
+    const baseColor = isAuthPage ? '#1E2746' : backgroundColor || '#1A1F2C';
     
     // Create a smoother, more appealing gradient
-    const endColor = adjustColorBrightness(baseColor, -40);
+    const endColor = adjustColorBrightness(baseColor, -30);
     
     // Apply background to body
     document.body.style.background = `linear-gradient(135deg, ${baseColor}, ${endColor})`;
     document.body.style.backgroundAttachment = 'fixed';
     document.body.style.backgroundSize = 'cover';
-    document.body.style.height = '100vh';
     document.body.style.margin = '0';
     document.body.style.padding = '0';
     document.body.style.color = 'white';
     
+    // Add some CSS to make the app look more modern
+    const style = document.createElement('style');
+    style.textContent = `
+      .glass {
+        background: rgba(30, 39, 70, 0.2);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+      }
+      
+      .glass-sidebar {
+        background: rgba(10, 15, 30, 0.4);
+        backdrop-filter: blur(10px);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      body {
+        overflow: hidden;
+        height: 100vh;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
   }, [backgroundColor, isAuthPage]);
 
   // Helper function to adjust color brightness

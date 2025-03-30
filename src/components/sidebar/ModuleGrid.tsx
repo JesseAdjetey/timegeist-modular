@@ -22,11 +22,11 @@ const ModuleGrid: React.FC<ModuleGridProps> = ({
   pageIndex
 }) => {
   // Module dimensions - reduced width for better fit in sidebar
-  const MODULE_WIDTH = 280; // Reduced from 320 to 280
+  const MODULE_WIDTH = 240; // Reduced from 280 to 240
   
   // Use our custom hook for responsive layout with lower breakpoint
   const { isTwoColumn, containerRef } = useSidebarLayout({
-    columnBreakpoint: 620 // Reduced from 700 to trigger two columns more easily
+    columnBreakpoint: 440 // Reduced to only allow one column in most cases
   });
 
   // State for tracking drag operations
@@ -120,14 +120,14 @@ const ModuleGrid: React.FC<ModuleGridProps> = ({
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col space-y-3 px-2">
       {/* Saved Modules Manager */}
       <SavedModulesManager pageIndex={pageIndex} />
       
       {/* Module Grid */}
       <div 
         ref={containerRef} 
-        className={`${isTwoColumn ? 'grid grid-cols-2 gap-4 justify-items-center' : 'flex flex-col items-center'}`}
+        className={`${isTwoColumn ? 'grid grid-cols-2 gap-3' : 'flex flex-col space-y-3'}`}
       >
         {modules.map((module, index) => (
           <div

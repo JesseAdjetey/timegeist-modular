@@ -21,7 +21,7 @@ export const SupabaseRealTimeSetup = () => {
       }
       
       // Then, invoke the edge function to enable realtime
-      const { error: functionError } = await supabase.functions.invoke('enable-realtime');
+      const { error: functionError } = await supabase.functions.invoke('enable-realtime', {});
       
       if (functionError) {
         console.error('Error enabling realtime:', functionError);

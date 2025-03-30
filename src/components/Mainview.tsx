@@ -10,14 +10,14 @@ import { GripVertical } from 'lucide-react';
 
 const Mainview = () => {
   const { selectedView } = useViewStore();
-  const [sidebarWidth, setSidebarWidth] = useState(500); // Increased from 450 to 500 for better module layout
+  const [sidebarWidth, setSidebarWidth] = useState(320); // Reduced from 500 to 320
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const isTouchDevice = useRef(false);
 
   // Set limits for sidebar width
-  const MIN_WIDTH = 400;
-  const MAX_WIDTH = 1000;
+  const MIN_WIDTH = 280; // Reduced from 400 to 280
+  const MAX_WIDTH = 450; // Reduced from 1000 to 450
 
   // Detect touch device on mount
   useEffect(() => {
@@ -106,31 +106,31 @@ const Mainview = () => {
   }, []);
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen w-full overflow-hidden">
       {/* Sidebar */}
       <div
         ref={sidebarRef}
         style={{ width: `${sidebarWidth}px`, minWidth: `${MIN_WIDTH}px`, maxWidth: `${MAX_WIDTH}px` }}
-        className="transition-all duration-100"
+        className="h-full transition-all duration-100"
       >
         <SideBar />
       </div>
 
       {/* Resizer */}
       <div
-        className="flex items-center justify-center w-6 cursor-ew-resize z-10 hover:bg-purple-400/30 transition-colors"
+        className="flex items-center justify-center w-4 cursor-ew-resize z-10 hover:bg-purple-400/30 transition-colors"
         onMouseDown={startDrag}
         onTouchStart={handleTouchStart}
       >
-        <div className="h-16 w-4 rounded-md flex items-center justify-center light-mode:bg-purple-200 light-mode:hover:bg-purple-300 dark-mode:bg-purple-600/30 dark-mode:hover:bg-purple-500/60">
-          <GripVertical className="text-purple-500 h-10" />
+        <div className="h-16 w-1 rounded-md flex items-center justify-center bg-purple-600/30 hover:bg-purple-500/60">
+          <GripVertical className="text-purple-500 h-10 opacity-60" />
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-col flex-1 h-screen">
+      <div className="flex flex-col flex-1 h-screen overflow-hidden">
         <Header />
-        <div className="overflow-y-auto flex-1">
+        <div className="flex-1 overflow-hidden">
           {selectedView === "Month" && <MonthView />}
           {selectedView === "Day" && <DayView />}
           {selectedView === "Week" && <WeekView />}
