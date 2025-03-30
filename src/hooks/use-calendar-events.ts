@@ -59,7 +59,7 @@ export function useCalendarEvents() {
           // Fetch participants for this event
           const { data: participantsData, error: participantsError } = await supabase
             .from('event_participants')
-            .select('participant_code')
+            .select('*')
             .eq('event_id', event.id);
           
           if (participantsError) {
@@ -70,6 +70,7 @@ export function useCalendarEvents() {
             };
           }
           
+          // Extract participant codes from the data
           const participants = participantsData?.map(p => p.participant_code) || [];
           
           // Transform the data to match CalendarEventType
