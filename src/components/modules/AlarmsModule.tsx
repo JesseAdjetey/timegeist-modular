@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import ModuleContainer from './ModuleContainer';
 import { Clock, Bell, X, RefreshCw } from 'lucide-react';
@@ -170,7 +169,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
       
       const { data, error } = await supabase
         .from('alarms')
-        .insert(newAlarmData)
+        .insert(newAlarmData as any)
         .select('*')
         .single();
       
@@ -218,7 +217,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
       
       const { error } = await supabase
         .from('alarms')
-        .update(updateData)
+        .update(updateData as any)
         .eq('id', id);
       
       if (error) throw error;
@@ -287,7 +286,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
     );
   };
 
-  const formatRecurringPattern = (alarm: Alarm) => {
+  const formatRecurringPattern = (alarm: any) => {
     if (!alarm.is_recurring) return null;
     
     let pattern = "";
@@ -299,7 +298,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
         break;
       case 'weekly':
         if (alarm.recurring_days && alarm.recurring_days.length > 0) {
-          const daysText = alarm.recurring_days.map(d => getWeekdayName(d)).join(', ');
+          const daysText = alarm.recurring_days.map((d: number) => getWeekdayName(d)).join(', ');
           pattern = interval === 1 
             ? `Weekly on ${daysText}` 
             : `Every ${interval} weeks on ${daysText}`;
@@ -317,7 +316,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
         break;
       case 'yearly':
         if (alarm.recurring_months && alarm.recurring_months.length > 0) {
-          const monthsText = alarm.recurring_months.map(m => getMonthName(m)).join(', ');
+          const monthsText = alarm.recurring_months.map((m: number) => getMonthName(m)).join(', ');
           pattern = interval === 1 
             ? `Yearly in ${monthsText}` 
             : `Every ${interval} years in ${monthsText}`;
