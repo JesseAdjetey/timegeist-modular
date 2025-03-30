@@ -7,11 +7,10 @@ import { useState } from "react";
 import { useEventStore } from "@/lib/store";
 import { nanoid } from "@/lib/utils";
 import { CalendarEventType } from "@/lib/stores/types";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 const AddEventButton = () => {
   const { addEvent } = useEventStore();
-  const { toast } = useToast();
   const [open, setOpen] = useState(false);
 
   const handleSaveEvent = (event: CalendarEventType) => {
