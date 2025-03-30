@@ -20,7 +20,7 @@ interface UseSidebarLayoutReturn {
  */
 export function useSidebarLayout(options: UseSidebarLayoutOptions = {}): UseSidebarLayoutReturn {
   const { 
-    columnBreakpoint = 700 // Default breakpoint for two column layout
+    columnBreakpoint = 620 // Reduced from 700 to trigger two columns more easily
   } = options;
   
   const [isTwoColumn, setIsTwoColumn] = useState(false);

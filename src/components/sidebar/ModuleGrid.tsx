@@ -16,12 +16,12 @@ const ModuleGrid: React.FC<ModuleGridProps> = ({
   onRemoveModule,
   onUpdateModuleTitle
 }) => {
-  // Module dimensions - fixed width for modules
-  const MODULE_WIDTH = 320;
+  // Module dimensions - reduced width for better fit in sidebar
+  const MODULE_WIDTH = 280; // Reduced from 320 to 280
   
-  // Use our custom hook for responsive layout
+  // Use our custom hook for responsive layout with lower breakpoint
   const { isTwoColumn, containerRef } = useSidebarLayout({
-    columnBreakpoint: 700
+    columnBreakpoint: 620 // Reduced from 700 to trigger two columns more easily
   });
 
   // Custom cursor effect

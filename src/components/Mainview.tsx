@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import MonthView from "@/components/month-view";
 import SideBar from "@/components/sidebar/sideBar";
@@ -9,14 +10,14 @@ import { GripVertical } from 'lucide-react';
 
 const Mainview = () => {
   const { selectedView } = useViewStore();
-  const [sidebarWidth, setSidebarWidth] = useState(450); // Increased from 400 to 450
+  const [sidebarWidth, setSidebarWidth] = useState(500); // Increased from 450 to 500 for better module layout
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const isTouchDevice = useRef(false);
 
   // Set limits for sidebar width
   const MIN_WIDTH = 400;
-  const MAX_WIDTH = 1000; // Updated from 900 to 1000
+  const MAX_WIDTH = 1000;
 
   // Detect touch device on mount
   useEffect(() => {
