@@ -10,7 +10,7 @@ import { GripVertical } from 'lucide-react';
 
 const Mainview = () => {
   const { selectedView } = useViewStore();
-  const [sidebarWidth, setSidebarWidth] = useState(400); // Initial width
+  const [sidebarWidth, setSidebarWidth] = useState(450); // Increased from 400 to 450
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const isTouchDevice = useRef(false);
