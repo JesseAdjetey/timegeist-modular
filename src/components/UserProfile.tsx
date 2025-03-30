@@ -15,7 +15,8 @@ const UserProfile = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate('/auth');
+      // Force navigation to auth page after signout
+      navigate('/auth', { replace: true });
     } catch (error) {
       console.error('Error signing out:', error);
       toast({

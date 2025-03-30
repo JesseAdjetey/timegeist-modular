@@ -117,7 +117,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       setError(null);
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      // Clear the session and user state immediately after sign out
+      setSession(null);
+      setUser(null);
+      
       toast({
         title: "Signed out",
         description: "You have been signed out successfully.",
