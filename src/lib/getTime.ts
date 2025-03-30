@@ -37,3 +37,9 @@ export const getWeekDays = (date: dayjs.Dayjs) => {
 export const getHours = Array.from({ length: 24 }, (_, i) =>
   dayjs().startOf("day").add(i, "hour")
 );
+
+// Add the missing isCurrentHour function
+export const isCurrentHour = (hour: dayjs.Dayjs) => {
+  const currentHour = dayjs().hour();
+  return hour.hour() === currentHour && isCurrentDay(hour);
+};

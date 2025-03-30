@@ -1,10 +1,10 @@
-
 import React, { Fragment, useState, useEffect } from "react";
 import MonthViewBox from "@/components/month-view-box";
 import { useDateStore, useEventStore } from "@/lib/store";
 import AddEventButton from "@/components/calendar/AddEventButton";
 import EventForm from "@/components/calendar/EventForm";
 import EventDetails from "@/components/calendar/EventDetails";
+import dayjs from "dayjs";
 
 const MonthView = () => {
   const { twoDMonthArray } = useDateStore();
@@ -14,7 +14,6 @@ const MonthView = () => {
   const [todoData, setTodoData] = useState<any>(null);
   
   useEffect(() => {
-    // Add global CSS to style elements while being dragged via touch
     const style = document.createElement('style');
     style.textContent = `
       .touch-dragging {
@@ -42,8 +41,7 @@ const MonthView = () => {
   const handleDayClick = (day: any) => {
     if (!day) return;
     
-    // Default to 9 AM when clicking on a day in month view
-    setTodoData(null); // Reset todo data
+    setTodoData(null);
     setSelectedTime({
       date: day.toDate(),
       startTime: '09:00'
@@ -51,26 +49,22 @@ const MonthView = () => {
     setFormOpen(true);
   };
   
-  // Handle opening event form with todo data
   const openEventForm = (todoData: any, day: dayjs.Dayjs) => {
     console.log("Opening event form with todo data in month view:", todoData, day.format("YYYY-MM-DD"));
     setTodoData(todoData);
     setSelectedTime({
       date: day.toDate(),
-      startTime: '09:00' // Default to 9 AM for month view
+      startTime: '09:00'
     });
     setFormOpen(true);
   };
   
-  // Handle event dropping in the month view
   const handleEventDrop = (event: any, newDate: string) => {
-    // Create updated event with new date
     const updatedEvent = {
       ...event,
       date: newDate
     };
     
-    // Update the event in the store
     updateEvent(updatedEvent);
   };
 
@@ -107,7 +101,6 @@ const MonthView = () => {
       </div>
       <AddEventButton />
 
-      {/* Event Form Dialog */}
       <EventForm 
         open={formOpen} 
         onClose={() => {
@@ -118,7 +111,6 @@ const MonthView = () => {
         todoData={todoData}
       />
 
-      {/* Event Details Dialog */}
       <EventDetails
         open={isEventSummaryOpen}
         onClose={closeEventSummary}
