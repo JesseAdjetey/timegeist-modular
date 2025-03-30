@@ -1,5 +1,5 @@
 
-import { Toaster as ToastProvider } from "@/hooks/use-toast"
+import { Toaster as ToastProvider } from "@/hooks/toast-context"
 
 export function Toaster() {
   return <ToastProvider />
