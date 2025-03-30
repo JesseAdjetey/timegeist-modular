@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import {
   Toast,
@@ -170,12 +171,12 @@ const Toaster = ({ toastOptions }: ToasterProps) => {
   )
 }
 
-const dispatch = React.createContext<React.Dispatch<Action> | undefined>(
+const dispatchContext = React.createContext<React.Dispatch<Action> | undefined>(
   undefined
 )
 
 export const useToast = () => {
-  const [, innerDispatch] = React.useReducer(reducer, {
+  const [state, innerDispatch] = React.useReducer(reducer, {
     toasts: [],
   })
 
@@ -221,14 +222,14 @@ export const useToast = () => {
     toast,
     update,
     dismiss,
-    toasts: [],
+    toasts: state.toasts,
   }
 }
 
-export { Toaster, type ToasterToast }
-
 // Helper function to display toasts easily
-export const toast = (props: Omit<ToasterToast, "id">) => {
+export function toast(props: Omit<ToasterToast, "id">) {
   const { toast: showToast } = useToast()
   return showToast(props)
 }
+
+export { Toaster, type ToasterToast }
