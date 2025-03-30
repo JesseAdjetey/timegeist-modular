@@ -4,58 +4,17 @@ import { actionTypes, type ToasterToast } from "./toast-types"
 import { genId, ToastDispatchContext } from "./toast-context"
 
 export const useToast = () => {
-  const [state, innerDispatch] = React.useReducer(
-    (state: { toasts: ToasterToast[] }, action: any) => {
-      switch (action.type) {
-        case actionTypes.ADD_TOAST:
-          return {
-            ...state,
-            toasts: [action.toast, ...state.toasts].slice(0, 5),
-          }
-        case actionTypes.UPDATE_TOAST:
-          return {
-            ...state,
-            toasts: state.toasts.map((t) =>
-              t.id === action.toast.id ? { ...t, ...action.toast } : t
-            ),
-          }
-        case actionTypes.DISMISS_TOAST:
-          return {
-            ...state,
-            toasts: state.toasts.map((t) =>
-              t.id === action.toastId || action.toastId === undefined
-                ? {
-                    ...t,
-                    open: false,
-                  }
-                : t
-            ),
-          }
-        case actionTypes.REMOVE_TOAST:
-          if (action.toastId === undefined) {
-            return {
-              ...state,
-              toasts: [],
-            }
-          }
-          return {
-            ...state,
-            toasts: state.toasts.filter((t) => t.id !== action.toastId),
-          }
-        default:
-          return state
-      }
-    },
-    {
-      toasts: [],
-    }
-  )
+  const dispatch = React.useContext(ToastDispatchContext);
+  
+  if (!dispatch) {
+    throw new Error("useToast must be used within a ToastProvider");
+  }
 
   const toast = React.useCallback(
     ({ ...props }: Omit<ToasterToast, "id">) => {
       const id = genId()
 
-      innerDispatch({
+      dispatch({
         type: actionTypes.ADD_TOAST,
         toast: {
           ...props,
@@ -66,39 +25,44 @@ export const useToast = () => {
 
       return id
     },
-    [innerDispatch]
+    [dispatch]
   )
 
   const update = React.useCallback(
     (id: string, props: Partial<ToasterToast>) => {
-      innerDispatch({
+      dispatch({
         type: actionTypes.UPDATE_TOAST,
         toast: { ...props, id },
       })
     },
-    [innerDispatch]
+    [dispatch]
   )
 
   const dismiss = React.useCallback(
     (id?: string) => {
-      innerDispatch({
+      dispatch({
         type: actionTypes.DISMISS_TOAST,
         toastId: id,
       })
     },
-    [innerDispatch]
+    [dispatch]
   )
 
   return {
     toast,
     update,
     dismiss,
-    toasts: state.toasts,
   }
 }
 
 // Helper function to display toasts easily
 export function toast(props: Omit<ToasterToast, "id">) {
-  const { toast: showToast } = useToast()
-  return showToast(props)
+  if (typeof document !== "undefined") {
+    // This is a simple implementation for static usage
+    const { toast } = useToast()
+    return toast(props)
+  }
+  
+  // Return empty function for SSR
+  return () => {}
 }
