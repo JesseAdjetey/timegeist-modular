@@ -1,313 +1,478 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect, useRef } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { Session } from '@supabase/supabase-js';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Sparkles } from 'lucide-react';
 import AnimatedLogo from '@/components/auth/AnimatedLogo';
-import AnimatedBackground from '@/components/auth/AnimatedBackground';
-import TimeManagementVisual from '@/components/auth/TimeManagementVisual';
-import FeatureHighlight from '@/components/auth/FeatureHighlight';
+import { Check, ChevronRight, Star, Award, Gift, Trophy, Timer, Calendar, BrainCircuit, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
+
+const ACHIEVEMENTS = [
+  { id: 'first_visit', title: 'First Visit', icon: Star, description: 'Welcome to Malleabite!' },
+  { id: 'explorer', title: 'Explorer', icon: Sparkles, description: 'Clicked on all interactive elements' },
+  { id: 'curious', title: 'Curious Mind', icon: BrainCircuit, description: 'Read about our features' }
+];
 
 const Auth = () => {
+  const { user, signIn, signUp, loading, error } = useAuth();
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-  const [session, setSession] = useState<Session | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
-
+  const [name, setName] = useState('');
+  const [progress, setProgress] = useState(0);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
+  const [featuresExplored, setFeaturesExplored] = useState<Record<string, boolean>>({
+    productivity: false,
+    timeTracking: false,
+    taskManagement: false,
+    scheduling: false,
+  });
+  
+  // References for interactive elements
+  const timeOrbsRef = useRef<HTMLDivElement>(null);
+  const productivityBoostRef = useRef<HTMLDivElement>(null);
+  const mainContainerRef = useRef<HTMLDivElement>(null);
+  const exploreCountRef = useRef(0);
+  
+  // Custom cursor effect
   useEffect(() => {
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        if (session) {
-          setTimeout(() => {
-            navigate('/');
-          }, 0);
+    // Create custom cursor if it doesn't exist
+    if (!document.getElementById('custom-cursor')) {
+      const cursor = document.createElement('div');
+      cursor.id = 'custom-cursor';
+      document.body.appendChild(cursor);
+      
+      const handleMouseMove = (e: MouseEvent) => {
+        cursor.style.left = `${e.clientX}px`;
+        cursor.style.top = `${e.clientY}px`;
+      };
+      
+      window.addEventListener('mousemove', handleMouseMove);
+      
+      // Add hover effect listeners
+      document.querySelectorAll('.interactive-element').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+          cursor.classList.add('expanded');
+        });
+        
+        el.addEventListener('mouseleave', () => {
+          cursor.classList.remove('expanded');
+        });
+      });
+      
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        if (document.body.contains(cursor)) {
+          document.body.removeChild(cursor);
         }
+      };
+    }
+  }, []);
+  
+  // Unlock first visit achievement on load
+  useEffect(() => {
+    if (!unlockedAchievements.includes('first_visit')) {
+      setTimeout(() => {
+        unlockAchievement('first_visit');
+      }, 2000);
+    }
+    
+    // Setup interactive time orbs
+    if (timeOrbsRef.current) {
+      createInteractiveTimeOrbs();
+    }
+    
+    // Track progress based on form completion
+    updateProgress();
+  }, [email, password, name, isSignUp, unlockedAchievements]);
+  
+  // Create interactive floating time-related orbs
+  const createInteractiveTimeOrbs = () => {
+    if (!timeOrbsRef.current) return;
+    
+    const container = timeOrbsRef.current;
+    const orbsCount = 5;
+    
+    // Clear existing orbs
+    container.innerHTML = '';
+    
+    // Add orbs
+    for (let i = 0; i < orbsCount; i++) {
+      const orb = document.createElement('div');
+      const size = Math.random() * 40 + 40;
+      const icons = [Timer, Calendar, Check, Star];
+      const IconComponent = icons[Math.floor(Math.random() * icons.length)];
+      
+      orb.className = 'absolute rounded-full flex items-center justify-center draggable interactive-element';
+      orb.style.width = `${size}px`;
+      orb.style.height = `${size}px`;
+      orb.style.top = `${Math.random() * 80 + 10}%`;
+      orb.style.left = `${Math.random() * 80 + 10}%`;
+      orb.style.background = `rgba(${Math.random() * 100 + 100}, ${Math.random() * 50 + 50}, ${Math.random() * 200 + 50}, 0.3)`;
+      orb.style.backdropFilter = 'blur(8px)';
+      orb.style.transform = 'translate(-50%, -50%)';
+      orb.style.transition = 'transform 0.1s, filter 0.3s';
+      orb.style.animation = `float-${i} ${Math.random() * 5 + 10}s infinite alternate ease-in-out`;
+      
+      // Add icon
+      const iconElement = document.createElement('div');
+      iconElement.className = 'text-white/70';
+      // Use SVG instead of component
+      iconElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+      orb.appendChild(iconElement);
+      
+      // Make it draggable
+      orb.addEventListener('mousedown', (e: MouseEvent) => {
+        const rect = orb.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        const offsetY = e.clientY - rect.top;
+        
+        orb.style.cursor = 'grabbing';
+        orb.classList.add('highlight');
+        
+        // Track element for explorer achievement
+        trackElementExplored(i);
+        
+        const moveHandler = (moveEvent: MouseEvent) => {
+          orb.style.left = `${moveEvent.clientX - offsetX}px`;
+          orb.style.top = `${moveEvent.clientY - offsetY}px`;
+          orb.style.animation = 'none';
+        };
+        
+        const upHandler = () => {
+          orb.style.cursor = 'grab';
+          orb.classList.remove('highlight');
+          
+          window.removeEventListener('mousemove', moveHandler);
+          window.removeEventListener('mouseup', upHandler);
+          
+          // Reset to float animation
+          setTimeout(() => {
+            orb.style.animation = `float-${i} ${Math.random() * 5 + 10}s infinite alternate ease-in-out`;
+          }, 100);
+        };
+        
+        window.addEventListener('mousemove', moveHandler);
+        window.addEventListener('mouseup', upHandler);
+      });
+      
+      // Create keyframe animation for this specific orb
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes float-${i} {
+          0% { transform: translate(-50%, -50%) translateX(0) translateY(0); }
+          100% { transform: translate(-50%, -50%) translateX(${Math.random() * 100 - 50}px) translateY(${Math.random() * 100 - 50}px); }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      container.appendChild(orb);
+    }
+  };
+  
+  // Track which elements have been explored
+  const trackElementExplored = (index: number) => {
+    exploreCountRef.current += 1;
+    
+    // If all interactive elements have been explored
+    if (exploreCountRef.current >= 7 && !unlockedAchievements.includes('explorer')) {
+      unlockAchievement('explorer');
+    }
+  };
+  
+  // Track feature exploration
+  const exploreFeature = (feature: string) => {
+    if (!featuresExplored[feature]) {
+      setFeaturesExplored(prev => ({ ...prev, [feature]: true }));
+      
+      // Check if all features are explored
+      const updatedExplored = { ...featuresExplored, [feature]: true };
+      const allExplored = Object.values(updatedExplored).every(Boolean);
+      
+      if (allExplored && !unlockedAchievements.includes('curious')) {
+        unlockAchievement('curious');
       }
-    );
-
-    // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        navigate('/');
-      }
+    }
+  };
+  
+  // Unlock achievement and show notification
+  const unlockAchievement = (id: string) => {
+    if (unlockedAchievements.includes(id)) return;
+    
+    const achievement = ACHIEVEMENTS.find(a => a.id === id);
+    if (!achievement) return;
+    
+    setUnlockedAchievements(prev => [...prev, id]);
+    
+    // Show achievement notification with the icon from achievement
+    toast("Achievement Unlocked!", {
+      description: achievement.title,
+      icon: <achievement.icon className="h-4 w-4 text-yellow-400" />,
+      duration: 4000,
     });
+    
+    // Increment progress
+    setProgress(prev => Math.min(prev + 20, 100));
+  };
+  
+  // Update progress bar based on form completion
+  const updateProgress = () => {
+    let newProgress = 0;
+    
+    // Email adds 20%
+    if (email) newProgress += 20;
+    
+    // Password adds 20%
+    if (password) newProgress += 20;
+    
+    // Name adds 20% if in signup mode
+    if (isSignUp && name) newProgress += 20;
+    
+    // Achievements add the rest
+    newProgress += unlockedAchievements.length * 10;
+    
+    // Cap at 100%
+    newProgress = Math.min(newProgress, 100);
+    
+    setProgress(newProgress);
+  };
 
-    // Add the CSS animation for floating elements
-    const style = document.createElement('style');
-    style.innerHTML = `
-      @keyframes floatComplex {
-        0% { transform: translate(-50%, -50%) rotate(0deg) translate(0, 0); }
-        25% { transform: translate(-50%, -50%) rotate(3deg) translate(30px, 20px); }
-        50% { transform: translate(-50%, -50%) rotate(-2deg) translate(20px, -30px); }
-        75% { transform: translate(-50%, -50%) rotate(1deg) translate(-20px, -10px); }
-        100% { transform: translate(-50%, -50%) rotate(0deg) translate(0, 0); }
-      }
-      
-      @keyframes floatLogo {
-        0% { transform: translateY(0) rotate(0deg); }
-        50% { transform: translateY(-10px) rotate(2deg); }
-        100% { transform: translateY(0) rotate(0deg); }
-      }
-      
-      @keyframes glow {
-        0% { opacity: 0.3; transform: scale(0.9); }
-        100% { opacity: 0.7; transform: scale(1.1); }
-      }
-      
-      @keyframes pulse {
-        0% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.8); }
-        100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.2); }
-      }
-      
-      @keyframes orbit {
-        0% { transform: rotate(0deg) translateX(100px) rotate(0deg); }
-        100% { transform: rotate(360deg) translateX(100px) rotate(-360deg); }
-      }
-      
-      .glass-card {
-        background: rgba(30, 20, 60, 0.2);
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        transition: all 0.3s ease;
-      }
-      
-      .glass-card:hover {
-        background: rgba(30, 20, 60, 0.3);
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.47);
-      }
-      
-      .perspective-1000 {
-        perspective: 1000px;
-      }
-      
-      .shimmer {
-        background: linear-gradient(
-          to right,
-          rgba(255, 255, 255, 0) 0%,
-          rgba(255, 255, 255, 0.2) 50%,
-          rgba(255, 255, 255, 0) 100%
-        );
-        background-size: 200% 100%;
-        animation: shimmer 2s infinite;
-      }
-      
-      @keyframes shimmer {
-        0% { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
-      }
-    `;
-    document.head.appendChild(style);
-
-    return () => {
-      subscription.unsubscribe();
-      document.head.removeChild(style);
-    };
-  }, [navigate]);
-
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     
     try {
-      if (mode === 'signin') {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
-        toast({
-          title: "Success!",
-          description: "You've successfully signed in.",
-        });
+      if (isSignUp) {
+        await signUp(email, password, name);
       } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
-        toast({
-          title: "Account created!",
-          description: "Check your email to confirm your account.",
-        });
+        await signIn(email, password);
       }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "An error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error('Authentication error:', err);
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  // If user is already logged in, redirect to home page
+  if (user) {
+    return <Navigate to="/" />;
+  }
 
   return (
-    <div className="flex min-h-screen overflow-hidden bg-background">
-      {/* Animated Background */}
-      <AnimatedBackground />
+    <div 
+      ref={mainContainerRef}
+      className="min-h-screen flex flex-col relative overflow-hidden bg-gradient-to-br from-black via-purple-950/40 to-black text-white"
+    >
+      {/* Animated background overlay */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_10%_10%,rgba(138,43,226,0.15),transparent_50%)]"></div>
+        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_80%_80%,rgba(138,43,226,0.1),transparent_50%)]"></div>
+        
+        {/* Animated grid */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `linear-gradient(rgba(138, 43, 226, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(138, 43, 226, 0.3) 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
+            backgroundPosition: '-1px -1px',
+            animation: 'gradient-shift 20s ease infinite'
+          }}
+        ></div>
+      </div>
       
-      {/* Time Management Visuals */}
-      <TimeManagementVisual />
+      {/* Interactive time orbs */}
+      <div ref={timeOrbsRef} className="absolute inset-0 pointer-events-auto z-10"></div>
       
-      {/* Main Content */}
-      <div className="flex flex-col md:flex-row w-full relative z-10">
-        {/* Left Section - Branding and Logo */}
-        <div className="flex-1 flex flex-col justify-center items-center p-6 md:p-12">
-          {/* Centered Logo */}
-          <div className="w-full max-w-md mx-auto text-center">
-            <AnimatedLogo className="w-72 h-72 mx-auto mb-6" />
+      <div className="container mx-auto px-4 py-8 flex flex-col min-h-screen relative z-20">
+        {/* Progress bar */}
+        <div className="fixed top-0 left-0 w-full h-1 bg-black/50 z-50">
+          <div 
+            className="h-full bg-gradient-to-r from-purple-500 to-violet-500"
+            style={{ width: `${progress}%`, transition: 'width 0.5s ease' }}
+          ></div>
+        </div>
+        
+        {/* Achievements display */}
+        <div className="fixed top-4 right-4 flex flex-col gap-2 z-50">
+          {ACHIEVEMENTS.map(achievement => (
+            <div 
+              key={achievement.id}
+              className={`rounded-full w-10 h-10 flex items-center justify-center transition-all ${
+                unlockedAchievements.includes(achievement.id) 
+                  ? 'bg-gradient-to-br from-purple-500 to-violet-600 achievement' 
+                  : 'bg-gray-800/50 grayscale opacity-50'
+              }`}
+              title={achievement.title}
+            >
+              <achievement.icon size={18} />
+            </div>
+          ))}
+        </div>
+        
+        <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-16 py-8">
+          {/* Logo and branding */}
+          <div className="md:w-1/2 flex flex-col items-center md:items-start">
+            <div className="mb-8 interactive-element">
+              <AnimatedLogo className="w-72 h-72" />
+            </div>
             
-            <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-300 via-indigo-300 to-purple-200 mb-4 tracking-tight">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-purple-300">
               Malleabite
             </h1>
             
-            <div className="relative mb-8">
-              <p className="text-xl text-white/90 font-light">
-                Malleable Integrated Time-management Environment
-              </p>
-              <div className="absolute inset-0 shimmer"></div>
-            </div>
-            
-            <p className="text-white/70 max-w-md mx-auto mb-12 leading-relaxed">
-              Shape your time, shape your life. The ultimate adaptable solution for 
-              modern time management with AI-powered insights.
+            <p className="text-xl md:text-2xl mb-8 text-purple-200/70 max-w-lg">
+              Your malleable Integrated Time-management Environment
             </p>
             
-            {/* Feature highlights (visible on larger screens) */}
-            <div className="hidden md:block">
-              <FeatureHighlight />
+            {/* Interactive feature highlights */}
+            <div className="grid grid-cols-2 gap-4 max-w-lg mb-8">
+              <div 
+                ref={productivityBoostRef}
+                className="glass rounded-xl p-4 flex flex-col items-center text-center hover:scale-105 transition-transform cursor-pointer interactive-element"
+                onClick={() => exploreFeature('productivity')}
+              >
+                <BrainCircuit className="mb-2 text-purple-400" size={28} />
+                <h3 className="font-semibold text-white">Productivity Boost</h3>
+                <p className="text-sm text-gray-300">Optimize your workflow</p>
+              </div>
+              
+              <div 
+                className="glass rounded-xl p-4 flex flex-col items-center text-center hover:scale-105 transition-transform cursor-pointer interactive-element"
+                onClick={() => exploreFeature('timeTracking')}
+              >
+                <Timer className="mb-2 text-purple-400" size={28} />
+                <h3 className="font-semibold text-white">Time Tracking</h3>
+                <p className="text-sm text-gray-300">Monitor where time goes</p>
+              </div>
+              
+              <div 
+                className="glass rounded-xl p-4 flex flex-col items-center text-center hover:scale-105 transition-transform cursor-pointer interactive-element"
+                onClick={() => exploreFeature('taskManagement')}
+              >
+                <Check className="mb-2 text-purple-400" size={28} />
+                <h3 className="font-semibold text-white">Task Management</h3>
+                <p className="text-sm text-gray-300">Never miss a deadline</p>
+              </div>
+              
+              <div 
+                className="glass rounded-xl p-4 flex flex-col items-center text-center hover:scale-105 transition-transform cursor-pointer interactive-element"
+                onClick={() => exploreFeature('scheduling')}
+              >
+                <Calendar className="mb-2 text-purple-400" size={28} />
+                <h3 className="font-semibold text-white">Smart Scheduling</h3>
+                <p className="text-sm text-gray-300">Automate your calendar</p>
+              </div>
             </div>
           </div>
-        </div>
-        
-        {/* Right Section - Auth Form */}
-        <div className="w-full md:w-2/5 xl:w-1/3 flex items-center justify-center p-6 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-900/20 to-background border-l border-purple-500/20 backdrop-blur-xl md:block hidden" />
           
-          <Card className="w-full max-w-md overflow-hidden glass-card border-white/10 relative">
-            {/* Animated border glow */}
-            <div className="absolute inset-0 rounded-lg overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/30 via-indigo-500/30 to-purple-500/30 animate-pulse opacity-70" />
-            </div>
-            
-            <CardHeader className="text-center relative z-10">
-              <CardTitle className="text-2xl font-bold text-white mb-2">
-                {mode === 'signin' ? 'Welcome Back' : 'Join Malleabite'}
-              </CardTitle>
-              <CardDescription className="text-white/70">
-                {mode === 'signin' 
-                  ? 'Sign in to continue your productivity journey' 
-                  : 'Create an account to start organizing your time'
-                }
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="relative z-10">
-              <form onSubmit={handleAuth} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-white">Email</Label>
-                  <div className="relative group">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-white/60 group-hover:text-primary transition-colors" />
-                    <Input 
-                      id="email"
-                      type="email" 
-                      value={email} 
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      placeholder="your@email.com"
-                      className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-primary/50 transition-all"
+          {/* Auth form */}
+          <div className="md:w-1/2 max-w-md w-full">
+            <div className="glass p-8 rounded-2xl border border-purple-500/20 shadow-[0_0_30px_rgba(138,43,226,0.2)]">
+              <h2 className="text-2xl font-bold mb-6 text-center">
+                {isSignUp ? 'Create Your Account' : 'Welcome Back'}
+              </h2>
+              
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/30 text-white p-3 rounded-lg mb-4">
+                  {error}
+                </div>
+              )}
+              
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {isSignUp && (
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="bg-purple-950/30 border-purple-500/30 text-white"
+                      placeholder="John Doe"
+                      required={isSignUp}
                     />
                   </div>
+                )}
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="bg-purple-950/30 border-purple-500/30 text-white"
+                    placeholder="your@email.com"
+                    required
+                  />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-white">Password</Label>
-                  <div className="relative group">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-white/60 group-hover:text-primary transition-colors" />
-                    <Input 
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={password} 
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      placeholder="••••••••"
-                      className="pl-10 pr-10 bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-primary/50 transition-all"
-                    />
-                    <button 
-                      type="button"
-                      onClick={togglePasswordVisibility}
-                      className="absolute right-3 top-3 text-white/60 hover:text-white transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="bg-purple-950/30 border-purple-500/30 text-white"
+                    required
+                  />
                 </div>
                 
                 <Button 
                   type="submit" 
-                  className="w-full relative overflow-hidden group bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-2 transition-all duration-300"
+                  className="w-full py-6 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-medium text-lg interactive-button"
                   disabled={loading}
                 >
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    {loading ? 'Processing...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
-                    {!loading && (
-                      mode === 'signin' ? 
-                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" /> : 
-                        <Sparkles className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                    )}
-                  </span>
-                  <span className="absolute inset-0 w-full scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-500 bg-gradient-to-r from-indigo-700 to-purple-700"></span>
-                </Button>
-                
-                <div className="text-center pt-4">
-                  {mode === 'signin' ? (
-                    <p className="text-white/70">
-                      Don't have an account?{' '}
-                      <button 
-                        onClick={() => setMode('signup')}
-                        className="text-primary hover:text-primary/80 hover:underline font-medium"
-                        type="button"
-                      >
-                        Create one
-                      </button>
-                    </p>
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                      <span>Processing...</span>
+                    </div>
                   ) : (
-                    <p className="text-white/70">
-                      Already have an account?{' '}
-                      <button 
-                        onClick={() => setMode('signin')}
-                        className="text-primary hover:text-primary/80 hover:underline font-medium"
-                        type="button"
-                      >
-                        Sign in
-                      </button>
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <span>{isSignUp ? 'Sign Up' : 'Sign In'}</span>
+                      <ChevronRight size={18} />
+                    </div>
                   )}
-                </div>
+                </Button>
               </form>
-            </CardContent>
-          </Card>
+              
+              <div className="mt-6 text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-purple-300 hover:text-white transition-colors"
+                >
+                  {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+                </button>
+              </div>
+            </div>
+            
+            {/* Show achievements progress */}
+            <div className="mt-6 p-4 glass rounded-xl">
+              <h3 className="text-sm font-medium flex items-center gap-2 mb-2">
+                <Trophy size={16} className="text-yellow-400" />
+                <span>Unlock Achievements</span>
+              </h3>
+              
+              <div className="flex flex-wrap gap-2 text-xs">
+                {ACHIEVEMENTS.map(achievement => (
+                  <div 
+                    key={achievement.id}
+                    className={`px-2 py-1 rounded-full flex items-center gap-1 ${
+                      unlockedAchievements.includes(achievement.id)
+                        ? 'bg-purple-500/30 text-white'
+                        : 'bg-gray-800/30 text-gray-400'
+                    }`}
+                  >
+                    <achievement.icon size={12} />
+                    <span>{achievement.title}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

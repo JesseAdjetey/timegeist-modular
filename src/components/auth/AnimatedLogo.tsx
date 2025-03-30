@@ -60,6 +60,69 @@ const AnimatedLogo: React.FC<AnimatedLogoProps> = ({ className }) => {
     // Add floating animation
     logoElement.style.animation = 'floatLogo 6s ease-in-out infinite';
 
+    // Add clickable interaction
+    container.addEventListener('click', () => {
+      // Play a quick pulse animation on click
+      logoElement.style.animation = 'none';
+      setTimeout(() => {
+        logoElement.style.animation = 'pulse-interactive 0.5s ease-out forwards, floatLogo 6s ease-in-out infinite 0.5s';
+      }, 10);
+      
+      // Generate sparkles/particles on click
+      for (let i = 0; i < 20; i++) {
+        createParticle(container, e.clientX, e.clientY);
+      }
+    });
+
+    // Function to create particles
+    const createParticle = (parent: HTMLElement, x: number, y: number) => {
+      const particle = document.createElement('div');
+      const size = Math.random() * 10 + 5;
+      const rect = parent.getBoundingClientRect();
+      const localX = x - rect.left;
+      const localY = y - rect.top;
+      
+      particle.className = 'absolute rounded-full bg-primary/60 z-20';
+      particle.style.width = `${size}px`;
+      particle.style.height = `${size}px`;
+      particle.style.left = `${localX}px`;
+      particle.style.top = `${localY}px`;
+      
+      // Random direction
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 100 + 50;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+      
+      // Add animation
+      particle.style.animation = 'fadeOut 0.8s forwards';
+      
+      parent.appendChild(particle);
+      
+      // Animate particle
+      let startTime = performance.now();
+      const animateParticle = (time: number) => {
+        const elapsed = time - startTime;
+        const progress = elapsed / 800; // 800ms duration
+        
+        if (progress >= 1) {
+          parent.removeChild(particle);
+          return;
+        }
+        
+        const currentX = localX + vx * progress;
+        const currentY = localY + vy * progress - (300 * progress * progress); // Arc upward
+        
+        particle.style.left = `${currentX}px`;
+        particle.style.top = `${currentY}px`;
+        particle.style.opacity = `${1 - progress}`;
+        
+        requestAnimationFrame(animateParticle);
+      };
+      
+      requestAnimationFrame(animateParticle);
+    };
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       container.removeEventListener('mouseleave', resetPosition);
