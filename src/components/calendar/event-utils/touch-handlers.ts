@@ -36,15 +36,22 @@ export const formatMinutesAsTime = (minutes: number): string => {
 // Calculate event positioning in pixels
 export const calculateEventPosition = (startTimeStr: string, hourHeight: number = 80): number => {
   const startMinutes = getTimeInMinutes(startTimeStr);
-  return (startMinutes / 60) * (hourHeight / 1);
+  return (startMinutes / 60) * hourHeight;
 };
 
 // Calculate event height in pixels based on duration
 export const calculateEventHeight = (startTimeStr: string, endTimeStr: string, hourHeight: number = 80): number => {
   const startMinutes = getTimeInMinutes(startTimeStr);
-  const endMinutes = getTimeInMinutes(endTimeStr);
+  let endMinutes = getTimeInMinutes(endTimeStr);
+  
+  // Handle case where end time is earlier than start time (event spans midnight)
+  if (endMinutes < startMinutes) {
+    endMinutes += 24 * 60; // Add 24 hours worth of minutes
+  }
+  
   const durationInHours = (endMinutes - startMinutes) / 60;
-  return durationInHours * hourHeight;
+  // Ensure minimum height
+  return Math.max(durationInHours * hourHeight, 20);
 };
 
 // Get drag data for an event

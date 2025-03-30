@@ -19,6 +19,7 @@ import dayjs from 'dayjs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { getTimeInfo } from './event-utils/touch-handlers';
 
 interface EventFormProps {
   initialEvent?: Partial<CalendarEventType>;
@@ -40,21 +41,15 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
   const parseTimeFromDescription = (description?: string) => {
     if (!description) return { startTime: '09:00', endTime: '10:00', desc: '' };
     
+    const timeInfo = getTimeInfo(description);
     const parts = description.split('|');
-    if (parts.length >= 2) {
-      const timesPart = parts[0].trim();
-      const desc = parts[1].trim();
-      
-      const times = timesPart.split('-').map(t => t.trim());
-      
-      return {
-        startTime: times[0] || '09:00',
-        endTime: times[1] || '10:00',
-        desc
-      };
-    }
+    const desc = parts.length >= 2 ? parts[1].trim() : '';
     
-    return { startTime: '09:00', endTime: '10:00', desc: description };
+    return {
+      startTime: timeInfo.start,
+      endTime: timeInfo.end,
+      desc
+    };
   };
   
   const { startTime, endTime, desc } = parseTimeFromDescription(initialEvent?.description);
@@ -74,6 +69,20 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
   const [isTodo, setIsTodo] = useState(initialEvent?.isTodo || false);
   const [hasAlarm, setHasAlarm] = useState(initialEvent?.hasAlarm || false);
   const [hasReminder, setHasReminder] = useState(initialEvent?.hasReminder || false);
+  
+  // Ensure timeEnd is after timeStart
+  useEffect(() => {
+    const startMinutes = parseInt(timeStart.split(':')[0]) * 60 + parseInt(timeStart.split(':')[1] || '0');
+    const endMinutes = parseInt(timeEnd.split(':')[0]) * 60 + parseInt(timeEnd.split(':')[1] || '0');
+    
+    if (endMinutes <= startMinutes) {
+      // Set end time to be 1 hour after start time
+      const newEndMinutes = startMinutes + 60;
+      const newEndHours = Math.floor(newEndMinutes / 60) % 24;
+      const newEndMins = newEndMinutes % 60;
+      setTimeEnd(`${newEndHours.toString().padStart(2, '0')}:${newEndMins.toString().padStart(2, '0')}`);
+    }
+  }, [timeStart, timeEnd]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +95,8 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
       isLocked,
       isTodo,
       hasAlarm,
-      hasReminder
+      hasReminder,
+      color: initialEvent?.color // Preserve the original color if it exists
     };
     
     onSave(newEvent);

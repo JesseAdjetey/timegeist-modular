@@ -1,9 +1,11 @@
+
 import React from "react";
 import dayjs from "dayjs";
 import CalendarEvent from "../calendar/CalendarEvent";
 import { useEventStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { getTimeInfo } from "../calendar/event-utils/touch-handlers";
 
 interface TimeSlotProps {
   hour: dayjs.Dayjs;
@@ -76,6 +78,13 @@ const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) =>
     e.dataTransfer.dropEffect = 'move';
   };
 
+  // Get events for this specific hour slot
+  const hourEvents = events.filter(event => {
+    const timeInfo = getTimeInfo(event.description);
+    const eventHour = parseInt(timeInfo.start.split(':')[0], 10);
+    return eventHour === hour.hour();
+  });
+
   return (
     <div
       className="relative flex h-20 border-t border-white/10 hover:bg-white/5 gradient-border cursor-glow"
@@ -84,7 +93,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({ hour, events, onTimeSlotClick }) =>
       onDrop={handleDrop}
     >
       {/* Events for this hour */}
-      {events.map(event => (
+      {hourEvents.map(event => (
         <div 
           key={event.id} 
           className="absolute inset-x-2 z-10"
