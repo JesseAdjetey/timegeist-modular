@@ -2,20 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import ModuleContainer from './ModuleContainer';
 import { cn } from '@/lib/utils';
-import { Calendar, Circle, CheckCircle } from 'lucide-react';
+import { Calendar, Circle, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEventStore } from '@/lib/store';
-import { nanoid } from 'nanoid';
-import dayjs from 'dayjs';
-import { CalendarEventType } from '@/lib/stores/types';
-
-interface TodoItem {
-  id: string;
-  text: string;
-  completed: boolean;
-  isCalendarEvent: boolean;
-  eventId?: string;
-}
+import { useTodos, TodoItem } from '@/hooks/use-todos';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TodoModuleProps {
   title: string;
@@ -31,59 +22,46 @@ const TodoModule: React.FC<TodoModuleProps> = ({
   title, 
   onRemove, 
   onTitleChange,
-  initialItems = [],
   isMinimized,
   onMinimize,
   isDragging
 }) => {
-  const [items, setItems] = useState<TodoItem[]>(initialItems);
   const [newItem, setNewItem] = useState("");
   const { addEvent, events } = useEventStore();
+  const { todos, loading, error, addTodo, toggleTodo, linkTodoToEvent } = useTodos();
+  const { user } = useAuth();
 
   // Find todo items that are already calendar events
   useEffect(() => {
     // Check for todo items that have been added to the calendar
     const todoEvents = events.filter(event => event.todoId);
     
-    if (todoEvents.length > 0) {
-      setItems(prevItems => 
-        prevItems.map(item => {
-          const matchingEvent = todoEvents.find(event => event.todoId === item.id);
-          if (matchingEvent && !item.isCalendarEvent) {
-            return {
-              ...item,
-              isCalendarEvent: true,
-              eventId: matchingEvent.id
-            };
+    if (todoEvents.length > 0 && todos.length > 0) {
+      todoEvents.forEach(event => {
+        if (event.todoId) {
+          const matchingTodo = todos.find(todo => todo.id === event.todoId && !todo.isCalendarEvent);
+          if (matchingTodo) {
+            linkTodoToEvent(matchingTodo.id, event.id);
           }
-          return item;
-        })
-      );
+        }
+      });
     }
-  }, [events]);
+  }, [events, todos]);
 
-  const addItem = () => {
+  const handleAddItem = async () => {
     if (newItem.trim()) {
-      const newTodoItem: TodoItem = {
-        id: nanoid(),
-        text: newItem.trim(),
-        completed: false,
-        isCalendarEvent: false
-      };
-      setItems([...items, newTodoItem]);
+      await addTodo(newItem.trim());
       setNewItem("");
     }
   };
 
-  const toggleCompleted = (id: string) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, completed: !item.completed } : item
-    ));
+  const handleToggleCompleted = async (id: string, completed: boolean) => {
+    await toggleTodo(id, !completed);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      addItem();
+      handleAddItem();
     }
   };
 
@@ -91,7 +69,7 @@ const TodoModule: React.FC<TodoModuleProps> = ({
     // Set data transfer with todo item data
     const todoData = {
       id: item.id,
-      text: item.text,
+      text: item.title,
       source: 'todo-module'
     };
     
@@ -113,13 +91,6 @@ const TodoModule: React.FC<TodoModuleProps> = ({
       e.currentTarget.classList.remove('opacity-50');
     }
   };
-  
-  // Mark a todo item as a calendar event
-  const setAsCalendarEvent = (todoId: string, eventId: string) => {
-    setItems(items.map(item => 
-      item.id === todoId ? { ...item, isCalendarEvent: true, eventId } : item
-    ));
-  };
 
   if (isMinimized) {
     return (
@@ -131,7 +102,23 @@ const TodoModule: React.FC<TodoModuleProps> = ({
         onMinimize={onMinimize}
       >
         <div className="text-center text-sm text-muted-foreground py-2">
-          {items.length} todo items
+          {loading ? 'Loading...' : `${todos.length} todo items`}
+        </div>
+      </ModuleContainer>
+    );
+  }
+
+  if (!user) {
+    return (
+      <ModuleContainer 
+        title={title} 
+        onRemove={onRemove}
+        onTitleChange={onTitleChange}
+        isMinimized={isMinimized}
+        onMinimize={onMinimize}
+      >
+        <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
+          Sign in to use todos
         </div>
       </ModuleContainer>
     );
@@ -146,36 +133,47 @@ const TodoModule: React.FC<TodoModuleProps> = ({
       onMinimize={onMinimize}
     >
       <div className="max-h-60 overflow-y-auto mb-3">
-        {items.map(item => (
-          <div 
-            key={item.id}
-            className="flex items-center gap-2 bg-white/5 p-2 rounded-lg mb-2 group cursor-pointer"
-            draggable={true}
-            onDragStart={(e) => handleDragStart(e, item)}
-            onDragEnd={handleDragEnd}
-          >
+        {loading ? (
+          <div className="flex justify-center items-center p-4">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="ml-2 text-sm">Loading todos...</span>
+          </div>
+        ) : error ? (
+          <div className="text-center text-sm text-red-400 p-2">{error}</div>
+        ) : todos.length === 0 ? (
+          <div className="text-center text-sm text-muted-foreground p-2">No todos yet</div>
+        ) : (
+          todos.map(item => (
             <div 
-              className="cursor-pointer flex-shrink-0" 
-              onClick={() => toggleCompleted(item.id)}
+              key={item.id}
+              className="flex items-center gap-2 bg-white/5 p-2 rounded-lg mb-2 group cursor-pointer"
+              draggable={true}
+              onDragStart={(e) => handleDragStart(e, item)}
+              onDragEnd={handleDragEnd}
             >
-              {item.completed ? (
-                <CheckCircle size={18} className="text-primary" />
-              ) : (
-                <Circle size={18} className="text-primary/60" />
+              <div 
+                className="cursor-pointer flex-shrink-0" 
+                onClick={() => handleToggleCompleted(item.id, item.completed)}
+              >
+                {item.completed ? (
+                  <CheckCircle size={18} className="text-primary" />
+                ) : (
+                  <Circle size={18} className="text-primary/60" />
+                )}
+              </div>
+              <span className={cn("text-sm flex-1", { 
+                "line-through opacity-50": item.completed 
+              })}>
+                {item.title}
+              </span>
+              {item.isCalendarEvent && (
+                <span className="text-primary text-xs opacity-70">
+                  <Calendar size={14} />
+                </span>
               )}
             </div>
-            <span className={cn("text-sm flex-1", { 
-              "line-through opacity-50": item.completed 
-            })}>
-              {item.text}
-            </span>
-            {item.isCalendarEvent && (
-              <span className="text-primary text-xs opacity-70">
-                <Calendar size={14} />
-              </span>
-            )}
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       <div className="flex gap-2">
@@ -188,7 +186,7 @@ const TodoModule: React.FC<TodoModuleProps> = ({
           placeholder="Add a task..."
         />
         <button
-          onClick={addItem}
+          onClick={handleAddItem}
           className="bg-primary px-3 py-1 rounded-md hover:bg-primary/80 transition-colors"
         >
           Add
