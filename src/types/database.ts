@@ -28,6 +28,22 @@ export interface Alarm {
   recurring_end_date?: string;
 }
 
+export interface AlarmDisplay {
+  id: string;
+  title: string;
+  description?: string;
+  alarm_time: string;
+  is_recurring: boolean;
+  recurring_type?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  recurring_interval?: number;
+  recurring_days?: number[];
+  recurring_months?: number[];
+  recurring_day_of_month?: number;
+  recurring_end_date?: string;
+  event_id?: string;
+  is_active: boolean;
+}
+
 export interface Event {
   id: string;
   title: string;
