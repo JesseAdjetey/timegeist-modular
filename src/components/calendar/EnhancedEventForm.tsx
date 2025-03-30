@@ -93,12 +93,17 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
   };
 
   const formattedDate = dayjs(date).format('dddd, MMMM D');
+  const isEditMode = !!initialEvent?.id;
 
   return (
     <div className="py-6 max-h-[85vh] overflow-y-auto">
       <div className="mb-4">
-        <h2 className="text-2xl font-bold gradient-text mb-1">Add Event</h2>
-        <p className="text-muted-foreground text-sm">Create a new event on your calendar</p>
+        <h2 className="text-2xl font-bold gradient-text mb-1">
+          {isEditMode ? 'Edit Event' : 'Add Event'}
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          {isEditMode ? 'Update this event on your calendar' : 'Create a new event on your calendar'}
+        </p>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -240,11 +245,11 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
             type="submit" 
             className="bg-primary hover:bg-primary/80"
           >
-            Add Event
+            {isEditMode ? 'Save Changes' : 'Add Event'}
           </Button>
         </div>
         
-        {/* AI assistant button */}
+        {/* AI assistant button - show for both add and edit modes */}
         {onUseAI && (
           <Button 
             type="button" 

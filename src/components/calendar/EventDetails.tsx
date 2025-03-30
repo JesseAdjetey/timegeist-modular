@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useEventStore } from '@/lib/store';
@@ -43,6 +44,13 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
     });
   };
 
+  const handleUseAI = () => {
+    toast({
+      title: "Mally AI",
+      description: "AI assistance is coming soon!",
+    });
+  };
+
   // Extract time and description from event description
   const parseDescription = (description: string) => {
     const parts = description.split('|');
@@ -62,6 +70,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
             initialEvent={selectedEvent}
             onSave={handleSave}
             onCancel={() => setIsEditing(false)}
+            onUseAI={handleUseAI}
           />
         ) : (
           <div className="py-6">

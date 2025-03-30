@@ -4,17 +4,18 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { nanoid } from 'nanoid';
 import { useEventStore } from '@/lib/store';
 import EnhancedEventForm from "./EnhancedEventForm";
+import { toast } from '@/components/ui/use-toast';
 
 interface EventFormProps {
   open: boolean;
   onClose?: () => void;
-  onCancel?: () => void; // Added this prop
+  onCancel?: () => void;
   initialTime?: {
     date: Date;
     startTime: string;
   };
   onSave?: (event: any) => void;
-  onUseAI?: () => void; // Added this prop
+  onUseAI?: () => void;
 }
 
 const EventForm: React.FC<EventFormProps> = ({ 
@@ -45,6 +46,13 @@ const EventForm: React.FC<EventFormProps> = ({
     if (handleClose) handleClose();
   };
 
+  const handleUseAI = () => {
+    toast({
+      title: "Mally AI",
+      description: "AI assistance is coming soon!",
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose && handleClose()}>
       <DialogContent className="sm:max-w-[500px] bg-background/95 border-white/10">
@@ -56,7 +64,7 @@ const EventForm: React.FC<EventFormProps> = ({
           } : undefined}
           onSave={handleSave}
           onCancel={handleClose}
-          onUseAI={onUseAI}
+          onUseAI={onUseAI || handleUseAI}
         />
       </DialogContent>
     </Dialog>
