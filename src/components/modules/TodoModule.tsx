@@ -28,8 +28,15 @@ const TodoModule: React.FC<TodoModuleProps> = ({
 }) => {
   const [newItem, setNewItem] = useState("");
   const { addEvent, events } = useEventStore();
-  const { todos, loading, error, addTodo, toggleTodo, linkTodoToEvent } = useTodos();
+  const { todos, loading, error, addTodo, toggleTodo, linkTodoToEvent, refetchTodos } = useTodos();
   const { user } = useAuth();
+  
+  // Refetch todos when the user changes (login/logout)
+  useEffect(() => {
+    if (user) {
+      refetchTodos();
+    }
+  }, [user, refetchTodos]);
 
   // Find todo items that are already calendar events
   useEffect(() => {

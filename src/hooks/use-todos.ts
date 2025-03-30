@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,9 +22,10 @@ export function useTodos() {
   const { user } = useAuth();
 
   // Fetch todos from Supabase
-  const fetchTodos = async () => {
+  const fetchTodos = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       
       if (!user) {
         setTodos([]);
@@ -33,10 +34,11 @@ export function useTodos() {
       
       console.log('Fetching todos for user:', user.id);
       
-      // Directly query just the todo_items table without any joins to avoid policy issues
+      // Query the todo_items table and explicitly filter by user_id
       const { data, error } = await supabase
         .from('todo_items')
         .select('id, title, completed, created_at, completed_at, event_id')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -66,7 +68,7 @@ export function useTodos() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   // Add a new todo to Supabase
   const addTodo = async (title: string) => {
@@ -77,13 +79,13 @@ export function useTodos() {
       
       console.log('Adding new todo:', title);
       
-      // Create a basic todo item including all required fields
+      // Create a todo item with user_id explicitly set
       const newTodo = {
         id: newTodoId,
         title: title.trim(),
         completed: false,
-        order_position: 0, // Add the required field with a default value
-        user_id: user.id // Add the user ID to ensure ownership
+        order_position: 0,
+        user_id: user.id // Explicitly set the user_id to the current user
       };
       
       console.log('Inserting todo with data:', newTodo);
@@ -129,7 +131,8 @@ export function useTodos() {
       const { error } = await supabase
         .from('todo_items')
         .update({ completed: !completed })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id); // Add user_id filter for extra security
       
       if (error) {
         console.error('Error details:', error);
@@ -157,7 +160,8 @@ export function useTodos() {
       const { error } = await supabase
         .from('todo_items')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id); // Add user_id filter for extra security
       
       if (error) {
         console.error('Error details:', error);
@@ -180,7 +184,8 @@ export function useTodos() {
       const { error } = await supabase
         .from('todo_items')
         .update({ event_id: eventId })
-        .eq('id', todoId);
+        .eq('id', todoId)
+        .eq('user_id', user.id); // Add user_id filter for extra security
       
       if (error) {
         console.error('Error details:', error);
@@ -211,7 +216,7 @@ export function useTodos() {
     const todosSubscription = supabase
       .channel('todos-changes')
       .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'todo_items' }, 
+        { event: '*', schema: 'public', table: 'todo_items', filter: `user_id=eq.${user?.id}` }, 
         (payload) => {
           console.log('Realtime update received:', payload);
           // Only refetch when the user is authenticated
@@ -226,7 +231,7 @@ export function useTodos() {
       console.log('Cleaning up subscription');
       supabase.removeChannel(todosSubscription);
     };
-  }, [user]);
+  }, [user, fetchTodos]);
 
   return {
     todos,
@@ -236,6 +241,6 @@ export function useTodos() {
     toggleTodo,
     deleteTodo,
     linkTodoToEvent,
-    fetchTodos
+    refetchTodos: fetchTodos
   };
 }
