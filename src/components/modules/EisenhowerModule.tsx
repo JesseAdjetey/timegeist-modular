@@ -1,18 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ModuleContainer from './ModuleContainer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, ArrowLeft } from 'lucide-react';
-import { nanoid } from 'nanoid';
-
-interface EisenhowerItem {
-  id: string;
-  text: string;
-  quadrant: 'urgent-important' | 'not-urgent-important' | 'urgent-not-important' | 'not-urgent-not-important';
-}
-
-type QuadrantType = EisenhowerItem['quadrant'] | null;
+import { Plus, ArrowLeft, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useEisenhower, EisenhowerItem } from '@/hooks/use-eisenhower';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface QuadrantConfig {
   title: string;
@@ -20,13 +14,15 @@ interface QuadrantConfig {
   description: string;
 }
 
+type QuadrantType = EisenhowerItem['quadrant'] | null;
+
 interface EisenhowerModuleProps {
   title?: string;
   onRemove?: () => void;
   onTitleChange?: (title: string) => void;
   onMinimize?: () => void;
   isMinimized?: boolean;
-  initialItems?: EisenhowerItem[];
+  isDragging?: boolean;
 }
 
 const EisenhowerModule: React.FC<EisenhowerModuleProps> = ({ 
@@ -35,11 +31,13 @@ const EisenhowerModule: React.FC<EisenhowerModuleProps> = ({
   onTitleChange,
   onMinimize,
   isMinimized,
-  initialItems = [] 
+  isDragging
 }) => {
-  const [items, setItems] = useState<EisenhowerItem[]>(initialItems);
   const [focusedQuadrant, setFocusedQuadrant] = useState<QuadrantType>(null);
   const [newItemText, setNewItemText] = useState('');
+  const [submitStatus, setSubmitStatus] = useState<{success?: boolean; message?: string} | null>(null);
+  const { items, loading, error, addItem, removeItem, updateQuadrant, lastResponse } = useEisenhower();
+  const { user } = useAuth();
 
   const quadrantConfig: Record<EisenhowerItem['quadrant'], QuadrantConfig> = {
     'urgent-important': {
@@ -64,29 +62,44 @@ const EisenhowerModule: React.FC<EisenhowerModuleProps> = ({
     }
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, quadrant: EisenhowerItem['quadrant']) => {
+  // Clear status message after 5 seconds
+  useEffect(() => {
+    if (submitStatus) {
+      const timer = setTimeout(() => {
+        setSubmitStatus(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [submitStatus]);
+
+  // Update submitStatus when lastResponse changes
+  useEffect(() => {
+    if (lastResponse) {
+      setSubmitStatus({
+        success: lastResponse.success,
+        message: lastResponse.message
+      });
+    }
+  }, [lastResponse]);
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, quadrant: EisenhowerItem['quadrant']) => {
     e.preventDefault();
     
     try {
       const data = e.dataTransfer.getData('application/json');
       const draggedItem = JSON.parse(data);
       
-      const existingItemIndex = items.findIndex(item => item.id === draggedItem.id);
+      const existingItem = items.find(item => item.id === draggedItem.id);
       
-      if (existingItemIndex >= 0) {
-        const updatedItems = [...items];
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quadrant
-        };
-        setItems(updatedItems);
+      if (existingItem) {
+        // Update existing item's quadrant
+        await updateQuadrant(existingItem.id, quadrant);
+      } else if (draggedItem.source === 'todo-module') {
+        // Add as new item from todo module
+        await addItem(draggedItem.text, quadrant);
       } else {
-        const newItem: EisenhowerItem = {
-          id: draggedItem.id || nanoid(),
-          text: draggedItem.text || draggedItem.title || 'Untitled Task',
-          quadrant
-        };
-        setItems([...items, newItem]);
+        // Add as new item
+        await addItem(draggedItem.text || draggedItem.title || 'Untitled Task', quadrant);
       }
     } catch (error) {
       console.error('Error processing dragged item:', error);
@@ -97,29 +110,24 @@ const EisenhowerModule: React.FC<EisenhowerModuleProps> = ({
     e.preventDefault();
   };
 
-  const removeItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
+  const handleRemoveItem = async (id: string) => {
+    await removeItem(id);
   };
 
   const getQuadrantItems = (quadrant: EisenhowerItem['quadrant']) => {
     return items.filter(item => item.quadrant === quadrant);
   };
 
-  const addNewItem = (quadrant: EisenhowerItem['quadrant']) => {
+  const handleAddNewItem = async (quadrant: EisenhowerItem['quadrant']) => {
     if (newItemText.trim()) {
-      const newItem: EisenhowerItem = {
-        id: nanoid(),
-        text: newItemText.trim(),
-        quadrant
-      };
-      setItems([...items, newItem]);
+      await addItem(newItemText.trim(), quadrant);
       setNewItemText('');
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, quadrant: EisenhowerItem['quadrant']) => {
     if (e.key === 'Enter') {
-      addNewItem(quadrant);
+      handleAddNewItem(quadrant);
     }
   };
 
@@ -149,6 +157,20 @@ const EisenhowerModule: React.FC<EisenhowerModuleProps> = ({
         
         <p className="text-xs mb-3 opacity-70">{config.description}</p>
         
+        {submitStatus && (
+          <div className={cn(
+            "text-sm p-2 mb-2 rounded-md flex items-center",
+            submitStatus.success ? "bg-green-500/20 text-green-300" : "bg-red-500/20 text-red-300"
+          )}>
+            {submitStatus.success ? (
+              <CheckCircle2 size={16} className="mr-1" />
+            ) : (
+              <AlertCircle size={16} className="mr-1" />
+            )}
+            {submitStatus.message}
+          </div>
+        )}
+        
         <div className="flex gap-2 mb-3">
           <Input
             value={newItemText}
@@ -161,25 +183,59 @@ const EisenhowerModule: React.FC<EisenhowerModuleProps> = ({
             size="sm" 
             variant="outline" 
             className="h-8 px-2 bg-white/10 border-white/10"
-            onClick={() => addNewItem(focusedQuadrant)}
+            onClick={() => handleAddNewItem(focusedQuadrant)}
           >
             <Plus size={14} />
           </Button>
         </div>
         
-        <div className="overflow-y-auto max-h-[150px]">
-          {quadrantItems.map(item => (
-            <div key={item.id} className="bg-white/10 text-xs p-2 rounded mb-1 flex justify-between">
-              <span>{item.text}</span>
-              <button onClick={() => removeItem(item.id)} className="opacity-50 hover:opacity-100">×</button>
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center items-center py-4">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="ml-2 text-xs">Loading items...</span>
+          </div>
+        ) : error ? (
+          <div className="text-center text-xs text-red-400 p-2">Error: {error}</div>
+        ) : (
+          <div className="overflow-y-auto max-h-[150px]">
+            {quadrantItems.length === 0 ? (
+              <div className="text-xs opacity-50 text-center pt-2">No items in this quadrant</div>
+            ) : (
+              quadrantItems.map(item => (
+                <div key={item.id} className="bg-white/10 text-xs p-2 rounded mb-1 flex justify-between">
+                  <span>{item.text}</span>
+                  <button 
+                    onClick={() => handleRemoveItem(item.id)} 
+                    className="opacity-50 hover:opacity-100"
+                  >×</button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     );
   };
 
   const renderMatrix = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span className="ml-2">Loading matrix...</span>
+        </div>
+      );
+    }
+    
+    if (error) {
+      return (
+        <div className="flex justify-center items-center h-64 text-red-400">
+          <AlertCircle className="h-6 w-6 mr-2" />
+          <span>Error: {error}</span>
+        </div>
+      );
+    }
+
     return (
       <div className="grid grid-cols-2 grid-rows-2 gap-2 h-64">
         {Object.entries(quadrantConfig).map(([quadrant, config]) => {
@@ -212,7 +268,7 @@ const EisenhowerModule: React.FC<EisenhowerModuleProps> = ({
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        removeItem(item.id);
+                        handleRemoveItem(item.id);
                       }} 
                       className="opacity-50 hover:opacity-100"
                     >
@@ -232,13 +288,45 @@ const EisenhowerModule: React.FC<EisenhowerModuleProps> = ({
     );
   };
 
+  if (isMinimized) {
+    return (
+      <ModuleContainer 
+        title={title} 
+        onRemove={onRemove}
+        onTitleChange={onTitleChange}
+        isMinimized={isMinimized}
+        onMinimize={onMinimize}
+      >
+        <div className="text-center text-sm text-muted-foreground py-2">
+          {loading ? 'Loading...' : `${items.length} matrix items`}
+        </div>
+      </ModuleContainer>
+    );
+  }
+
+  if (!user) {
+    return (
+      <ModuleContainer 
+        title={title} 
+        onRemove={onRemove}
+        onTitleChange={onTitleChange}
+        isMinimized={isMinimized}
+        onMinimize={onMinimize}
+      >
+        <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
+          Sign in to use Eisenhower Matrix
+        </div>
+      </ModuleContainer>
+    );
+  }
+
   return (
     <ModuleContainer 
       title={title} 
       onRemove={onRemove}
       onTitleChange={onTitleChange}
-      onMinimize={onMinimize}
       isMinimized={isMinimized}
+      onMinimize={onMinimize}
     >
       {focusedQuadrant ? renderFocusedQuadrant() : renderMatrix()}
     </ModuleContainer>
