@@ -33,7 +33,7 @@ export function useCalendarEvents() {
       
       console.log('Fetching calendar events for user:', user.id);
       
-      // First fetch the calendar events
+      // Fetch the calendar events
       const { data: eventsData, error: eventsError } = await supabase
         .from('calendar_events')
         .select('*')
@@ -53,45 +53,21 @@ export function useCalendarEvents() {
       
       console.log('Fetched calendar events:', eventsData);
       
-      // For each event, fetch participants separately
-      const eventsWithParticipants = await Promise.all(
-        eventsData.map(async (event) => {
-          // Fetch participants for this event
-          const { data: participantsData, error: participantsError } = await supabase
-            .from('event_participants')
-            .select('*')
-            .eq('event_id', event.id);
-          
-          if (participantsError) {
-            console.error('Error fetching participants:', participantsError);
-            return {
-              ...event,
-              participants: undefined
-            };
-          }
-          
-          // Since we no longer have participant_code field, we'll use user_id as the participant identifier
-          // This assumes that user_id is the field we want to use for participants
-          const participants = participantsData?.map(p => p.user_id) || [];
-          
-          // Transform the data to match CalendarEventType
-          return {
-            id: event.id,
-            title: event.title,
-            date: event.date,
-            description: event.description,
-            color: event.color || 'bg-blue-400/70',
-            isLocked: event.is_locked || false,
-            isTodo: event.is_todo || false,
-            hasAlarm: event.has_alarm || false,
-            hasReminder: event.has_reminder || false,
-            todoId: event.todo_id,
-            participants: participants.length > 0 ? participants : undefined
-          } as CalendarEventType;
-        })
-      );
+      // Transform the data to match CalendarEventType
+      const transformedEvents = eventsData.map(event => ({
+        id: event.id,
+        title: event.title,
+        date: event.date,
+        description: event.description,
+        color: event.color || 'bg-blue-400/70',
+        isLocked: event.is_locked || false,
+        isTodo: event.is_todo || false,
+        hasAlarm: event.has_alarm || false,
+        hasReminder: event.has_reminder || false,
+        todoId: event.todo_id
+      })) as CalendarEventType[];
       
-      setEvents(eventsWithParticipants);
+      setEvents(transformedEvents);
     } catch (err: any) {
       console.error('Error fetching calendar events:', err);
       setError(err.message || err.error_description || String(err));
@@ -150,21 +126,6 @@ export function useCalendarEvents() {
       if (data && data.length > 0) {
         const newEventId = data[0].id;
         
-        // If there are participants, add them
-        if (event.participants && event.participants.length > 0) {
-          const participantPromises = event.participants.map(userId => 
-            supabase
-              .from('event_participants')
-              .insert({
-                event_id: newEventId,
-                user_id: userId,
-                role: 'attendee'
-              })
-          );
-          
-          await Promise.all(participantPromises);
-        }
-        
         // Create transformed event with correct structure for state
         const transformedEvent: CalendarEventType = {
           id: newEventId,
@@ -176,8 +137,7 @@ export function useCalendarEvents() {
           isTodo: event.isTodo || false,
           hasAlarm: event.hasAlarm || false,
           hasReminder: event.hasReminder || false,
-          todoId: event.todoId,
-          participants: event.participants
+          todoId: event.todoId
         };
         
         // Update local state optimistically
@@ -273,27 +233,6 @@ export function useCalendarEvents() {
         throw error;
       }
       
-      // Handle participants if they exist
-      if (event.participants) {
-        // First delete existing participants
-        await supabase
-          .from('event_participants')
-          .delete()
-          .eq('event_id', event.id);
-        
-        // Then add new participants
-        const participantPromises = event.participants.map(code => 
-          supabase
-            .from('event_participants')
-            .insert({
-              event_id: event.id,
-              participant_code: code
-            })
-        );
-        
-        await Promise.all(participantPromises);
-      }
-      
       toast.success('Event updated successfully');
     } catch (err: any) {
       console.error('Error updating calendar event:', err);
@@ -358,26 +297,10 @@ export function useCalendarEvents() {
         }
       )
       .subscribe();
-    
-    // Set up real-time subscription for event participants
-    const participantsSubscription = supabase
-      .channel('participants-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'event_participants' }, 
-        (payload) => {
-          console.log('Realtime update received for event participants:', payload);
-          // Only refetch when the user is authenticated
-          if (user) {
-            fetchEvents();
-          }
-        }
-      )
-      .subscribe();
       
     return () => {
       console.log('Cleaning up subscriptions');
       supabase.removeChannel(eventsSubscription);
-      supabase.removeChannel(participantsSubscription);
     };
   }, [user, fetchEvents]);
 
