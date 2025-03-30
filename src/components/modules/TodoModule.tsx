@@ -99,7 +99,7 @@ const TodoModule: React.FC<TodoModuleProps> = ({
     
     // Set the drag data as JSON string
     e.dataTransfer.setData('application/json', JSON.stringify(todoData));
-    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.effectAllowed = 'move';
     
     // Add visual feedback for dragging
     if (e.currentTarget) {

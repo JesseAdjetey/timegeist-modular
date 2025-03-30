@@ -148,6 +148,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    console.log("Drag over event in TimeSlot", hour.format("HH:mm"));
     e.dataTransfer.dropEffect = 'move';
   };
 
@@ -164,6 +165,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       onClick={() => onTimeSlotClick(hour)}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      data-hour={hour.format('HH:mm')}
     >
       {/* Events for this hour */}
       {hourEvents.map(event => (
