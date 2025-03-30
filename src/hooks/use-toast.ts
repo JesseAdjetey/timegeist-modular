@@ -55,23 +55,21 @@ export const useToast = () => {
   }
 }
 
-// Helper function to display toasts easily
+// Helper function to display toasts easily - this is meant for simple use cases outside components
 export function toast(props: Omit<ToasterToast, "id">) {
   // This function can't directly use the hook outside a component
   // So we need to ensure we're only using it in a client-side context
   if (typeof document === "undefined") {
-    return () => {}  // Return empty function for SSR
+    return ""  // Return empty string for SSR
   }
   
-  // We need to get the dispatch from the context directly
-  // This approach won't work consistently because hooks can't be called outside components
-  // Displaying an error to guide developers to use useToast() inside components
-  console.error(
-    "The toast() function should only be used for simple static calls. " +
+  // Display a warning that this should be used with caution
+  console.warn(
+    "The global toast() function should only be used for simple static calls. " +
     "For dynamic or component usage, import and use the useToast() hook instead."
   )
   
-  // We'll provide a basic implementation that just logs for now
+  // We'll just log it for now since we can't properly access the context outside a component
   console.log("Toast requested:", props)
   return ""
 }

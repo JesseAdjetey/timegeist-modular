@@ -1,10 +1,9 @@
-
 import * as React from "react"
 import { 
   Toast, 
   ToastClose, 
   ToastDescription, 
-  ToastProvider, 
+  ToastProvider as UIToastProvider, 
   ToastTitle, 
   ToastViewport 
 } from "@/components/ui/toast"
@@ -106,7 +105,7 @@ export const ToastDispatchContext = React.createContext<React.Dispatch<Action> |
 let dispatch: React.Dispatch<Action>
 
 // Toast provider component to be used in applications
-export function Toaster() {
+export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatchState] = React.useReducer(reducer, {
     toasts: [],
   });
@@ -125,23 +124,46 @@ export function Toaster() {
   
   return (
     <ToastDispatchContext.Provider value={dispatchState}>
-      <ToastProvider>
-        {state.toasts.map(function ({ id, title, description, action, ...props }) {
-          return (
-            <Toast key={id} {...props}>
-              <div className="grid gap-1">
-                {title && <ToastTitle>{title}</ToastTitle>}
-                {description && (
-                  <ToastDescription>{description}</ToastDescription>
-                )}
-              </div>
-              {action}
-              <ToastClose />
-            </Toast>
-          );
-        })}
-        <ToastViewport />
-      </ToastProvider>
+      {children}
     </ToastDispatchContext.Provider>
+  );
+}
+
+// Toast display component
+export function Toaster() {
+  const [state, dispatchState] = React.useReducer(reducer, {
+    toasts: [],
+  });
+
+  // Set the global dispatch to the current dispatch
+  dispatch = dispatchState;
+
+  React.useEffect(() => {
+    return () => {
+      toastTimeouts.forEach((timeout) => {
+        clearTimeout(timeout);
+      });
+      toastTimeouts.clear();
+    };
+  }, []);
+  
+  return (
+    <UIToastProvider>
+      {state.toasts.map(function ({ id, title, description, action, ...props }) {
+        return (
+          <Toast key={id} {...props}>
+            <div className="grid gap-1">
+              {title && <ToastTitle>{title}</ToastTitle>}
+              {description && (
+                <ToastDescription>{description}</ToastDescription>
+              )}
+            </div>
+            {action}
+            <ToastClose />
+          </Toast>
+        );
+      })}
+      <ToastViewport />
+    </UIToastProvider>
   );
 }
