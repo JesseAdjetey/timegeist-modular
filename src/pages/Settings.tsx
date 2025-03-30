@@ -27,10 +27,10 @@ const Settings = () => {
   const { backgroundColor, setBackgroundColor } = useSettingsStore();
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="container mx-auto p-4 max-w-4xl text-white">
       <div className="flex items-center mb-6">
         <Link to="/">
-          <Button variant="ghost" size="icon" className="mr-2">
+          <Button variant="ghost" size="icon" className="mr-2 text-white hover:bg-white/10">
             <ChevronLeft className="h-5 w-5" />
             <span className="sr-only">Back</span>
           </Button>
@@ -41,7 +41,7 @@ const Settings = () => {
       <div className="grid gap-8 md:grid-cols-2">
         <div>
           <h2 className="text-xl font-bold mb-4">Appearance</h2>
-          <div className="p-6 bg-card rounded-lg shadow">
+          <div className="p-6 bg-black/30 rounded-lg shadow backdrop-blur-sm border border-white/10">
             <div className="mb-6">
               <h3 className="text-lg font-medium mb-3">Background Color</h3>
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
@@ -77,7 +77,9 @@ const Settings = () => {
         
         <div>
           <h2 className="text-xl font-bold mb-4">User Profile</h2>
-          <UserProfile />
+          <div className="p-6 bg-black/30 rounded-lg shadow backdrop-blur-sm border border-white/10">
+            <UserProfile />
+          </div>
         </div>
       </div>
     </div>

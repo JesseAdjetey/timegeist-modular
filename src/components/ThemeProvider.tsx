@@ -15,7 +15,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     document.documentElement.classList.remove('light-mode');
     
     // Create a smoother, more appealing gradient
-    const endColor = adjustColorBrightness(backgroundColor, -25);
+    const endColor = adjustColorBrightness(backgroundColor, -40);
     
     // Apply background to body
     document.body.style.background = `linear-gradient(135deg, ${backgroundColor}, ${endColor})`;
@@ -24,6 +24,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     document.body.style.height = '100vh';
     document.body.style.margin = '0';
     document.body.style.padding = '0';
+    document.body.style.color = 'white';
     
   }, [backgroundColor]);
 
