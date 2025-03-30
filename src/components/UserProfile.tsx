@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Calendar, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Separator } from "@/components/ui/separator";
+import { Profile } from '@/types/database';
 
 interface ProfileData {
   id: string;
@@ -39,7 +41,7 @@ const UserProfile = () => {
           .single();
           
         if (profileError) throw profileError;
-        setProfile(profileData);
+        setProfile(profileData as Profile);
         
         // Fetch alarm count
         const { count: alarmCount, error: alarmError } = await supabase

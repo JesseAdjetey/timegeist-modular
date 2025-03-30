@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import ModuleContainer from './ModuleContainer';
 import { Clock, Bell, X, RefreshCw } from 'lucide-react';
@@ -9,8 +10,9 @@ import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { Alarm } from '@/types/database';
 
-interface Alarm {
+interface AlarmDisplay {
   id: string;
   title: string;
   description?: string;
@@ -45,7 +47,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [alarms, setAlarms] = useState<Alarm[]>([]);
+  const [alarms, setAlarms] = useState<AlarmDisplay[]>([]);
   const [loading, setLoading] = useState(true);
   const [newAlarmTitle, setNewAlarmTitle] = useState('');
   const [newAlarmTime, setNewAlarmTime] = useState('08:00');
@@ -72,7 +74,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
         
         if (error) throw error;
         
-        const transformedData = data?.map(alarm => ({
+        const transformedData = (data || []).map((alarm: Alarm) => ({
           id: alarm.id,
           title: alarm.title || 'Unnamed Alarm',
           description: alarm.description,
@@ -86,7 +88,7 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
           recurring_end_date: alarm.recurring_end_date,
           event_id: alarm.event_id,
           is_active: !alarm.is_snoozed
-        })) || [];
+        }));
         
         setAlarms(transformedData);
       } catch (error) {
@@ -159,21 +161,23 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
         }
       }
       
+      const newAlarmData = {
+        title: newAlarmTitle,
+        alarm_time: alarmTime.toISOString(),
+        user_id: user.id,
+        ...recurringData
+      };
+      
       const { data, error } = await supabase
         .from('alarms')
-        .insert({
-          title: newAlarmTitle,
-          alarm_time: alarmTime.toISOString(),
-          user_id: user.id,
-          ...recurringData
-        })
-        .select()
+        .insert(newAlarmData)
+        .select('*')
         .single();
       
       if (error) throw error;
       
       if (data) {
-        const newAlarm: Alarm = {
+        const newAlarm: AlarmDisplay = {
           id: data.id,
           title: data.title,
           alarm_time: new Date(data.alarm_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -210,9 +214,11 @@ const AlarmsModule: React.FC<AlarmsModuleProps> = ({
 
   const toggleAlarm = async (id: string, isActive: boolean) => {
     try {
+      const updateData = { is_snoozed: !isActive };
+      
       const { error } = await supabase
         .from('alarms')
-        .update({ is_snoozed: !isActive })
+        .update(updateData)
         .eq('id', id);
       
       if (error) throw error;
