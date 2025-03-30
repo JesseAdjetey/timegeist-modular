@@ -1,6 +1,8 @@
+
 import { toast } from "sonner";
 import { CalendarEventType } from "@/lib/stores/types";
 import dayjs from "dayjs";
+import { formatMinutesAsTime, getTimeInMinutes } from "../event-utils/touch-handlers";
 
 export const handleDragOver = (e: React.DragEvent) => {
   e.preventDefault();
@@ -22,29 +24,26 @@ export const handleDrop = (
     // Don't process if the event is locked
     if (data.isLocked) return;
     
-    // Calculate new time - keep the same duration but update the start time
-    const oldStart = data.timeStart;
-    const oldEnd = data.timeEnd;
+    // Calculate precise drop time based on cursor position
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relativeY = e.clientY - rect.top;
+    const hourHeight = rect.height;
+    const minutesWithinHour = Math.floor((relativeY / hourHeight) * 60);
     
-    // Calculate duration in minutes
-    const oldStartParts = oldStart.split(':').map(Number);
-    const oldEndParts = oldEnd.split(':').map(Number);
-    const oldStartMinutes = oldStartParts[0] * 60 + oldStartParts[1];
-    const oldEndMinutes = oldEndParts[0] * 60 + oldEndParts[1];
+    // Get the base hour and add the minutes
+    const baseHour = hour.hour();
+    const totalMinutes = baseHour * 60 + minutesWithinHour;
+    
+    // Format as HH:MM
+    const newStartTime = formatMinutesAsTime(totalMinutes);
+    
+    // Calculate new end time by preserving duration
+    const oldStartMinutes = getTimeInMinutes(data.timeStart);
+    const oldEndMinutes = getTimeInMinutes(data.timeEnd);
     const durationMinutes = oldEndMinutes - oldStartMinutes;
     
-    // Set new start time to the hour of the drop target
-    const newStartTime = hour.format("HH:00");
-    
-    // Calculate new end time
-    const newStartParts = newStartTime.split(':').map(Number);
-    const newStartMinutes = newStartParts[0] * 60 + newStartParts[1];
-    const newEndMinutes = newStartMinutes + durationMinutes;
-    
-    const newEndHours = Math.floor(newEndMinutes / 60) % 24;
-    const newEndMinutes2 = newEndMinutes % 60;
-    
-    const newEndTime = `${newEndHours.toString().padStart(2, '0')}:${newEndMinutes2.toString().padStart(2, '0')}`;
+    const newEndMinutes = totalMinutes + durationMinutes;
+    const newEndTime = formatMinutesAsTime(newEndMinutes);
     
     // Get description without time part
     const descriptionParts = data.description.split('|');

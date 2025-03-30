@@ -13,13 +13,19 @@ const CurrentTimeIndicator: React.FC<CurrentTimeIndicatorProps> = ({
 }) => {
   if (!isCurrentDay) return null;
   
+  // Calculate position more precisely
+  const minutes = currentTime.hour() * 60 + currentTime.minute();
+  const position = (minutes / (24 * 60)) * 100 * 20;
+  
   return (
     <div
-      className="absolute h-0.5 w-full bg-primary z-20"
+      className="absolute h-0.5 w-full bg-primary z-20 flex items-center"
       style={{
-        top: `${(currentTime.hour() * 60 + currentTime.minute()) / (24 * 60) * 100 * 20}px`,
+        top: `${position}px`,
       }}
-    />
+    >
+      <div className="w-2 h-2 rounded-full bg-primary -ml-1" />
+    </div>
   );
 };
 

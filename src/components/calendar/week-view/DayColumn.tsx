@@ -5,6 +5,7 @@ import { CalendarEventType } from "@/lib/stores/types";
 import dayjs from "dayjs";
 import CalendarEvent from "../CalendarEvent";
 import CurrentTimeIndicator from "./CurrentTimeIndicator";
+import { calculateEventHeight, calculateEventPosition, getTimeInfo } from "../event-utils/touch-handlers";
 
 interface DayColumnProps {
   currentDate: dayjs.Dayjs;
@@ -27,15 +28,7 @@ const DayColumn: React.FC<DayColumnProps> = ({
   openEventSummary,
   toggleEventLock,
 }) => {
-  // Calculate event position (very simplified version for demo)
-  const getEventPosition = (event: CalendarEventType) => {
-    // Extract hour from event description (assuming format like "9:00 - 10:30 | Description")
-    const hourMatch = event.description.match(/(\d+):(\d+)/);
-    if (hourMatch) {
-      return parseInt(hourMatch[1], 10);
-    }
-    return 9; // Default to 9am if we can't parse
-  };
+  const hourHeight = 80; // The height in pixels of each hour cell
 
   return (
     <div className="relative border-r border-white/10">
@@ -46,35 +39,42 @@ const DayColumn: React.FC<DayColumnProps> = ({
           onClick={() => onTimeSlotClick(currentDate, hour)}
           onDragOver={onDragOver}
           onDrop={(e) => onDrop(e, currentDate, hour)}
-        >
-          {/* Events for this hour */}
-          {dayEvents
-            .filter(event => getEventPosition(event) === hour.hour())
-            .map(event => (
-              <div 
-                key={event.id} 
-                className="absolute inset-x-0.5 z-10"
-                style={{ top: '2px' }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openEventSummary(event);
-                }}
-              >
-                <CalendarEvent
-                  event={event}
-                  color={event.color}
-                  isLocked={event.isLocked}
-                  hasAlarm={event.hasAlarm}
-                  hasReminder={event.hasReminder}
-                  hasTodo={event.isTodo}
-                  participants={event.participants}
-                  onClick={() => openEventSummary(event)}
-                  onLockToggle={(isLocked) => toggleEventLock(event.id, isLocked)}
-                />
-              </div>
-            ))}
-        </div>
+        />
       ))}
+
+      {/* Events displayed at their exact positions */}
+      {dayEvents.map(event => {
+        const timeInfo = getTimeInfo(event.description);
+        const topPosition = calculateEventPosition(timeInfo.start, hourHeight);
+        const eventHeight = calculateEventHeight(timeInfo.start, timeInfo.end, hourHeight);
+        
+        return (
+          <div 
+            key={event.id} 
+            className="absolute inset-x-0.5 z-10"
+            style={{ 
+              top: `${topPosition}px`,
+              height: `${eventHeight}px`
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              openEventSummary(event);
+            }}
+          >
+            <CalendarEvent
+              event={event}
+              color={event.color}
+              isLocked={event.isLocked}
+              hasAlarm={event.hasAlarm}
+              hasReminder={event.hasReminder}
+              hasTodo={event.isTodo}
+              participants={event.participants}
+              onClick={() => openEventSummary(event)}
+              onLockToggle={(isLocked) => toggleEventLock(event.id, isLocked)}
+            />
+          </div>
+        );
+      })}
 
       {/* Current Time indicator */}
       <CurrentTimeIndicator 
