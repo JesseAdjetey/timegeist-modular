@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import CalendarEvent from "./calendar/CalendarEvent";
 import { CalendarEventType } from "@/lib/store";
 import { toast } from "sonner";
+import { nanoid } from "nanoid";
 
 interface MonthViewBoxProps {
   day: dayjs.Dayjs | null;
@@ -13,6 +14,7 @@ interface MonthViewBoxProps {
   onEventClick?: (event: CalendarEventType) => void;
   onDayClick?: (day: dayjs.Dayjs) => void;
   onEventDrop?: (event: any, date: string) => void;
+  addEvent?: (event: CalendarEventType) => void;
 }
 
 const MonthViewBox: React.FC<MonthViewBoxProps> = ({
@@ -21,7 +23,8 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
   events = [],
   onEventClick,
   onDayClick,
-  onEventDrop
+  onEventDrop,
+  addEvent
 }) => {
   const boxRef = useRef<HTMLDivElement>(null);
   
@@ -91,6 +94,26 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
     try {
       // Parse the drag data
       const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      
+      // Handle todo item drag
+      if (data.source === 'todo-module' && addEvent) {
+        // Create a new calendar event from the todo item
+        const newEvent: CalendarEventType = {
+          id: nanoid(),
+          title: data.text,
+          date: day.format('YYYY-MM-DD'),
+          description: `09:00 - 10:00 | ${data.text}`,
+          color: 'bg-purple-500/70',
+          isTodo: true,
+          todoId: data.id
+        };
+        
+        // Add the event to the store
+        addEvent(newEvent);
+        
+        toast.success(`Todo "${data.text}" added to calendar on ${day.format("MMM D")}`);
+        return;
+      }
       
       // Don't process if the event is locked
       if (data.isLocked) return;

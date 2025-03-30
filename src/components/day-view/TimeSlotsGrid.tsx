@@ -4,19 +4,22 @@ import dayjs from "dayjs";
 import { getHours, isCurrentDay } from "@/lib/getTime";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import TimeSlot from "./TimeSlot";
+import { CalendarEventType } from "@/lib/stores/types";
 
 interface TimeSlotsGridProps {
   userSelectedDate: dayjs.Dayjs;
   currentTime: dayjs.Dayjs;
   events: any[];
   onTimeSlotClick: (hour: dayjs.Dayjs) => void;
+  addEvent?: (event: CalendarEventType) => void;
 }
 
 const TimeSlotsGrid: React.FC<TimeSlotsGridProps> = ({ 
   userSelectedDate, 
   currentTime, 
   events, 
-  onTimeSlotClick 
+  onTimeSlotClick,
+  addEvent
 }) => {
   // Calculate event position (very simplified version for demo)
   const getEventPosition = (event: any) => {

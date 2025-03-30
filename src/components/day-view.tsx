@@ -11,7 +11,7 @@ import TimeSlotsGrid from "./day-view/TimeSlotsGrid";
 const DayView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const { userSelectedDate } = useDateStore();
-  const { events, isEventSummaryOpen, closeEventSummary } = useEventStore();
+  const { events, isEventSummaryOpen, closeEventSummary, addEvent } = useEventStore();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
 
@@ -49,6 +49,7 @@ const DayView = () => {
           currentTime={currentTime}
           events={dayEvents}
           onTimeSlotClick={handleTimeSlotClick}
+          addEvent={addEvent}
         />
       </div>
       <AddEventButton />

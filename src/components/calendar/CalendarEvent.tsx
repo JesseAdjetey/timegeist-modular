@@ -6,6 +6,7 @@ import EventIndicators from './event-components/EventIndicators';
 import EventLockToggle from './event-components/EventLockToggle';
 import DragHandle from './event-components/DragHandle';
 import { CalendarEventType } from '@/lib/store';
+import { CheckSquare } from 'lucide-react';
 
 interface CalendarEventProps {
   event: CalendarEventType;
@@ -87,6 +88,13 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
           hasTodo={hasTodo}
           participants={participants}
         />
+        
+        {/* Todo indicator at bottom right */}
+        {event.isTodo && (
+          <div className="absolute bottom-0 right-0 bg-white/10 rounded-full p-0.5 m-0.5">
+            <CheckSquare size={12} className="text-white" />
+          </div>
+        )}
       </div>
     </div>
   );

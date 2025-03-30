@@ -8,7 +8,7 @@ import EventDetails from "@/components/calendar/EventDetails";
 
 const MonthView = () => {
   const { twoDMonthArray } = useDateStore();
-  const { events, openEventSummary, updateEvent, isEventSummaryOpen, closeEventSummary } = useEventStore();
+  const { events, openEventSummary, updateEvent, addEvent, isEventSummaryOpen, closeEventSummary } = useEventStore();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
   
@@ -84,6 +84,7 @@ const MonthView = () => {
                   onEventClick={openEventSummary}
                   onDayClick={handleDayClick}
                   onEventDrop={handleEventDrop}
+                  addEvent={addEvent}
                 />
               ))}
             </Fragment>

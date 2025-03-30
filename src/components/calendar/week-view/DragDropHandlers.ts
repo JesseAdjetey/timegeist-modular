@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { CalendarEventType } from "@/lib/stores/types";
 import dayjs from "dayjs";
 import { formatMinutesAsTime, getTimeInMinutes } from "../event-utils/touch-handlers";
+import { nanoid } from "nanoid";
 
 export const handleDragOver = (e: React.DragEvent) => {
   e.preventDefault();
@@ -13,13 +14,20 @@ export const handleDrop = (
   e: React.DragEvent, 
   day: dayjs.Dayjs, 
   hour: dayjs.Dayjs,
-  updateEvent: (event: CalendarEventType) => void
+  updateEvent: (event: CalendarEventType) => void,
+  addEvent?: (event: CalendarEventType) => void
 ) => {
   e.preventDefault();
   
   try {
     // Get the drag data
     const data = JSON.parse(e.dataTransfer.getData('application/json'));
+    
+    // Handle todo item drag
+    if (data.source === 'todo-module') {
+      handleTodoDrop(data, day, hour, addEvent);
+      return;
+    }
     
     // Don't process if the event is locked
     if (data.isLocked) return;
@@ -69,4 +77,35 @@ export const handleDrop = (
     console.error("Error handling drop:", error);
     toast.error("Failed to move event");
   }
+};
+
+// Handle dropping a todo item onto the calendar
+const handleTodoDrop = (
+  todoData: any,
+  day: dayjs.Dayjs,
+  hour: dayjs.Dayjs,
+  addEvent?: (event: CalendarEventType) => void
+) => {
+  if (!addEvent) return;
+  
+  // Format time strings
+  const startTime = hour.format("HH:00");
+  const endTime = hour.add(1, 'hour').format("HH:00");
+  
+  // Create a new calendar event from the todo item
+  const newEvent: CalendarEventType = {
+    id: nanoid(),
+    title: todoData.text,
+    date: day.format('YYYY-MM-DD'),
+    description: `${startTime} - ${endTime} | ${todoData.text}`,
+    color: 'bg-purple-500/70', // Special color for todo events
+    isTodo: true, // Mark as a todo event
+    todoId: todoData.id // Reference back to original todo
+  };
+  
+  // Add the event to the store
+  addEvent(newEvent);
+  
+  // Show success message
+  toast.success(`Todo "${todoData.text}" added to calendar at ${startTime}`);
 };

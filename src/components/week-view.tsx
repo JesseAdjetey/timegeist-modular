@@ -15,7 +15,7 @@ import { handleDragOver, handleDrop } from "./calendar/week-view/DragDropHandler
 const WeekView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const { userSelectedDate } = useDateStore();
-  const { events, openEventSummary, toggleEventLock, updateEvent, isEventSummaryOpen, closeEventSummary } = useEventStore();
+  const { events, openEventSummary, toggleEventLock, updateEvent, addEvent, isEventSummaryOpen, closeEventSummary } = useEventStore();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
 
@@ -62,7 +62,7 @@ const WeekView = () => {
                   currentTime={currentTime}
                   onTimeSlotClick={handleTimeSlotClick}
                   onDragOver={handleDragOver}
-                  onDrop={(e, day, hour) => handleDrop(e, day, hour, updateEvent)}
+                  onDrop={(e, day, hour) => handleDrop(e, day, hour, updateEvent, addEvent)}
                   openEventSummary={openEventSummary}
                   toggleEventLock={toggleEventLock}
                 />
