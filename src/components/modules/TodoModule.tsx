@@ -146,7 +146,7 @@ const TodoModule: React.FC<TodoModuleProps> = ({
             <span className="ml-2 text-sm">Loading todos...</span>
           </div>
         ) : error ? (
-          <div className="text-center text-sm text-red-400 p-2">{error}</div>
+          <div className="text-center text-sm text-red-400 p-2">Error: {error}</div>
         ) : todos.length === 0 ? (
           <div className="text-center text-sm text-muted-foreground p-2">No todos yet</div>
         ) : (

@@ -62,7 +62,8 @@ export function useTodos() {
       setTodos(transformedTodos);
     } catch (err: any) {
       console.error('Error fetching todos:', err);
-      setError('Failed to fetch todos');
+      // Use the actual error message instead of a generic one
+      setError(err.message || err.error_description || String(err));
       // Still set the todos to an empty array so the UI doesn't break
       setTodos([]);
     } finally {
