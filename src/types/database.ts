@@ -40,3 +40,38 @@ export interface Event {
   updated_at: string;
   created_by: string;
 }
+
+// Add database type for supabase client type assertion
+export type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: Profile
+        Insert: Omit<Profile, 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>
+      }
+      alarms: {
+        Row: Alarm
+        Insert: Omit<Alarm, 'id'>
+        Update: Partial<Omit<Alarm, 'id' | 'user_id'>>
+      }
+      events: {
+        Row: Event
+        Insert: Omit<Event, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Event, 'id' | 'created_at' | 'updated_at'>>
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
