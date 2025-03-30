@@ -29,6 +29,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   // Handle dropping an event onto a time slot
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    console.log("Drop event received in TimeSlot:", hour.format("HH:mm"));
     
     try {
       // Get the drag data
@@ -39,10 +40,11 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       }
       
       const data = JSON.parse(dataString);
-      console.log("Received drop data:", data);
+      console.log("Received drop data in TimeSlot:", data);
       
       // Handle todo item drag
       if (data.source === 'todo-module') {
+        console.log("Todo item detected, opening form:", openEventForm !== undefined);
         if (openEventForm) {
           // Open event form with todo data
           openEventForm(data, hour);
@@ -54,7 +56,10 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       }
       
       // Don't process if the event is locked
-      if (data.isLocked) return;
+      if (data.isLocked) {
+        console.log("Event is locked, ignoring drop");
+        return;
+      }
       
       // Calculate precise drop position to snap to 30-minute intervals
       const rect = e.currentTarget.getBoundingClientRect();
@@ -95,6 +100,8 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
         description: `${newStartTime} - ${newEndTime} | ${descriptionText}`
       };
       
+      console.log("Updating event with new time:", updatedEvent);
+      
       // Update the event in the store
       updateEvent(updatedEvent);
       
@@ -109,8 +116,9 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 
   // Handle dropping a todo item onto the calendar
   const handleTodoDrop = (todoData: any, hour: dayjs.Dayjs) => {
+    console.log("Handling todo drop in TimeSlot", todoData);
     if (!addEvent || !todoData || !todoData.id || !todoData.text) {
-      console.error("Invalid todo data:", todoData);
+      console.error("Invalid todo data or missing addEvent function:", todoData, addEvent);
       return;
     }
     
