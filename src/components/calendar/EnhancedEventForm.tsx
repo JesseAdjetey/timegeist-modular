@@ -105,7 +105,7 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
       startsAt: startDateTime.toISOString(),
       endsAt: endDateTime.toISOString()
     };
-    
+    console.log('Event being saved:', newEvent);
     onSave(newEvent);
   };
 
