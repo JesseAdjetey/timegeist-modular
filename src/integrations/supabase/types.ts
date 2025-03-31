@@ -97,6 +97,7 @@ export type Database = {
           created_at: string
           date: string
           description: string
+          ends_at: string | null
           has_alarm: boolean | null
           has_reminder: boolean | null
           id: string
@@ -104,7 +105,6 @@ export type Database = {
           is_todo: boolean | null
           title: string
           todo_id: string | null
-          updated_at: string
           user_id: string | null
         }
         Insert: {
@@ -112,6 +112,7 @@ export type Database = {
           created_at?: string
           date: string
           description: string
+          ends_at?: string | null
           has_alarm?: boolean | null
           has_reminder?: boolean | null
           id?: string
@@ -119,7 +120,6 @@ export type Database = {
           is_todo?: boolean | null
           title: string
           todo_id?: string | null
-          updated_at?: string
           user_id?: string | null
         }
         Update: {
@@ -127,6 +127,7 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string
+          ends_at?: string | null
           has_alarm?: boolean | null
           has_reminder?: boolean | null
           id?: string
@@ -134,7 +135,6 @@ export type Database = {
           is_todo?: boolean | null
           title?: string
           todo_id?: string | null
-          updated_at?: string
           user_id?: string | null
         }
         Relationships: []

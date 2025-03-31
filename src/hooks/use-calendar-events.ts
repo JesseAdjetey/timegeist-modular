@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { CalendarEventType } from '@/lib/stores/types';
-import { nanoid } from 'nanoid';
 import { toast } from 'sonner';
 
 interface CalendarEventResponse {
@@ -48,18 +47,23 @@ export function useCalendarEvents() {
       console.log('Fetched calendar events:', eventsData || []);
       
       // Transform the data to match CalendarEventType
-      const transformedEvents = eventsData ? eventsData.map(event => ({
-        id: event.id,
-        title: event.title,
-        date: event.date,
-        description: event.description,
-        color: event.color || 'bg-blue-400/70',
-        isLocked: event.is_locked || false,
-        isTodo: event.is_todo || false,
-        hasAlarm: event.has_alarm || false,
-        hasReminder: event.has_reminder || false,
-        todoId: event.todo_id
-      })) as CalendarEventType[] : [];
+      const transformedEvents = eventsData ? eventsData.map(event => {
+        // Parse time information from the description or use ends_at
+        const timeInfo = getTimeInfo(event.description);
+        
+        return {
+          id: event.id,
+          title: event.title,
+          date: event.date,
+          description: event.description,
+          color: event.color || 'bg-blue-400/70',
+          isLocked: event.is_locked || false,
+          isTodo: event.is_todo || false,
+          hasAlarm: event.has_alarm || false,
+          hasReminder: event.has_reminder || false,
+          todoId: event.todo_id
+        };
+      }) as CalendarEventType[] : [];
       
       setEvents(transformedEvents);
     } catch (err: any) {
@@ -70,6 +74,26 @@ export function useCalendarEvents() {
       setLoading(false);
     }
   }, [user]);
+
+  // Helper function to extract time information from description
+  const getTimeInfo = (description: string) => {
+    const defaultResult = { start: '09:00', end: '10:00' };
+    
+    if (!description) return defaultResult;
+    
+    const parts = description.split('|');
+    if (parts.length < 1) return defaultResult;
+    
+    const timePart = parts[0].trim();
+    const timeMatch = timePart.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+    
+    if (!timeMatch) return defaultResult;
+    
+    return {
+      start: timeMatch[1],
+      end: timeMatch[2]
+    };
+  };
 
   // Add a new calendar event to Supabase
   const addEvent = async (event: CalendarEventType) => {
@@ -97,6 +121,16 @@ export function useCalendarEvents() {
         return response;
       }
       
+      // Extract time information from the description
+      const timeInfo = getTimeInfo(event.description);
+      
+      // Calculate ends_at based on the event date and end time
+      const [year, month, day] = event.date.split('-').map(Number);
+      const [endHour, endMinute] = timeInfo.end.split(':').map(Number);
+      
+      // Create a date object for ends_at
+      const endsAt = new Date(year, month - 1, day, endHour, endMinute);
+      
       // Transform event to match Supabase table schema
       const newEvent = {
         title: event.title,
@@ -108,7 +142,8 @@ export function useCalendarEvents() {
         has_alarm: event.hasAlarm || false,
         has_reminder: event.hasReminder || false,
         todo_id: event.todoId,
-        user_id: user.id
+        user_id: user.id,
+        ends_at: endsAt.toISOString()
       };
       
       const { data, error } = await supabase
@@ -241,6 +276,16 @@ export function useCalendarEvents() {
         e.id === event.id ? event : e
       ));
       
+      // Extract time information from the description
+      const timeInfo = getTimeInfo(event.description);
+      
+      // Calculate ends_at based on the event date and end time
+      const [year, month, day] = event.date.split('-').map(Number);
+      const [endHour, endMinute] = timeInfo.end.split(':').map(Number);
+      
+      // Create a date object for ends_at
+      const endsAt = new Date(year, month - 1, day, endHour, endMinute);
+      
       // Transform event to match Supabase table schema
       const updatedEvent = {
         title: event.title,
@@ -251,7 +296,8 @@ export function useCalendarEvents() {
         is_todo: event.isTodo,
         has_alarm: event.hasAlarm,
         has_reminder: event.hasReminder,
-        todo_id: event.todoId
+        todo_id: event.todoId,
+        ends_at: endsAt.toISOString()
       };
       
       const { error } = await supabase
