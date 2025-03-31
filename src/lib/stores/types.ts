@@ -16,7 +16,6 @@ export interface SidebarPage {
 export type CalendarEventType = {
   id: string;
   title: string;
-  date: string;
   description: string;
   isLocked?: boolean;
   isTodo?: boolean;
@@ -25,4 +24,9 @@ export type CalendarEventType = {
   participants?: string[];
   color?: string;
   todoId?: string; // Reference to the original todo item
+  
+  // New fields to match the updated database schema
+  startsAt: string; // ISO string format
+  endsAt: string; // ISO string format
+  date?: string; // Derived from startsAt for backward compatibility
 };

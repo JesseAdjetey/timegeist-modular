@@ -94,6 +94,54 @@ export type Database = {
       calendar_events: {
         Row: {
           color: string | null
+          created_at: string | null
+          description: string | null
+          ends_at: string
+          has_alarm: boolean | null
+          has_reminder: boolean | null
+          id: string
+          is_locked: boolean | null
+          is_todo: boolean | null
+          starts_at: string
+          title: string
+          todo_id: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          ends_at: string
+          has_alarm?: boolean | null
+          has_reminder?: boolean | null
+          id?: string
+          is_locked?: boolean | null
+          is_todo?: boolean | null
+          starts_at: string
+          title: string
+          todo_id?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          ends_at?: string
+          has_alarm?: boolean | null
+          has_reminder?: boolean | null
+          id?: string
+          is_locked?: boolean | null
+          is_todo?: boolean | null
+          starts_at?: string
+          title?: string
+          todo_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      calendar_events_old: {
+        Row: {
+          color: string | null
           created_at: string
           date: string
           description: string
