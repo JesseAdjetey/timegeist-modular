@@ -116,6 +116,8 @@ export function useCalendarEvents() {
 
   // Add a new event
   const addEvent = async (event: CalendarEventType) => {
+  console.log('===== FULL EVENT OBJECT BEFORE INSERTION =====');
+  console.log(JSON.stringify(event, null, 2));
     console.log('===== ADD EVENT DEBUG =====');
     console.log('Authentication Status:', {
       user: user ? 'User authenticated' : 'No user',
