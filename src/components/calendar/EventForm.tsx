@@ -63,10 +63,7 @@ const EventForm: React.FC<EventFormProps> = ({
 
   const handleSave = (event: any) => {
     // Generate a unique ID for the new event
-    const newEvent = {
-      ...event,
-      id: nanoid()
-    };
+    console.log('Event being saved:', event);
     
     if (propOnSave) {
       propOnSave(newEvent);
