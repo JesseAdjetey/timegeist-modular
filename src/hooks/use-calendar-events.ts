@@ -28,6 +28,7 @@ export function useCalendarEvents() {
       
       if (!user) {
         setEvents([]);
+        setLoading(false);
         return;
       }
       
@@ -40,21 +41,14 @@ export function useCalendarEvents() {
         .eq('user_id', user.id);
       
       if (eventsError) {
-        console.error('Error details:', eventsError);
+        console.error('Error fetching calendar events:', eventsError);
         throw eventsError;
       }
       
-      if (!eventsData) {
-        console.log('No calendar events found');
-        setEvents([]);
-        setLoading(false);
-        return;
-      }
-      
-      console.log('Fetched calendar events:', eventsData);
+      console.log('Fetched calendar events:', eventsData || []);
       
       // Transform the data to match CalendarEventType
-      const transformedEvents = eventsData.map(event => ({
+      const transformedEvents = eventsData ? eventsData.map(event => ({
         id: event.id,
         title: event.title,
         date: event.date,
@@ -65,11 +59,11 @@ export function useCalendarEvents() {
         hasAlarm: event.has_alarm || false,
         hasReminder: event.has_reminder || false,
         todoId: event.todo_id
-      })) as CalendarEventType[];
+      })) as CalendarEventType[] : [];
       
       setEvents(transformedEvents);
     } catch (err: any) {
-      console.error('Error fetching calendar events:', err);
+      console.error('Error in fetchEvents:', err);
       setError(err.message || err.error_description || String(err));
       setEvents([]);
     } finally {
@@ -86,10 +80,22 @@ export function useCalendarEvents() {
           message: 'User not authenticated',
         };
         setLastResponse(response);
+        toast.error('User not authenticated. Please log in to add events.');
         return response;
       }
       
       console.log('Adding new calendar event:', event);
+      
+      // Validate essential fields
+      if (!event.title || !event.date || !event.description) {
+        const response = {
+          success: false,
+          message: 'Missing required fields (title, date, or description)',
+        };
+        setLastResponse(response);
+        toast.error('Missing required fields for event');
+        return response;
+      }
       
       // Transform event to match Supabase table schema
       const newEvent = {
@@ -111,13 +117,14 @@ export function useCalendarEvents() {
         .select();
       
       if (error) {
-        console.error('Error details:', error);
+        console.error('Error adding calendar event:', error);
         const response = {
           success: false,
           message: `Failed to add event: ${error.message}`,
           error
         };
         setLastResponse(response);
+        toast.error(`Failed to add event: ${error.message}`);
         return response;
       }
       
@@ -149,14 +156,19 @@ export function useCalendarEvents() {
           eventId: newEventId,
         };
         setLastResponse(response);
+        toast.success('Event added successfully');
         return response;
       }
+      
+      // Refetch events since we couldn't update the state optimistically
+      fetchEvents();
       
       const response = {
         success: true,
         message: 'Event added but ID not returned',
       };
       setLastResponse(response);
+      toast.success('Event added successfully');
       return response;
     } catch (err: any) {
       console.error('Error adding calendar event:', err);
@@ -166,6 +178,7 @@ export function useCalendarEvents() {
         error: err
       };
       setLastResponse(response);
+      toast.error(`Error adding event: ${err.message || String(err)}`);
       return response;
     }
   };
@@ -173,7 +186,15 @@ export function useCalendarEvents() {
   // Remove a calendar event
   const removeEvent = async (id: string) => {
     try {
-      if (!user) return;
+      if (!user) {
+        toast.error('User not authenticated. Please log in to remove events.');
+        return;
+      }
+      
+      if (!id) {
+        toast.error('Invalid event ID');
+        return;
+      }
       
       // Optimistically update the UI
       setEvents(prevEvents => prevEvents.filter(event => event.id !== id));
@@ -185,8 +206,11 @@ export function useCalendarEvents() {
         .eq('user_id', user.id);
       
       if (error) {
-        console.error('Error details:', error);
-        throw error;
+        console.error('Error removing calendar event:', error);
+        toast.error('Failed to remove event');
+        // Refetch events to restore the correct state
+        fetchEvents();
+        return;
       }
       
       toast.success('Event removed successfully');
@@ -202,7 +226,15 @@ export function useCalendarEvents() {
   // Update a calendar event
   const updateEvent = async (event: CalendarEventType) => {
     try {
-      if (!user) return;
+      if (!user) {
+        toast.error('User not authenticated. Please log in to update events.');
+        return;
+      }
+      
+      if (!event.id) {
+        toast.error('Invalid event ID');
+        return;
+      }
       
       // Optimistically update the UI
       setEvents(prevEvents => prevEvents.map(e => 
@@ -229,8 +261,11 @@ export function useCalendarEvents() {
         .eq('user_id', user.id);
       
       if (error) {
-        console.error('Error details:', error);
-        throw error;
+        console.error('Error updating calendar event:', error);
+        toast.error('Failed to update event');
+        // Refetch events to restore the correct state
+        fetchEvents();
+        return;
       }
       
       toast.success('Event updated successfully');
@@ -246,7 +281,15 @@ export function useCalendarEvents() {
   // Toggle an event's lock state
   const toggleEventLock = async (id: string, isLocked: boolean) => {
     try {
-      if (!user) return;
+      if (!user) {
+        toast.error('User not authenticated. Please log in to modify events.');
+        return;
+      }
+      
+      if (!id) {
+        toast.error('Invalid event ID');
+        return;
+      }
       
       // Optimistically update the UI
       setEvents(prevEvents => prevEvents.map(event => 
@@ -260,8 +303,11 @@ export function useCalendarEvents() {
         .eq('user_id', user.id);
       
       if (error) {
-        console.error('Error details:', error);
-        throw error;
+        console.error('Error toggling event lock:', error);
+        toast.error('Failed to update event');
+        
+        // Refetch events to restore the correct state
+        fetchEvents();
       }
     } catch (err: any) {
       console.error('Error toggling event lock:', err);
@@ -284,10 +330,15 @@ export function useCalendarEvents() {
     }
     
     // Set up real-time subscription for calendar events
-    const eventsSubscription = supabase
+    const channel = supabase
       .channel('calendar-changes')
       .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'calendar_events', filter: `user_id=eq.${user?.id}` }, 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'calendar_events', 
+          filter: user ? `user_id=eq.${user.id}` : undefined 
+        }, 
         (payload) => {
           console.log('Realtime update received for calendar events:', payload);
           // Only refetch when the user is authenticated
@@ -300,7 +351,7 @@ export function useCalendarEvents() {
       
     return () => {
       console.log('Cleaning up subscriptions');
-      supabase.removeChannel(eventsSubscription);
+      supabase.removeChannel(channel);
     };
   }, [user, fetchEvents]);
 
