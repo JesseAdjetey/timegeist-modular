@@ -1,4 +1,3 @@
-
 import React from "react";
 import dayjs from "dayjs";
 import CalendarEvent from "../calendar/CalendarEvent";
@@ -129,16 +128,23 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
     // Format time strings
     const startTime = hour.format("HH:00");
     const endTime = hour.add(1, 'hour').format("HH:00");
+    const currentDate = dayjs().format('YYYY-MM-DD');
+    
+    // Format ISO strings for startsAt and endsAt
+    const startDateTime = dayjs(`${currentDate} ${startTime}`);
+    const endDateTime = dayjs(`${currentDate} ${endTime}`);
     
     // Create a new calendar event from the todo item
     const newEvent: CalendarEventType = {
       id: nanoid(), // This will be replaced by the database
       title: todoData.text,
-      date: dayjs().format('YYYY-MM-DD'), // Current date
+      date: currentDate, // Current date
       description: `${startTime} - ${endTime} | ${todoData.text}`,
       color: 'bg-purple-500/70', // Special color for todo events
       isTodo: true, // Mark as a todo event
-      todoId: todoData.id // Reference back to original todo
+      todoId: todoData.id, // Reference back to original todo
+      startsAt: startDateTime.toISOString(),
+      endsAt: endDateTime.toISOString()
     };
     
     console.log("Adding new event from todo:", newEvent);

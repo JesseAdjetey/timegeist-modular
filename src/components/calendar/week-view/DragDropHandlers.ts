@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { CalendarEventType } from "@/lib/stores/types";
 import dayjs from "dayjs";
@@ -125,16 +124,23 @@ const handleTodoDrop = async (
   // Format time strings
   const startTime = hour.format("HH:00");
   const endTime = hour.add(1, 'hour').format("HH:00");
+  const eventDate = day.format('YYYY-MM-DD');
+  
+  // Format ISO strings for startsAt and endsAt
+  const startDateTime = day.hour(parseInt(startTime.split(':')[0]));
+  const endDateTime = day.hour(parseInt(endTime.split(':')[0]));
   
   // Create a new calendar event from the todo item
   const newEvent: CalendarEventType = {
     id: nanoid(), // This will be replaced by the database
     title: todoData.text,
-    date: day.format('YYYY-MM-DD'),
+    date: eventDate,
     description: `${startTime} - ${endTime} | ${todoData.text}`,
     color: 'bg-purple-500/70', // Special color for todo events
     isTodo: true, // Mark as a todo event
-    todoId: todoData.id // Reference back to original todo
+    todoId: todoData.id, // Reference back to original todo
+    startsAt: startDateTime.toISOString(),
+    endsAt: endDateTime.toISOString()
   };
   
   console.log("Week view adding new event from todo:", newEvent);

@@ -87,16 +87,23 @@ const EnhancedEventForm: React.FC<EventFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Convert the date and times to ISO strings for startsAt and endsAt
+    const eventDate = dayjs(date).format('YYYY-MM-DD');
+    const startDateTime = dayjs(`${eventDate} ${timeStart}`);
+    const endDateTime = dayjs(`${eventDate} ${timeEnd}`);
+    
     const newEvent: CalendarEventType = {
       id: initialEvent?.id || 'temp-id', // Will be replaced with nanoid in the parent component
       title,
       description: `${timeStart} - ${timeEnd} | ${description}`,
-      date: dayjs(date).format('YYYY-MM-DD'),
+      date: eventDate, // For backward compatibility
       isLocked,
       isTodo,
       hasAlarm,
       hasReminder,
-      color: initialEvent?.color // Preserve the original color if it exists
+      color: initialEvent?.color, // Preserve the original color if it exists
+      startsAt: startDateTime.toISOString(),
+      endsAt: endDateTime.toISOString()
     };
     
     onSave(newEvent);

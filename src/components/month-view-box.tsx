@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
@@ -114,14 +113,20 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
         
         if (addEvent && day) {
           // Create a new calendar event from the todo item
+          const eventDate = day.format('YYYY-MM-DD');
+          const startDateTime = day.hour(9); // 9:00 AM
+          const endDateTime = day.hour(10); // 10:00 AM
+      
           const newEvent: CalendarEventType = {
             id: nanoid(),
             title: data.text,
-            date: day.format('YYYY-MM-DD'),
+            date: eventDate,
             description: `09:00 - 10:00 | ${data.text}`,
             color: 'bg-purple-500/70',
             isTodo: true,
-            todoId: data.id
+            todoId: data.id,
+            startsAt: startDateTime.toISOString(),
+            endsAt: endDateTime.toISOString()
           };
           
           console.log("Month view adding new event from todo:", newEvent);

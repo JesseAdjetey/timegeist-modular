@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { getWeekDays } from "@/lib/getTime";
 import { useDateStore, useEventStore } from "@/lib/store";
@@ -12,6 +11,7 @@ import TimeColumn from "./calendar/week-view/TimeColumn";
 import DayColumn from "./calendar/week-view/DayColumn";
 import { handleDragOver, handleDrop } from "./calendar/week-view/DragDropHandlers";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
+import { CalendarEventType } from "@/lib/stores/types";
 
 const WeekView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
@@ -43,7 +43,6 @@ const WeekView = () => {
     setFormOpen(true);
   };
   
-  // Function to open the event form with todo data
   const openEventForm = (todoData: any, date: Date, startTime: string) => {
     console.log("Opening event form with todo data:", todoData, date, startTime);
     setTodoData(todoData);
@@ -52,6 +51,15 @@ const WeekView = () => {
       startTime: startTime
     });
     setFormOpen(true);
+  };
+
+  const handleUpdateEvent = async (event: CalendarEventType) => {
+    await updateEvent(event);
+  };
+  
+  const handleAddEvent = async (event: CalendarEventType) => {
+    await addEvent(event);
+    return;
   };
 
   return (
@@ -77,7 +85,7 @@ const WeekView = () => {
                   currentTime={currentTime}
                   onTimeSlotClick={handleTimeSlotClick}
                   onDragOver={handleDragOver}
-                  onDrop={(e, day, hour) => handleDrop(e, day, hour, updateEvent, addEvent, openEventForm)}
+                  onDrop={(e, day, hour) => handleDrop(e, day, hour, handleUpdateEvent, handleAddEvent, openEventForm)}
                   openEventSummary={openEventSummary}
                   toggleEventLock={toggleEventLock}
                 />
@@ -88,7 +96,6 @@ const WeekView = () => {
       </div>
       <AddEventButton />
 
-      {/* Event Form Dialog */}
       <EventForm 
         open={formOpen} 
         onClose={() => {
@@ -99,7 +106,6 @@ const WeekView = () => {
         todoData={todoData}
       />
 
-      {/* Event Details Dialog */}
       <EventDetails
         open={isEventSummaryOpen}
         onClose={closeEventSummary}

@@ -25,8 +25,10 @@ export type CalendarEventType = {
   color?: string;
   todoId?: string; // Reference to the original todo item
   
-  // New fields to match the updated database schema
+  // Updated fields to match the database schema
   startsAt: string; // ISO string format
   endsAt: string; // ISO string format
+  
+  // Optional date field for backward compatibility
   date?: string; // Derived from startsAt for backward compatibility
 };
