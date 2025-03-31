@@ -62,6 +62,24 @@ const WeekView = () => {
     return;
   };
 
+  const handleSaveEvent = async (event: CalendarEventType) => {
+  try {
+    await addEvent(event);
+    setFormOpen(false);
+    toast({
+      title: "Event Added",
+      description: "The event has been added to your calendar.",
+    });
+  } catch (error) {
+    console.error("Error adding event:", error);
+    toast({
+      title: "Error",
+      description: "Failed to add event. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
+
   return (
     <>
       <div className="glass m-4 rounded-xl overflow-hidden">
@@ -104,6 +122,7 @@ const WeekView = () => {
         }}
         initialTime={selectedTime}
         todoData={todoData}
+        onSave={handleSaveEvent}
       />
 
       <EventDetails
