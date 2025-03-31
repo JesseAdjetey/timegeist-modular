@@ -1,4 +1,3 @@
-
 // Updated version of useCalendarEvents hook for the new calendar_events schema
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +31,13 @@ export function useCalendarEvents() {
       setLoading(true);
       setError(null);
       
+      console.log('===== FETCH EVENTS DEBUG =====');
+      console.log('Authentication Status:', {
+        user: user ? 'User authenticated' : 'No user',
+        userId: user?.id,
+        email: user?.email
+      });
+      
       if (!user) {
         console.log('No authenticated user, clearing events');
         setEvents([]);
@@ -47,8 +53,14 @@ export function useCalendarEvents() {
         .select('*')
         .eq('user_id', user.id);
       
+      console.log('Supabase Query Details:', {
+        method: 'select',
+        table: 'calendar_events',
+        userId: user.id
+      });
+      
       if (fetchError) {
-        console.error('Error fetching calendar events:', fetchError);
+        console.error('Detailed Supabase Fetch Error:', fetchError);
         throw fetchError;
       }
       
@@ -88,7 +100,13 @@ export function useCalendarEvents() {
         setEvents([]);
       }
     } catch (err: any) {
-      console.error('Error in fetchEvents:', err);
+      console.error('===== FETCH EVENTS CATCH BLOCK =====');
+      console.error('Error Details:', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack,
+        fullError: err
+      });
       setError(err.message || err.error_description || String(err));
       setEvents([]);
     } finally {
@@ -98,20 +116,39 @@ export function useCalendarEvents() {
 
   // Add a new event
   const addEvent = async (event: CalendarEventType) => {
+    console.log('===== ADD EVENT DEBUG =====');
+    console.log('Authentication Status:', {
+      user: user ? 'User authenticated' : 'No user',
+      userId: user?.id,
+      email: user?.email
+    });
+    
     if (!user) {
+      console.error('No authenticated user');
       toast.error('User not authenticated');
       return { success: false };
     }
     
     try {
+      console.log('Incoming Event Object:', event);
+      
       // Parse the time range from description (e.g., "09:00 - 10:00 | Description")
       const timeRange = extractTimeString(event.description);
+      console.log('Extracted Time Range:', timeRange);
+      
       const [startTime, endTime] = timeRange.split('-').map(t => t.trim());
+      console.log('Start Time:', startTime);
+      console.log('End Time:', endTime);
+      
       const eventDate = event.date || dayjs().format('YYYY-MM-DD');
+      console.log('Event Date:', eventDate);
       
       // Create timestamps by combining date and time
       const startsAt = dayjs(`${eventDate} ${startTime}`).toISOString();
       const endsAt = dayjs(`${eventDate} ${endTime}`).toISOString();
+      
+      console.log('Starts At (ISO):', startsAt);
+      console.log('Ends At (ISO):', endsAt);
       
       // Extract the actual description part
       const descriptionParts = event.description.split('|');
@@ -132,24 +169,33 @@ export function useCalendarEvents() {
         ends_at: endsAt
       };
       
-      console.log('Adding new calendar event:', newEvent);
+      console.log('Prepared Supabase Event Object:', newEvent);
       
       const { data, error } = await supabase
         .from('calendar_events')
         .insert(newEvent)
         .select();
+      
+      console.log('Supabase Insert Response:', { data, error });
         
       if (error) {
-        console.error('Error adding event:', error);
-        toast.error('Failed to add event');
+        console.error('Detailed Supabase Error:', error);
+        toast.error(`Failed to add event: ${error.message}`);
         return { success: false, error };
       }
       
       toast.success('Event added');
-      fetchEvents(); // Refresh events
+      await fetchEvents(); // Refresh events
       return { success: true, data };
-    } catch (err) {
-      console.error('Error in addEvent:', err);
+    } catch (err: any) {
+      console.error('===== ADD EVENT CATCH BLOCK =====');
+      console.error('Error Details:', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack,
+        fullError: err
+      });
+      
       toast.error('An error occurred while adding the event');
       return { success: false, error: err };
     }
@@ -205,7 +251,7 @@ export function useCalendarEvents() {
       }
       
       toast.success('Event updated');
-      fetchEvents(); // Refresh events
+      await fetchEvents(); // Refresh events
       return { success: true, data };
     } catch (err) {
       console.error('Error in updateEvent:', err);
@@ -234,7 +280,7 @@ export function useCalendarEvents() {
       }
       
       toast.success('Event removed');
-      fetchEvents(); // Refresh events
+      await fetchEvents(); // Refresh events
       return { success: true };
     } catch (err) {
       console.error('Error in removeEvent:', err);
@@ -263,7 +309,7 @@ export function useCalendarEvents() {
       }
       
       toast.success(isLocked ? 'Event locked' : 'Event unlocked');
-      fetchEvents(); // Refresh events
+      await fetchEvents(); // Refresh events
       return { success: true };
     } catch (err) {
       console.error('Error in toggleEventLock:', err);
@@ -306,7 +352,7 @@ export function useCalendarEvents() {
       }
       
       toast.success('Test event added');
-      fetchEvents(); // Refresh events
+      await fetchEvents(); // Refresh events
       return { success: true, data };
     } catch (err) {
       console.error('Error in addTestEvent:', err);
