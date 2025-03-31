@@ -62,20 +62,29 @@ const WeekView = () => {
     return;
   };
 
-  const handleSaveEvent = async (event: CalendarEventType) => {
+const handleSaveEvent = async (event: CalendarEventType) => {
   try {
-    await addEvent(event);
-    setFormOpen(false);
-    toast({
-      title: "Event Added",
-      description: "The event has been added to your calendar.",
-    });
+    const response = await addEvent(event);
+    
+    if (response.success) {
+      setFormOpen(false); // Close form if applicable
+      toast({
+        title: "Event Added",
+        description: `${event.title} has been added to your calendar.`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: response.error ? String(response.error) : "Failed to add event",
+        variant: "destructive"
+      });
+    }
   } catch (error) {
     console.error("Error adding event:", error);
     toast({
       title: "Error",
-      description: "Failed to add event. Please try again.",
-      variant: "destructive",
+      description: "An unexpected error occurred",
+      variant: "destructive"
     });
   }
 };
