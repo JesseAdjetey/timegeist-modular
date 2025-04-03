@@ -1,4 +1,3 @@
-// src/components/week-view.tsx
 import React, { useEffect, useState } from "react";
 import { getWeekDays } from "@/lib/getTime";
 import { useDateStore, useEventStore } from "@/lib/store";
@@ -13,7 +12,7 @@ import DayColumn from "./calendar/week-view/DayColumn";
 import { handleDragOver, handleDrop } from "./calendar/week-view/DragDropHandlers";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
 import { CalendarEventType } from "@/lib/stores/types";
-import { toast } from "@/components/ui/use-toast"; // Proper import for toast
+import { toast } from "@/components/ui/use-toast";
 
 const WeekView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
@@ -64,36 +63,32 @@ const WeekView = () => {
     return;
   };
 
-  const handleSaveEvent = async (event: CalendarEventType) => {
-    try {
-      // Use the addEvent function from useCalendarEvents
-      const response = await addEvent(event);
-      
-      if (response && response.success) {
-        setFormOpen(false); // Close form if applicable
-        toast({
-          title: "Event Added",
-          description: `${event.title} has been added to your calendar.`,
-        });
-        return { success: true, data: response.data };
-      } else {
-        toast({
-          title: "Error",
-          description: response && response.error ? String(response.error) : "Failed to add event",
-          variant: "destructive"
-        });
-        return { success: false, error: response && response.error };
-      }
-    } catch (error) {
-      console.error("Error adding event:", error);
+const handleSaveEvent = async (event: CalendarEventType) => {
+  try {
+    const response = await addEvent(event);
+    
+    if (response.success) {
+      setFormOpen(false); // Close form if applicable
+      toast({
+        title: "Event Added",
+        description: `${event.title} has been added to your calendar.`,
+      });
+    } else {
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: response.error ? String(response.error) : "Failed to add event",
         variant: "destructive"
       });
-      return { success: false, error };
     }
-  };
+  } catch (error) {
+    console.error("Error adding event:", error);
+    toast({
+      title: "Error",
+      description: "An unexpected error occurred",
+      variant: "destructive"
+    });
+  }
+};
 
   return (
     <>
