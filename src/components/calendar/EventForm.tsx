@@ -66,9 +66,9 @@ const EventForm: React.FC<EventFormProps> = ({
     console.log('Event being saved:', event);
     
     if (propOnSave) {
-      propOnSave(newEvent);
+      propOnSave(event);
     } else {
-      addEvent(newEvent);
+      addEvent(event);
       
       // Show a success message
       if (todoData) {
