@@ -12,7 +12,6 @@ import DayColumn from "./calendar/week-view/DayColumn";
 import { handleDragOver, handleDrop } from "./calendar/week-view/DragDropHandlers";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
 import { CalendarEventType } from "@/lib/stores/types";
-import { toast } from "@/components/ui/use-toast";
 
 const WeekView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
