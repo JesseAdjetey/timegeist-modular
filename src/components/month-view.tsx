@@ -8,6 +8,8 @@ import EventForm from "@/components/calendar/EventForm";
 import EventDetails from "@/components/calendar/EventDetails";
 import dayjs from "dayjs";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
+import { CalendarEventType } from "@/lib/stores/types";
+import { toast } from "sonner";
 
 const MonthView = () => {
   const { twoDMonthArray } = useDateStore();
@@ -19,7 +21,6 @@ const MonthView = () => {
     { date: Date; startTime: string } | undefined
   >();
   const [todoData, setTodoData] = useState<any>(null);
-  // Add this new state for pending day selection
   const [pendingDaySelection, setPendingDaySelection] =
     useState<dayjs.Dayjs | null>(null);
 
@@ -41,19 +42,15 @@ const MonthView = () => {
     };
   }, []);
 
-  // New useEffect to handle day selection properly
   useEffect(() => {
     if (pendingDaySelection) {
-      // First update the selected time
       setSelectedTime({
         date: pendingDaySelection.toDate(),
-        startTime: "09:00", // Default time for month view clicks
+        startTime: "09:00",
       });
 
-      // Then open the form in the next render cycle
       setTimeout(() => {
         setFormOpen(true);
-        // Clear the pending selection
         setPendingDaySelection(null);
       }, 0);
     }
@@ -66,7 +63,6 @@ const MonthView = () => {
     return events.filter((event) => event.date === dayStr);
   };
 
-  // Update to use the pending day selection approach
   const handleDayClick = (day: any) => {
     if (!day) return;
 
@@ -93,33 +89,21 @@ const MonthView = () => {
     await updateEvent(updatedEvent);
   };
 
-  // Add this function to handle saving events via the form
   const handleSaveEvent = async (event: CalendarEventType) => {
     try {
       const response = await addEvent(event);
 
       if (response.success) {
         setFormOpen(false);
-        toast({
-          title: "Event Added",
-          description: `${event.title} has been added to your calendar.`,
-        });
+        toast.success(`${event.title} has been added to your calendar.`);
       } else {
-        toast({
-          title: "Error",
-          description: response.error
-            ? String(response.error)
-            : "Failed to add event",
-          variant: "destructive",
-        });
+        toast.error(response.error
+          ? String(response.error)
+          : "Failed to add event");
       }
     } catch (error) {
       console.error("Error adding event:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+      toast.error("An unexpected error occurred");
     }
   };
 

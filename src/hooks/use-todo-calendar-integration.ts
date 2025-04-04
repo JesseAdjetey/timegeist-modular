@@ -4,6 +4,7 @@ import { CalendarEventType } from '@/lib/stores/types';
 import { TodoDragData, createCalendarEventFromTodo, createTodoFromCalendarEvent, syncEventTitleWithTodo } from '@/lib/dragdropHandlers';
 import { useCalendarEvents } from '@/hooks/use-calendar-events';
 import { useTodos } from '@/hooks/use-todos';
+import { toast } from 'sonner';
 
 export function useTodoCalendarIntegration() {
   const [isTodoCalendarDialogOpen, setIsTodoCalendarDialogOpen] = useState(false);
@@ -79,12 +80,18 @@ export function useTodoCalendarIntegration() {
   
   // Sync event title with todo title
   const syncTitles = async (eventId: string, todoId: string, newTitle: string): Promise<boolean> => {
-    return await syncEventTitleWithTodo(
-      eventId,
-      todoId,
-      newTitle,
-      updateTodoTitle
-    );
+    try {
+      if (!updateTodoTitle) {
+        console.error("updateTodoTitle function is not available");
+        return false;
+      }
+      
+      const result = await updateTodoTitle(todoId, newTitle);
+      return result.success;
+    } catch (error) {
+      console.error("Error syncing titles:", error);
+      return false;
+    }
   };
   
   return {

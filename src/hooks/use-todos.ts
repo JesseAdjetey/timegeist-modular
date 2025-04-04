@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -248,7 +247,7 @@ export function useTodos() {
   };
 
   // Update todo title - for synchronizing with calendar events
-  const updateTodoTitle = async (id: string, newTitle: string) => {
+  const updateTodoTitle = async (id: string, newTitle: string): Promise<{ success: boolean; message: string }> => {
     try {
       if (!user || !newTitle.trim()) {
         return { success: false, message: !user ? 'User not authenticated' : 'Title cannot be empty' };
@@ -313,6 +312,7 @@ export function useTodos() {
   const getTodoById = (id: string): TodoItem | undefined => {
     return todos.find(todo => todo.id === id);
   };
+
   // Load todos when component mounts or user changes
   useEffect(() => {
     if (user) {
@@ -353,8 +353,10 @@ export function useTodos() {
     toggleTodo,
     deleteTodo,
     linkTodoToEvent,
+    unlinkTodoFromEvent,
+    updateTodoTitle,
+    getTodoById,
     refetchTodos: fetchTodos,
     lastResponse
   };
 }
-

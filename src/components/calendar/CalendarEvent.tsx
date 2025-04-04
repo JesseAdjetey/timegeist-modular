@@ -1,10 +1,11 @@
+
 import React from "react";
 import { cn } from "@/lib/utils";
 import { useEventDrag } from "@/hooks/use-event-drag";
 import EventIndicators from "./event-components/EventIndicators";
 import EventLockToggle from "./event-components/EventLockToggle";
 import DragHandle from "./event-components/DragHandle";
-import { CalendarEventType } from "@/lib/store";
+import { CalendarEventType } from "@/lib/stores/types";
 import { CheckSquare, ListTodo } from "lucide-react";
 
 interface CalendarEventProps {
@@ -48,7 +49,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
   };
 
   // Whether this is a todo-related event
-  const isTodoEvent = event.isTodo || event.todoId || hasTodo;
+  const isTodoEvent = Boolean(event.isTodo || event.todoId || hasTodo);
 
   return (
     <div
@@ -69,7 +70,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
     >
       <div className="relative">
         {/* Lock/Unlock Button */}
-        <EventLockToggle isLocked={isLocked} onToggle={handleLockToggle} />
+        <EventLockToggle isLocked={!!isLocked} onToggle={handleLockToggle} />
 
         {/* Drag Handle (only shown if not locked) */}
         {!isLocked && <DragHandle />}

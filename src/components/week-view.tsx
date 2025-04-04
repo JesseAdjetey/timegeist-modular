@@ -16,7 +16,7 @@ import {
 } from "./calendar/week-view/DragDropHandlers";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
 import { CalendarEventType } from "@/lib/stores/types";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useTodos } from "@/hooks/use-todos";
 import TodoCalendarDialog from "@/components/calendar/integration/TodoCalendarDialog";
 import { useTodoCalendarIntegration } from "@/hooks/use-todo-calendar-integration";
@@ -141,7 +141,7 @@ const WeekView = () => {
         return;
       }
       
-      // For regular events, use the handleDrop from the library
+      // For regular events, use the handleDrop function with proper options
       const options = {
         updateEventFn: updateEvent,
         addEventFn: addEvent,
@@ -150,6 +150,7 @@ const WeekView = () => {
         onShowTodoCalendarDialog: showTodoCalendarDialog
       };
       
+      // Call the library function with the proper options
       libHandleDrop(e, day, hour, options);
     } catch (error) {
       console.error("Error handling drop:", error);
