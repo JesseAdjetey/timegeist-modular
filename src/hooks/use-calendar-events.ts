@@ -73,7 +73,7 @@ export const useCalendarEvents = () => {
     endsAt: data.ends_at || data.time_end || ''
   });
 
-  const fetchEvents = async () => {
+  const fetchEvents = async (): Promise<void> => {
     if (!user) return;
 
     setLoadingEvents(true);
