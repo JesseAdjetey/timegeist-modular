@@ -6,10 +6,30 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CalendarEventType } from '@/lib/stores/types';
 import { nanoid } from '@/lib/utils';
 
+// Define more specific response types to avoid deep type recursion issues
+type SupabaseData = {
+  id: string;
+  title: string;
+  description: string;
+  color?: string;
+  date?: string;
+  is_locked?: boolean;
+  is_todo?: boolean;
+  has_alarm?: boolean;
+  has_reminder?: boolean;
+  todo_id?: string;
+  participants?: string[];
+  starts_at?: string;
+  time_start?: string;
+  ends_at?: string;
+  time_end?: string;
+  user_id?: string;
+};
+
 // Define the expected return type of addEvent to avoid infinite type recursion
 type AddEventResponse = {
   success: boolean;
-  data?: any;
+  data?: SupabaseData[];
   message?: string;
 };
 
@@ -37,7 +57,7 @@ export const useCalendarEvents = () => {
   const { user } = useAuth();
   const [loadingEvents, setLoadingEvents] = useState(false);
   
-  const transformEvent = (data: any): CalendarEventType => ({
+  const transformEvent = (data: SupabaseData): CalendarEventType => ({
     id: data.id,
     title: data.title || '',
     description: data.description || '',
