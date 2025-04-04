@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { CalendarEventType } from '@/lib/stores/types';
 import { TodoDragData, createCalendarEventFromTodo, createTodoFromCalendarEvent, syncEventTitleWithTodo } from '@/lib/dragdropHandlers';
@@ -29,42 +28,77 @@ export function useTodoCalendarIntegration() {
   
   // Create both calendar event and keep todo
   const handleCreateBoth = async () => {
-    if (!currentTodoData || !currentDateTimeData) return;
+    if (!currentTodoData) return;
     
-    await createCalendarEventFromTodo(
-      currentTodoData,
-      currentDateTimeData.date,
-      currentDateTimeData.startTime,
-      true, // keep todo
-      {
-        addEventFn: addEvent,
-        updateEventFn: updateEvent,
-        linkTodoToEventFn: linkTodoToEvent,
-        deleteTodoFn: deleteTodo,
-        onShowTodoCalendarDialog: showTodoCalendarDialog
+    // Handle different sources differently
+    if (currentTodoData.source === 'todo-module') {
+      // Todo to Calendar: Create calendar event from todo
+      if (currentDateTimeData) {
+        await createCalendarEventFromTodo(
+          currentTodoData,
+          currentDateTimeData.date,
+          currentDateTimeData.startTime,
+          true, // keep todo
+          {
+            addEventFn: addEvent,
+            updateEventFn: updateEvent,
+            linkTodoToEventFn: linkTodoToEvent,
+            deleteTodoFn: deleteTodo,
+            onShowTodoCalendarDialog: showTodoCalendarDialog
+          }
+        );
       }
-    );
+    } else if (currentTodoData.source === 'calendar-module') {
+      // Calendar to Todo: Create todo from calendar event
+      if (currentTodoData.eventId) {
+        // Find the event by id
+        const eventResponse = await useCalendarEvents().getEventById(currentTodoData.eventId);
+        
+        if (eventResponse && eventResponse.success && eventResponse.event) {
+          // Create a new todo from the event
+          const todoId = await createTodoFromCalendarEvent(
+            eventResponse.event,
+            linkTodoToEvent,
+            addTodo
+          );
+          
+          if (todoId) {
+            toast.success(`"${currentTodoData.text}" added to your todo list`);
+          } else {
+            toast.error("Failed to create todo from event");
+          }
+        } else {
+          toast.error("Could not find the calendar event");
+        }
+      }
+    }
     
     hideTodoCalendarDialog();
   };
   
   // Create calendar event only (delete todo)
   const handleCreateCalendarOnly = async () => {
-    if (!currentTodoData || !currentDateTimeData) return;
+    if (!currentTodoData) return;
     
-    await createCalendarEventFromTodo(
-      currentTodoData,
-      currentDateTimeData.date,
-      currentDateTimeData.startTime,
-      false, // don't keep todo
-      {
-        addEventFn: addEvent,
-        updateEventFn: updateEvent,
-        linkTodoToEventFn: linkTodoToEvent,
-        deleteTodoFn: deleteTodo,
-        onShowTodoCalendarDialog: showTodoCalendarDialog
-      }
-    );
+    if (currentTodoData.source === 'todo-module' && currentDateTimeData) {
+      // Todo to Calendar: Create calendar event from todo and delete todo
+      await createCalendarEventFromTodo(
+        currentTodoData,
+        currentDateTimeData.date,
+        currentDateTimeData.startTime,
+        false, // don't keep todo
+        {
+          addEventFn: addEvent,
+          updateEventFn: updateEvent,
+          linkTodoToEventFn: linkTodoToEvent,
+          deleteTodoFn: deleteTodo,
+          onShowTodoCalendarDialog: showTodoCalendarDialog
+        }
+      );
+    } else if (currentTodoData.source === 'calendar-module') {
+      // Calendar to Todo: No action needed, just close dialog
+      toast.info("No changes made to your calendar event");
+    }
     
     hideTodoCalendarDialog();
   };

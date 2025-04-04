@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
@@ -5,6 +6,7 @@ import CalendarEvent from "./calendar/CalendarEvent";
 import { CalendarEventType } from "@/lib/store";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
+import { TodoDragData } from "@/lib/dragdropHandlers";
 
 interface MonthViewBoxProps {
   day: dayjs.Dayjs | null;
@@ -15,6 +17,7 @@ interface MonthViewBoxProps {
   onEventDrop?: (event: any, date: string) => void;
   addEvent?: (event: CalendarEventType) => void;
   openEventForm?: (todoData: any, day: dayjs.Dayjs) => void;
+  showTodoCalendarDialog?: (todoData: TodoDragData, date: Date, startTime: string) => void;
 }
 
 const MonthViewBox: React.FC<MonthViewBoxProps> = ({
@@ -25,7 +28,8 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
   onDayClick,
   onEventDrop,
   addEvent,
-  openEventForm
+  openEventForm,
+  showTodoCalendarDialog
 }) => {
   const boxRef = useRef<HTMLDivElement>(null);
   
@@ -105,6 +109,12 @@ const MonthViewBox: React.FC<MonthViewBoxProps> = ({
       
       // Handle todo item drag
       if (data.source === 'todo-module') {
+        if (showTodoCalendarDialog && day) {
+          // Open todo calendar dialog
+          showTodoCalendarDialog(data, day.toDate(), "09:00");
+          return;
+        }
+        
         if (openEventForm && day) {
           // Open event form with todo data
           openEventForm(data, day);

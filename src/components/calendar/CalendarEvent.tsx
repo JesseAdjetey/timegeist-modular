@@ -51,6 +51,25 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
   // Whether this is a todo-related event
   const isTodoEvent = Boolean(event.isTodo || event.todoId || hasTodo);
 
+  const startCalendarDrag = (e: React.DragEvent) => {
+    if (isLocked) {
+      e.preventDefault();
+      return;
+    }
+
+    // Add the source field to identify this as coming from the calendar
+    const dragData = {
+      ...event,
+      source: "calendar-module",
+      isLocked: !!isLocked,
+      hasTodo: isTodoEvent,
+    };
+
+    console.log("Starting calendar event drag:", dragData);
+    e.dataTransfer.setData("application/json", JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = "move";
+  };
+
   return (
     <div
       className={cn(
@@ -61,7 +80,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
       )}
       onClick={(e) => handleClick(e, onClick)}
       draggable={!isLocked}
-      onDragStart={handleDragStart}
+      onDragStart={isLocked ? undefined : startCalendarDrag}
       onDragEnd={handleDragEnd}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}

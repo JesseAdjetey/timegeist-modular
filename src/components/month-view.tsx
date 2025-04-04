@@ -11,6 +11,8 @@ import dayjs from "dayjs";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
 import { CalendarEventType } from "@/lib/stores/types";
 import { toast } from "sonner";
+import TodoCalendarDialog from "@/components/calendar/integration/TodoCalendarDialog";
+import { useTodoCalendarIntegration } from "@/hooks/use-todo-calendar-integration";
 
 const MonthView = () => {
   const { twoDMonthArray } = useDateStore();
@@ -24,6 +26,17 @@ const MonthView = () => {
   const [todoData, setTodoData] = useState<any>(null);
   const [pendingDaySelection, setPendingDaySelection] =
     useState<dayjs.Dayjs | null>(null);
+  
+  // Use the todo calendar integration
+  const {
+    showTodoCalendarDialog,
+    isTodoCalendarDialogOpen,
+    hideTodoCalendarDialog,
+    currentTodoData,
+    handleCreateBoth,
+    handleCreateCalendarOnly,
+    handleCreateTodoFromEvent
+  } = useTodoCalendarIntegration();
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -133,6 +146,7 @@ const MonthView = () => {
                   onEventDrop={handleEventDrop}
                   addEvent={addEvent}
                   openEventForm={openEventForm}
+                  showTodoCalendarDialog={showTodoCalendarDialog}
                 />
               ))}
             </Fragment>
@@ -150,9 +164,22 @@ const MonthView = () => {
         initialTime={selectedTime}
         todoData={todoData}
         onSave={handleSaveEvent}
+        createTodoFromEvent={handleCreateTodoFromEvent}
       />
 
-      <EventDetails open={isEventSummaryOpen} onClose={closeEventSummary} />
+      <EventDetails 
+        open={isEventSummaryOpen} 
+        onClose={closeEventSummary} 
+      />
+      
+      {/* Todo-Calendar Integration Dialog */}
+      <TodoCalendarDialog
+        open={isTodoCalendarDialogOpen}
+        onClose={hideTodoCalendarDialog}
+        todoTitle={currentTodoData?.text || ""}
+        onCreateBoth={handleCreateBoth}
+        onCreateCalendarOnly={handleCreateCalendarOnly}
+      />
     </>
   );
 };

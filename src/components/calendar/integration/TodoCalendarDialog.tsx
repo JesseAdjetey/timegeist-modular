@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CalendarCheck, Calendar, ArrowLeft } from "lucide-react";
+import { CalendarCheck, Calendar, ListTodo, ArrowLeft } from "lucide-react";
 
 interface TodoCalendarDialogProps {
   open: boolean;
@@ -24,18 +24,24 @@ const TodoCalendarDialog: React.FC<TodoCalendarDialogProps> = ({
   onCreateBoth,
   onCreateCalendarOnly,
 }) => {
+  // Check if the title contains "calendar-module" to determine direction
+  const isFromCalendar = todoTitle.includes("calendar-module");
+  const cleanTitle = todoTitle.replace("calendar-module", "").trim();
+  
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md bg-background/95 border-white/10">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold gradient-text">
-            Schedule Todo Item
+            {isFromCalendar ? "Add Event to Todo List" : "Schedule Todo Item"}
           </DialogTitle>
         </DialogHeader>
 
         <div className="py-4">
           <p className="mb-4 text-foreground/80">
-            Would you like to make "{todoTitle}" a calendar event?
+            {isFromCalendar 
+              ? `Would you like to make "${cleanTitle}" a todo item?` 
+              : `Would you like to make "${todoTitle}" a calendar event?`}
           </p>
 
           <div className="flex flex-col gap-3 mt-6">
@@ -47,14 +53,25 @@ const TodoCalendarDialog: React.FC<TodoCalendarDialogProps> = ({
               <span>Both calendar event and todo item</span>
             </Button>
 
-            <Button
-              onClick={onCreateCalendarOnly}
-              variant="outline"
-              className="border-primary/20 text-primary hover:bg-primary/10 hover:text-primary flex items-center gap-2 justify-start py-6"
-            >
-              <Calendar size={20} />
-              <span>Calendar event only</span>
-            </Button>
+            {isFromCalendar ? (
+              <Button
+                onClick={onCreateCalendarOnly}
+                variant="outline"
+                className="border-primary/20 text-primary hover:bg-primary/10 hover:text-primary flex items-center gap-2 justify-start py-6"
+              >
+                <ListTodo size={20} />
+                <span>Keep as calendar event only</span>
+              </Button>
+            ) : (
+              <Button
+                onClick={onCreateCalendarOnly}
+                variant="outline"
+                className="border-primary/20 text-primary hover:bg-primary/10 hover:text-primary flex items-center gap-2 justify-start py-6"
+              >
+                <Calendar size={20} />
+                <span>Calendar event only</span>
+              </Button>
+            )}
 
             <Button
               onClick={onClose}
