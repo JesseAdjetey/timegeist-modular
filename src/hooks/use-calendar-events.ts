@@ -6,6 +6,32 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CalendarEventType } from '@/lib/stores/types';
 import { nanoid } from '@/lib/utils';
 
+// Define the expected return type of addEvent to avoid infinite type recursion
+type AddEventResponse = {
+  success: boolean;
+  data?: any;
+  message?: string;
+};
+
+// Define the expected return type for updateEvent
+type UpdateEventResponse = {
+  success: boolean;
+  message?: string;
+};
+
+// Define the expected return type for deleteEvent
+type DeleteEventResponse = {
+  success: boolean;
+  message?: string;
+};
+
+// Define the expected return type for getEventById
+type GetEventResponse = {
+  success: boolean;
+  event?: CalendarEventType;
+  message?: string;
+};
+
 export const useCalendarEvents = () => {
   const { events, setEvents, addEvent: addEventToStore, updateEvent: updateEventInStore, deleteEvent: deleteEventFromStore, isInitialized, setIsInitialized } = useEventStore();
   const { user } = useAuth();
@@ -17,14 +43,14 @@ export const useCalendarEvents = () => {
     description: data.description || '',
     date: data.date,
     color: data.color || 'bg-primary/70',
-    isLocked: data.is_locked || false,
-    isTodo: data.is_todo || false,
-    hasAlarm: data.has_alarm || false,
-    hasReminder: data.has_reminder || false,
+    isLocked: !!data.is_locked,
+    isTodo: !!data.is_todo,
+    hasAlarm: !!data.has_alarm,
+    hasReminder: !!data.has_reminder,
     todoId: data.todo_id,
     participants: data.participants || [],
-    startsAt: data.starts_at,
-    endsAt: data.ends_at
+    startsAt: data.starts_at || data.time_start || '',
+    endsAt: data.ends_at || data.time_end || ''
   });
 
   const fetchEvents = async () => {
@@ -53,7 +79,7 @@ export const useCalendarEvents = () => {
     }
   };
 
-  const addEvent = async (event: CalendarEventType) => {
+  const addEvent = async (event: CalendarEventType): Promise<AddEventResponse> => {
     if (!user) return { success: false, message: 'User not authenticated' };
 
     try {
@@ -93,7 +119,7 @@ export const useCalendarEvents = () => {
     }
   };
 
-  const updateEvent = async (event: CalendarEventType) => {
+  const updateEvent = async (event: CalendarEventType): Promise<UpdateEventResponse> => {
     if (!user) return { success: false, message: 'User not authenticated' };
 
     try {
@@ -131,7 +157,7 @@ export const useCalendarEvents = () => {
     }
   };
 
-  const deleteEvent = async (id: string) => {
+  const deleteEvent = async (id: string): Promise<DeleteEventResponse> => {
     if (!user) return { success: false, message: 'User not authenticated' };
 
     try {
@@ -154,7 +180,7 @@ export const useCalendarEvents = () => {
     }
   };
   
-  const getEventById = async (id: string) => {
+  const getEventById = async (id: string): Promise<GetEventResponse> => {
     try {
       // First try to find it in the local store
       const localEvent = events.find(e => e.id === id);
