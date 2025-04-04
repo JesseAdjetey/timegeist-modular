@@ -105,14 +105,21 @@ const MonthView = () => {
 
   const handleSaveEvent = async (event: CalendarEventType) => {
     try {
+      if (event.isTodo && !event.todoId && handleCreateTodoFromEvent) {
+        const newTodoId = await handleCreateTodoFromEvent(event);
+        if (newTodoId) {
+          event.todoId = newTodoId;
+        }
+      }
+      
       const response = await addEvent(event);
 
       if (response.success) {
         setFormOpen(false);
         toast.success(`${event.title} has been added to your calendar.`);
       } else {
-        toast.error(response.error
-          ? String(response.error)
+        toast.error(response.message
+          ? String(response.message)
           : "Failed to add event");
       }
     } catch (error) {

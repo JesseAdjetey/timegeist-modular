@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useEventStore } from '@/lib/store';
 import { supabase } from '@/integrations/supabase/client';
@@ -109,7 +110,7 @@ export const useCalendarEvents = () => {
           has_reminder: event.hasReminder,
           todo_id: event.todoId,
           participants: event.participants,
-	  starts_at: event.startsAt,
+          starts_at: event.startsAt,
           ends_at: event.endsAt
         })
         .eq('id', event.id)
@@ -162,7 +163,7 @@ export const useCalendarEvents = () => {
       }
       
       // If not found locally, try to fetch from the database
-      if (!user) return { success: false, error: 'User not authenticated' };
+      if (!user) return { success: false, message: 'User not authenticated' };
       
       const { data, error } = await supabase
         .from('events')
@@ -173,34 +174,20 @@ export const useCalendarEvents = () => {
         
       if (error) {
         console.error('Error fetching event by ID:', error);
-        return { success: false, error: error.message };
+        return { success: false, message: error.message };
       }
       
       if (!data) {
-        return { success: false, error: 'Event not found' };
+        return { success: false, message: 'Event not found' };
       }
       
       // Transform the database event to the app format
-      const transformedEvent: CalendarEventType = {
-        id: data.id,
-        title: data.title || '',
-        description: data.description || '',
-        date: data.date,
-        color: data.color || 'bg-primary/70',
-        isLocked: data.is_locked || false,
-        isTodo: data.is_todo || false,
-        hasAlarm: data.has_alarm || false,
-        hasReminder: data.has_reminder || false,
-        todoId: data.todo_id,
-        participants: data.participants || [],
-        startsAt: data.starts_at,
-        endsAt: data.ends_at
-      };
+      const transformedEvent = transformEvent(data);
       
       return { success: true, event: transformedEvent };
     } catch (err: any) {
       console.error('Unexpected error fetching event by ID:', err);
-      return { success: false, error: err.message || 'Unknown error' };
+      return { success: false, message: err.message || 'Unknown error' };
     }
   };
   

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useEventStore } from '@/lib/store';
@@ -15,7 +16,7 @@ interface EventDetailsProps {
 
 const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
   const { selectedEvent, closeEventSummary } = useEventStore();
-  const { updateEvent, removeEvent } = useCalendarEvents();
+  const { updateEvent, deleteEvent } = useCalendarEvents();
   const [isEditing, setIsEditing] = useState(false);
 
   if (!selectedEvent) return null;
@@ -44,7 +45,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
 
   const handleDelete = async () => {
     try {
-      await removeEvent(selectedEvent.id);
+      await deleteEvent(selectedEvent.id);
       onClose();
     } catch (error) {
       console.error('Error deleting event:', error);
