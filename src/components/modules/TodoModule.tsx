@@ -1,11 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import ModuleContainer from './ModuleContainer';
-import { cn } from '@/lib/utils';
-import { Calendar, Circle, CheckCircle, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { useEventStore } from '@/lib/store';
-import { useTodos, TodoItem } from '@/hooks/use-todos';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect } from "react";
+import ModuleContainer from "./ModuleContainer";
+import { cn } from "@/lib/utils";
+import {
+  Calendar,
+  Circle,
+  CheckCircle,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useEventStore } from "@/lib/store";
+import { useTodos, TodoItem } from "@/hooks/use-todos";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TodoModuleProps {
   title: string;
@@ -17,20 +24,32 @@ interface TodoModuleProps {
   isDragging?: boolean;
 }
 
-const TodoModule: React.FC<TodoModuleProps> = ({ 
-  title, 
-  onRemove, 
+const TodoModule: React.FC<TodoModuleProps> = ({
+  title,
+  onRemove,
   onTitleChange,
   isMinimized,
   onMinimize,
-  isDragging
+  isDragging,
 }) => {
   const [newItem, setNewItem] = useState("");
-  const [submitStatus, setSubmitStatus] = useState<{success?: boolean; message?: string} | null>(null);
+  const [submitStatus, setSubmitStatus] = useState<{
+    success?: boolean;
+    message?: string;
+  } | null>(null);
   const { addEvent, events } = useEventStore();
-  const { todos, loading, error, addTodo, toggleTodo, linkTodoToEvent, refetchTodos, lastResponse } = useTodos();
+  const {
+    todos,
+    loading,
+    error,
+    addTodo,
+    toggleTodo,
+    linkTodoToEvent,
+    refetchTodos,
+    lastResponse,
+  } = useTodos();
   const { user } = useAuth();
-  
+
   useEffect(() => {
     if (submitStatus) {
       const timer = setTimeout(() => {
@@ -39,7 +58,7 @@ const TodoModule: React.FC<TodoModuleProps> = ({
       return () => clearTimeout(timer);
     }
   }, [submitStatus]);
-  
+
   useEffect(() => {
     if (user) {
       refetchTodos();
@@ -47,12 +66,14 @@ const TodoModule: React.FC<TodoModuleProps> = ({
   }, [user, refetchTodos]);
 
   useEffect(() => {
-    const todoEvents = events.filter(event => event.todoId);
-    
+    const todoEvents = events.filter((event) => event.todoId);
+
     if (todoEvents.length > 0 && todos.length > 0) {
-      todoEvents.forEach(event => {
+      todoEvents.forEach((event) => {
         if (event.todoId) {
-          const matchingTodo = todos.find(todo => todo.id === event.todoId && !todo.isCalendarEvent);
+          const matchingTodo = todos.find(
+            (todo) => todo.id === event.todoId && !todo.isCalendarEvent
+          );
           if (matchingTodo) {
             linkTodoToEvent(matchingTodo.id, event.id);
           }
@@ -65,17 +86,17 @@ const TodoModule: React.FC<TodoModuleProps> = ({
     if (newItem.trim()) {
       setSubmitStatus(null);
       const response = await addTodo(newItem.trim());
-      
+
       if (response.success) {
         setNewItem("");
         setSubmitStatus({
           success: true,
-          message: response.message
+          message: response.message,
         });
       } else {
         setSubmitStatus({
           success: false,
-          message: response.message
+          message: response.message,
         });
       }
     }
@@ -86,7 +107,7 @@ const TodoModule: React.FC<TodoModuleProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleAddItem();
     }
   };
@@ -95,36 +116,37 @@ const TodoModule: React.FC<TodoModuleProps> = ({
     const todoData = {
       id: item.id,
       text: item.title,
-      source: 'todo-module'
+      source: "todo-module",
+      completed: item.completed,
     };
-    
+
     console.log("Starting drag with data:", todoData);
-    
-    e.dataTransfer.setData('application/json', JSON.stringify(todoData));
-    e.dataTransfer.effectAllowed = 'move';
-    
+
+    e.dataTransfer.setData("application/json", JSON.stringify(todoData));
+    e.dataTransfer.effectAllowed = "move";
+
     if (e.currentTarget) {
-      e.currentTarget.classList.add('opacity-50');
+      e.currentTarget.classList.add("opacity-50");
     }
   };
-  
+
   const handleDragEnd = (e: React.DragEvent) => {
     if (e.currentTarget) {
-      e.currentTarget.classList.remove('opacity-50');
+      e.currentTarget.classList.remove("opacity-50");
     }
   };
 
   if (isMinimized) {
     return (
-      <ModuleContainer 
-        title={title} 
+      <ModuleContainer
+        title={title}
         onRemove={onRemove}
         onTitleChange={onTitleChange}
         isMinimized={isMinimized}
         onMinimize={onMinimize}
       >
         <div className="text-center text-sm text-muted-foreground py-2">
-          {loading ? 'Loading...' : `${todos.length} todo items`}
+          {loading ? "Loading..." : `${todos.length} todo items`}
         </div>
       </ModuleContainer>
     );
@@ -132,8 +154,8 @@ const TodoModule: React.FC<TodoModuleProps> = ({
 
   if (!user) {
     return (
-      <ModuleContainer 
-        title={title} 
+      <ModuleContainer
+        title={title}
         onRemove={onRemove}
         onTitleChange={onTitleChange}
         isMinimized={isMinimized}
@@ -147,8 +169,8 @@ const TodoModule: React.FC<TodoModuleProps> = ({
   }
 
   return (
-    <ModuleContainer 
-      title={title} 
+    <ModuleContainer
+      title={title}
       onRemove={onRemove}
       onTitleChange={onTitleChange}
       isMinimized={isMinimized}
@@ -161,20 +183,24 @@ const TodoModule: React.FC<TodoModuleProps> = ({
             <span className="ml-2 text-sm">Loading todos...</span>
           </div>
         ) : error ? (
-          <div className="text-center text-sm text-red-400 p-2">Error: {error}</div>
+          <div className="text-center text-sm text-red-400 p-2">
+            Error: {error}
+          </div>
         ) : todos.length === 0 ? (
-          <div className="text-center text-sm text-muted-foreground p-2">No todos yet</div>
+          <div className="text-center text-sm text-muted-foreground p-2">
+            No todos yet
+          </div>
         ) : (
-          todos.map(item => (
-            <div 
+          todos.map((item) => (
+            <div
               key={item.id}
               className="flex items-center gap-2 bg-white/5 p-2 rounded-lg mb-2 group cursor-pointer"
               draggable={true}
               onDragStart={(e) => handleDragStart(e, item)}
               onDragEnd={handleDragEnd}
             >
-              <div 
-                className="cursor-pointer flex-shrink-0" 
+              <div
+                className="cursor-pointer flex-shrink-0"
                 onClick={() => handleToggleCompleted(item.id, item.completed)}
               >
                 {item.completed ? (
@@ -183,15 +209,18 @@ const TodoModule: React.FC<TodoModuleProps> = ({
                   <Circle size={18} className="text-primary/60" />
                 )}
               </div>
-              <span className={cn("text-sm flex-1", { 
-                "line-through opacity-50": item.completed 
-              })}>
+              <span
+                className={cn("text-sm flex-1", {
+                  "line-through opacity-50": item.completed,
+                })}
+              >
                 {item.title}
               </span>
               {item.isCalendarEvent && (
-                <span className="text-primary text-xs opacity-70">
-                  <Calendar size={14} />
-                </span>
+                <div className="text-primary text-xs opacity-70 flex-shrink-0 tooltip-container">
+                  <Calendar size={16} />
+                  <span className="tooltip">On Calendar</span>
+                </div>
               )}
             </div>
           ))
@@ -199,10 +228,14 @@ const TodoModule: React.FC<TodoModuleProps> = ({
       </div>
 
       {submitStatus && (
-        <div className={cn(
-          "text-sm p-2 mb-2 rounded-md flex items-center",
-          submitStatus.success ? "bg-green-500/20 text-green-300" : "bg-red-500/20 text-red-300"
-        )}>
+        <div
+          className={cn(
+            "text-sm p-2 mb-2 rounded-md flex items-center",
+            submitStatus.success
+              ? "bg-green-500/20 text-green-300"
+              : "bg-red-500/20 text-red-300"
+          )}
+        >
           {submitStatus.success ? (
             <CheckCircle2 size={16} className="mr-1" />
           ) : (

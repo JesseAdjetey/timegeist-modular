@@ -222,7 +222,7 @@ export function useTodos() {
   // Link a todo with a calendar event
   const linkTodoToEvent = async (todoId: string, eventId: string) => {
     try {
-      if (!user) return;
+      if (!user) return { success: false, message: 'User not authenticated' };
       
       const { error } = await supabase
         .from('todo_items')
@@ -232,18 +232,87 @@ export function useTodos() {
       
       if (error) {
         console.error('Error details:', error);
-        throw error;
+        return { success: false, message: error.message };
       }
       
+      // Update the todos state
       setTodos(prevTodos => prevTodos.map(todo => 
         todo.id === todoId ? { ...todo, isCalendarEvent: true, eventId } : todo
       ));
+      
+      return { success: true, message: 'Todo linked to event successfully' };
     } catch (err: any) {
       console.error('Error linking todo to event:', err);
-      toast.error('Failed to link todo to event');
+      return { success: false, message: err.message || 'Failed to link todo to event' };
     }
   };
 
+  // Update todo title - for synchronizing with calendar events
+  const updateTodoTitle = async (id: string, newTitle: string) => {
+    try {
+      if (!user || !newTitle.trim()) {
+        return { success: false, message: !user ? 'User not authenticated' : 'Title cannot be empty' };
+      }
+      
+      // Optimistically update the UI
+      setTodos(prevTodos => prevTodos.map(todo => 
+        todo.id === id ? { ...todo, title: newTitle.trim() } : todo
+      ));
+      
+      const { error } = await supabase
+        .from('todo_items')
+        .update({ title: newTitle.trim() })
+        .eq('id', id)
+        .eq('user_id', user.id); // Add user_id filter for extra security
+      
+      if (error) {
+        console.error('Error updating todo title:', error);
+        return { success: false, message: error.message };
+      }
+      
+      return { success: true, message: 'Todo title updated successfully' };
+    } catch (err: any) {
+      console.error('Error updating todo title:', err);
+      
+      // Revert the optimistic update
+      fetchTodos();
+      
+      return { success: false, message: err.message || 'Failed to update todo title' };
+    }
+  };
+
+  // Unlink a todo from a calendar event
+  const unlinkTodoFromEvent = async (todoId: string) => {
+    try {
+      if (!user) return { success: false, message: 'User not authenticated' };
+      
+      const { error } = await supabase
+        .from('todo_items')
+        .update({ event_id: null })
+        .eq('id', todoId)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('Error unlinking todo from event:', error);
+        return { success: false, message: error.message };
+      }
+      
+      // Update the todos state
+      setTodos(prevTodos => prevTodos.map(todo => 
+        todo.id === todoId ? { ...todo, isCalendarEvent: false, eventId: undefined } : todo
+      ));
+      
+      return { success: true, message: 'Todo unlinked from event successfully' };
+    } catch (err: any) {
+      console.error('Error unlinking todo from event:', err);
+      return { success: false, message: err.message || 'Failed to unlink todo from event' };
+    }
+  };
+
+  // Get a todo by ID
+  const getTodoById = (id: string): TodoItem | undefined => {
+    return todos.find(todo => todo.id === id);
+  };
   // Load todos when component mounts or user changes
   useEffect(() => {
     if (user) {
@@ -288,3 +357,4 @@ export function useTodos() {
     lastResponse
   };
 }
+

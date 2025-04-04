@@ -1,3 +1,5 @@
+// src/components/week-view.tsx
+
 import React, { useEffect, useState } from "react";
 import { getWeekDays } from "@/lib/getTime";
 import { useDateStore, useEventStore } from "@/lib/store";
@@ -9,18 +11,47 @@ import EventDetails from "@/components/calendar/EventDetails";
 import WeekHeader from "./calendar/week-view/WeekHeader";
 import TimeColumn from "./calendar/week-view/TimeColumn";
 import DayColumn from "./calendar/week-view/DayColumn";
-import { handleDragOver, handleDrop } from "./calendar/week-view/DragDropHandlers";
+import {
+  handleDragOver,
+  handleDrop,
+} from "./calendar/week-view/DragDropHandlers";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
 import { CalendarEventType } from "@/lib/stores/types";
+import { toast } from "@/components/ui/use-toast";
+import { useTodos } from "@/hooks/use-todos";
+import TodoCalendarDialog from "@/components/calendar/integration/TodoCalendarDialog";
+import { useTodoCalendarIntegration } from "@/hooks/use-todo-calendar-integration";
 
 const WeekView = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const { userSelectedDate } = useDateStore();
-  const { openEventSummary, toggleEventLock, isEventSummaryOpen, closeEventSummary } = useEventStore();
+  const {
+    openEventSummary,
+    toggleEventLock,
+    isEventSummaryOpen,
+    closeEventSummary,
+  } = useEventStore();
   const { events, updateEvent, addEvent } = useCalendarEvents();
   const [formOpen, setFormOpen] = useState(false);
-  const [selectedTime, setSelectedTime] = useState<{date: Date, startTime: string} | undefined>();
+  const [selectedTime, setSelectedTime] = useState<
+    { date: Date; startTime: string } | undefined
+  >();
   const [todoData, setTodoData] = useState<any>(null);
+  // Add this new state for pending time selection
+  const [pendingTimeSelection, setPendingTimeSelection] = useState<{
+    day: dayjs.Dayjs;
+    hour: dayjs.Dayjs;
+  } | null>(null);
+
+  const {
+    isTodoCalendarDialogOpen,
+    currentTodoData,
+    showTodoCalendarDialog,
+    hideTodoCalendarDialog,
+    handleCreateBoth,
+    handleCreateCalendarOnly,
+    handleCreateTodoFromEvent
+  } = useTodoCalendarIntegration();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -29,65 +60,147 @@ const WeekView = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // New useEffect to handle time slot selection properly
+  useEffect(() => {
+    if (pendingTimeSelection) {
+      const { day, hour } = pendingTimeSelection;
+
+      // First update the selected time
+      setSelectedTime({
+        date: day.toDate(),
+        startTime: hour.format("HH:00"),
+      });
+
+      // Then open the form in the next render cycle
+      // This ensures selectedTime is updated before the form uses it
+      setTimeout(() => {
+        setFormOpen(true);
+        // Clear the pending selection
+        setPendingTimeSelection(null);
+      }, 0);
+    }
+  }, [pendingTimeSelection]);
+
   const getEventsForDay = (day: dayjs.Dayjs) => {
-    const dayStr = day.format('YYYY-MM-DD');
-    return events.filter(event => event.date === dayStr);
+    const dayStr = day.format("YYYY-MM-DD");
+    return events.filter((event) => event.date === dayStr);
   };
 
+  // Update to use the pending time selection approach
   const handleTimeSlotClick = (day: dayjs.Dayjs, hour: dayjs.Dayjs) => {
     setTodoData(null); // Reset todo data
-    setSelectedTime({
-      date: day.toDate(),
-      startTime: hour.format("HH:00")
-    });
-    setFormOpen(true);
+    // Instead of immediately updating state and opening form,
+    // set a pending time selection that will be processed by the useEffect
+    setPendingTimeSelection({ day, hour });
   };
-  
+
   const openEventForm = (todoData: any, date: Date, startTime: string) => {
-    console.log("Opening event form with todo data:", todoData, date, startTime);
+    console.log(
+      "Opening event form with todo data:",
+      todoData,
+      date,
+      startTime
+    );
     setTodoData(todoData);
-    setSelectedTime({
-      date: date,
-      startTime: startTime
-    });
-    setFormOpen(true);
+
+    // Create a dayjs object from the date and hour for the pending selection
+    const dayObj = dayjs(date);
+    const hourObj = dayjs(date).hour(parseInt(startTime.split(":")[0]));
+
+    setPendingTimeSelection({ day: dayObj, hour: hourObj });
+  };
+
+  const handleDrop = (e: React.DragEvent, day: dayjs.Dayjs, hour: dayjs.Dayjs) => {
+    // Extract logic to parse todo data, calculate time, and show dialog
+    try {
+      const dataString = e.dataTransfer.getData('application/json');
+      if (!dataString) {
+        console.error("No data found in drag event");
+        return;
+      }
+      
+      const data = JSON.parse(dataString);
+      
+      // Handle todo item drag
+      if (data.source === 'todo-module') {
+        // Calculate precise drop time based on cursor position
+        const rect = e.currentTarget.getBoundingClientRect();
+        const relativeY = e.clientY - rect.top;
+        const hourHeight = rect.height;
+        const minutesWithinHour = Math.floor((relativeY / hourHeight) * 60);
+        
+        // Snap to nearest 30-minute interval (0 or 30)
+        const snappedMinutes = minutesWithinHour < 30 ? 0 : 30;
+        
+        // Get the base hour and add the snapped minutes
+        const baseHour = hour.hour();
+        const startTime = `${baseHour.toString().padStart(2, '0')}:${snappedMinutes.toString().padStart(2, '0')}`;
+        
+        // Show the integration dialog
+        showTodoCalendarDialog(data, day.toDate(), startTime);
+        return;
+      }
+      
+      // Use the dragdropHandlers for regular events
+      const options = {
+        updateEventFn: updateEvent,
+        addEventFn: addEvent,
+        linkTodoToEventFn: linkTodoToEvent,
+        deleteTodoFn: deleteTodo,
+        onShowTodoCalendarDialog: showTodoCalendarDialog
+      };
+      
+      libHandleDrop(e, day, hour, options);
+    } catch (error) {
+      console.error("Error handling drop:", error);
+    }
   };
 
   const handleUpdateEvent = async (event: CalendarEventType) => {
     await updateEvent(event);
   };
-  
+
   const handleAddEvent = async (event: CalendarEventType) => {
     await addEvent(event);
     return;
   };
 
-const handleSaveEvent = async (event: CalendarEventType) => {
-  try {
-    const response = await addEvent(event);
-    
-    if (response.success) {
-      setFormOpen(false); // Close form if applicable
-      toast({
-        title: "Event Added",
-        description: `${event.title} has been added to your calendar.`,
-      });
-    } else {
+  const handleSaveEvent = async (event: CalendarEventType) => {
+    try {
+
+      if (event.isTodo && !event.todoId) {
+        const newTodoId = await handleCreateTodoFromEvent(event);
+        if (newTodoId) {
+          event.todoId = newTodoId;
+        }
+      }
+      
+      const response = await addEvent(event);
+
+      if (response.success) {
+        setFormOpen(false); // Close form if applicable
+        toast({
+          title: "Event Added",
+          description: `${event.title} has been added to your calendar.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error
+            ? String(response.error)
+            : "Failed to add event",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error adding event:", error);
       toast({
         title: "Error",
-        description: response.error ? String(response.error) : "Failed to add event",
-        variant: "destructive"
+        description: "An unexpected error occurred",
+        variant: "destructive",
       });
     }
-  } catch (error) {
-    console.error("Error adding event:", error);
-    toast({
-      title: "Error",
-      description: "An unexpected error occurred",
-      variant: "destructive"
-    });
-  }
-};
+  };
 
   return (
     <>
@@ -103,7 +216,7 @@ const handleSaveEvent = async (event: CalendarEventType) => {
             {/* Week Days Corresponding Boxes */}
             {getWeekDays(userSelectedDate).map(({ currentDate }, index) => {
               const dayEvents = getEventsForDay(currentDate);
-              
+
               return (
                 <DayColumn
                   key={index}
@@ -112,7 +225,16 @@ const handleSaveEvent = async (event: CalendarEventType) => {
                   currentTime={currentTime}
                   onTimeSlotClick={handleTimeSlotClick}
                   onDragOver={handleDragOver}
-                  onDrop={(e, day, hour) => handleDrop(e, day, hour, handleUpdateEvent, handleAddEvent, openEventForm)}
+                  onDrop={(e, day, hour) =>
+                    handleDrop(
+                      e,
+                      day,
+                      hour,
+                      handleUpdateEvent,
+                      handleAddEvent,
+                      openEventForm
+                    )
+                  }
                   openEventSummary={openEventSummary}
                   toggleEventLock={toggleEventLock}
                 />
@@ -123,8 +245,8 @@ const handleSaveEvent = async (event: CalendarEventType) => {
       </div>
       <AddEventButton />
 
-      <EventForm 
-        open={formOpen} 
+      <EventForm
+        open={formOpen}
         onClose={() => {
           setFormOpen(false);
           setTodoData(null);
@@ -134,10 +256,7 @@ const handleSaveEvent = async (event: CalendarEventType) => {
         onSave={handleSaveEvent}
       />
 
-      <EventDetails
-        open={isEventSummaryOpen}
-        onClose={closeEventSummary}
-      />
+      <EventDetails open={isEventSummaryOpen} onClose={closeEventSummary} />
     </>
   );
 };

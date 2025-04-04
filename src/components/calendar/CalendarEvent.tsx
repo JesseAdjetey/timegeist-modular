@@ -1,12 +1,11 @@
-
-import React from 'react';
-import { cn } from '@/lib/utils';
-import { useEventDrag } from '@/hooks/use-event-drag';
-import EventIndicators from './event-components/EventIndicators';
-import EventLockToggle from './event-components/EventLockToggle';
-import DragHandle from './event-components/DragHandle';
-import { CalendarEventType } from '@/lib/store';
-import { CheckSquare } from 'lucide-react';
+import React from "react";
+import { cn } from "@/lib/utils";
+import { useEventDrag } from "@/hooks/use-event-drag";
+import EventIndicators from "./event-components/EventIndicators";
+import EventLockToggle from "./event-components/EventLockToggle";
+import DragHandle from "./event-components/DragHandle";
+import { CalendarEventType } from "@/lib/store";
+import { CheckSquare, ListTodo } from "lucide-react";
 
 interface CalendarEventProps {
   event: CalendarEventType;
@@ -23,7 +22,7 @@ interface CalendarEventProps {
 
 const CalendarEvent: React.FC<CalendarEventProps> = ({
   event,
-  color = 'bg-primary/70',
+  color = "bg-primary/70",
   isLocked = false,
   hasAlarm = false,
   hasReminder = false,
@@ -31,7 +30,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
   participants = [],
   onClick,
   onLockToggle,
-  onMouseDown
+  onMouseDown,
 }) => {
   const {
     isDragging,
@@ -40,7 +39,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
     handleTouchStart,
     handleTouchMove,
     handleTouchEnd,
-    handleClick
+    handleClick,
   } = useEventDrag(event, isLocked, color);
 
   const handleLockToggle = (e: React.MouseEvent) => {
@@ -48,10 +47,13 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
     if (onLockToggle) onLockToggle(!isLocked);
   };
 
+  // Whether this is a todo-related event
+  const isTodoEvent = event.isTodo || event.todoId || hasTodo;
+
   return (
-    <div 
+    <div
       className={cn(
-        "calendar-event group", 
+        "calendar-event group",
         color,
         !isLocked && "cursor-move",
         isDragging && "opacity-70"
@@ -67,32 +69,29 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
     >
       <div className="relative">
         {/* Lock/Unlock Button */}
-        <EventLockToggle 
-          isLocked={isLocked} 
-          onToggle={handleLockToggle} 
-        />
+        <EventLockToggle isLocked={isLocked} onToggle={handleLockToggle} />
 
         {/* Drag Handle (only shown if not locked) */}
         {!isLocked && <DragHandle />}
 
         {/* Event Title */}
         <div className="font-medium">{event.title}</div>
-        
+
         {/* Event Time or Description */}
         <div className="text-xs opacity-80">{event.description}</div>
-        
+
         {/* Indicators */}
         <EventIndicators
           hasAlarm={hasAlarm}
           hasReminder={hasReminder}
-          hasTodo={hasTodo}
+          hasTodo={isTodoEvent}
           participants={participants}
         />
-        
+
         {/* Todo indicator at bottom right */}
-        {event.isTodo && (
+        {isTodoEvent && (
           <div className="absolute bottom-0 right-0 bg-white/10 rounded-full p-0.5 m-0.5">
-            <CheckSquare size={12} className="text-white" />
+            <ListTodo size={12} className="text-white" />
           </div>
         )}
       </div>
