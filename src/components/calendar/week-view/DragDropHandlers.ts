@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { CalendarEventType } from "@/lib/stores/types";
 import dayjs from "dayjs";
@@ -14,7 +15,7 @@ export const handleDrop = (
   e: React.DragEvent, 
   day: dayjs.Dayjs, 
   hour: dayjs.Dayjs,
-  updateEventFn: (event: CalendarEventType) => Promise<void>,
+  updateEventFn: (event: CalendarEventType) => Promise<any>,
   addEventFn?: (event: CalendarEventType) => Promise<any>,
   openEventForm?: (todoData: any, date: Date, timeStart: string) => void
 ) => {

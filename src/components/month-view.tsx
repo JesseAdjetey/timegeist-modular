@@ -1,3 +1,4 @@
+
 // src/components/month-view.tsx
 
 import React, { Fragment, useState, useEffect } from "react";
@@ -80,7 +81,7 @@ const MonthView = () => {
     setPendingDaySelection(day);
   };
 
-  const handleEventDrop = async (event: any, newDate: string) => {
+  const handleEventDrop = async (event: CalendarEventType, newDate: string) => {
     const updatedEvent = {
       ...event,
       date: newDate,

@@ -70,7 +70,7 @@ const CalendarEvent: React.FC<CalendarEventProps> = ({
     >
       <div className="relative">
         {/* Lock/Unlock Button */}
-        <EventLockToggle isLocked={!!isLocked} onToggle={handleLockToggle} />
+        <EventLockToggle isLocked={Boolean(isLocked)} onToggle={handleLockToggle} />
 
         {/* Drag Handle (only shown if not locked) */}
         {!isLocked && <DragHandle />}

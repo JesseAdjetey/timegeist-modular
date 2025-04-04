@@ -141,17 +141,8 @@ const WeekView = () => {
         return;
       }
       
-      // For regular events, use the handleDrop function with proper options
-      const options = {
-        updateEventFn: updateEvent,
-        addEventFn: addEvent,
-        linkTodoToEventFn: linkTodoToEvent,
-        deleteTodoFn: deleteTodo,
-        onShowTodoCalendarDialog: showTodoCalendarDialog
-      };
-      
-      // Call the library function with the proper options
-      libHandleDrop(e, day, hour, options);
+      // For regular calendar events, use the library handleDrop function
+      libHandleDrop(e, day, hour, updateEvent);
     } catch (error) {
       console.error("Error handling drop:", error);
       toast.error("Failed to process drop event");
@@ -181,26 +172,15 @@ const WeekView = () => {
 
       if (response.success) {
         setFormOpen(false);
-        toast({
-          title: "Event Added",
-          description: `${event.title} has been added to your calendar.`,
-        });
+        toast.success(`${event.title} has been added to your calendar.`);
       } else {
-        toast({
-          title: "Error",
-          description: response.error
-            ? String(response.error)
-            : "Failed to add event",
-          variant: "destructive",
-        });
+        toast.error(response.error
+          ? String(response.error)
+          : "Failed to add event");
       }
     } catch (error) {
       console.error("Error adding event:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+      toast.error("An unexpected error occurred");
     }
   };
 

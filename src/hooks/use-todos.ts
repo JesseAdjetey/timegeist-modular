@@ -27,7 +27,6 @@ export function useTodos() {
   const [lastResponse, setLastResponse] = useState<TodoResponse | null>(null);
   const { user } = useAuth();
 
-  // Fetch todos from Supabase
   const fetchTodos = useCallback(async () => {
     try {
       setLoading(true);
@@ -40,7 +39,6 @@ export function useTodos() {
       
       console.log('Fetching todos for user:', user.id);
       
-      // Query the todo_items table and explicitly filter by user_id
       const { data, error } = await supabase
         .from('todo_items')
         .select('id, title, completed, created_at, completed_at, event_id')
@@ -54,7 +52,6 @@ export function useTodos() {
       
       console.log('Fetched todos:', data);
       
-      // Transform the data to match our TodoItem interface
       const transformedTodos = data.map(item => ({
         id: item.id,
         title: item.title,
@@ -68,16 +65,13 @@ export function useTodos() {
       setTodos(transformedTodos);
     } catch (err: any) {
       console.error('Error fetching todos:', err);
-      // Use the actual error message instead of a generic one
       setError(err.message || err.error_description || String(err));
-      // Still set the todos to an empty array so the UI doesn't break
       setTodos([]);
     } finally {
       setLoading(false);
     }
   }, [user]);
 
-  // Add a new todo to Supabase
   const addTodo = async (title: string) => {
     try {
       if (!user || !title.trim()) {
@@ -91,13 +85,11 @@ export function useTodos() {
       
       console.log('Adding new todo:', title);
       
-      // Create a todo item with user_id explicitly set
-      // Note: Removed id field to let Supabase generate it
       const newTodo = {
         title: title.trim(),
         completed: false,
         order_position: 0,
-        user_id: user.id // Explicitly set the user_id to the current user
+        user_id: user.id
       };
       
       console.log('Inserting todo with data:', newTodo);
@@ -120,8 +112,6 @@ export function useTodos() {
       
       console.log('Todo successfully added with response:', data);
       
-      // Only optimistically update the UI if the database operation succeeded
-      // Use the ID returned from Supabase for the new todo item
       if (data && data.length > 0) {
         setTodos(prevTodos => [{
           id: data[0].id,
@@ -160,12 +150,10 @@ export function useTodos() {
     }
   };
 
-  // Toggle todo completion status
   const toggleTodo = async (id: string, completed: boolean) => {
     try {
       if (!user) return;
       
-      // Optimistically update the UI
       setTodos(prevTodos => prevTodos.map(todo => 
         todo.id === id ? { ...todo, completed: !completed } : todo
       ));
@@ -174,7 +162,7 @@ export function useTodos() {
         .from('todo_items')
         .update({ completed: !completed })
         .eq('id', id)
-        .eq('user_id', user.id); // Add user_id filter for extra security
+        .eq('user_id', user.id);
       
       if (error) {
         console.error('Error details:', error);
@@ -184,26 +172,23 @@ export function useTodos() {
       console.error('Error updating todo:', err);
       toast.error('Failed to update todo');
       
-      // Revert the optimistic update
       setTodos(prevTodos => prevTodos.map(todo => 
         todo.id === id ? { ...todo, completed } : todo
       ));
     }
   };
 
-  // Delete a todo
   const deleteTodo = async (id: string) => {
     try {
       if (!user) return;
       
-      // Optimistically update the UI
       setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
       
       const { error } = await supabase
         .from('todo_items')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id); // Add user_id filter for extra security
+        .eq('user_id', user.id);
       
       if (error) {
         console.error('Error details:', error);
@@ -213,12 +198,10 @@ export function useTodos() {
       console.error('Error deleting todo:', err);
       toast.error('Failed to delete todo');
       
-      // Refetch todos to restore the correct state
       fetchTodos();
     }
   };
 
-  // Link a todo with a calendar event
   const linkTodoToEvent = async (todoId: string, eventId: string) => {
     try {
       if (!user) return { success: false, message: 'User not authenticated' };
@@ -227,14 +210,13 @@ export function useTodos() {
         .from('todo_items')
         .update({ event_id: eventId })
         .eq('id', todoId)
-        .eq('user_id', user.id); // Add user_id filter for extra security
+        .eq('user_id', user.id);
       
       if (error) {
         console.error('Error details:', error);
         return { success: false, message: error.message };
       }
       
-      // Update the todos state
       setTodos(prevTodos => prevTodos.map(todo => 
         todo.id === todoId ? { ...todo, isCalendarEvent: true, eventId } : todo
       ));
@@ -246,14 +228,12 @@ export function useTodos() {
     }
   };
 
-  // Update todo title - for synchronizing with calendar events
   const updateTodoTitle = async (id: string, newTitle: string): Promise<{ success: boolean; message: string }> => {
     try {
       if (!user || !newTitle.trim()) {
         return { success: false, message: !user ? 'User not authenticated' : 'Title cannot be empty' };
       }
       
-      // Optimistically update the UI
       setTodos(prevTodos => prevTodos.map(todo => 
         todo.id === id ? { ...todo, title: newTitle.trim() } : todo
       ));
@@ -262,7 +242,7 @@ export function useTodos() {
         .from('todo_items')
         .update({ title: newTitle.trim() })
         .eq('id', id)
-        .eq('user_id', user.id); // Add user_id filter for extra security
+        .eq('user_id', user.id);
       
       if (error) {
         console.error('Error updating todo title:', error);
@@ -273,14 +253,12 @@ export function useTodos() {
     } catch (err: any) {
       console.error('Error updating todo title:', err);
       
-      // Revert the optimistic update
       fetchTodos();
       
       return { success: false, message: err.message || 'Failed to update todo title' };
     }
   };
 
-  // Unlink a todo from a calendar event
   const unlinkTodoFromEvent = async (todoId: string) => {
     try {
       if (!user) return { success: false, message: 'User not authenticated' };
@@ -296,7 +274,6 @@ export function useTodos() {
         return { success: false, message: error.message };
       }
       
-      // Update the todos state
       setTodos(prevTodos => prevTodos.map(todo => 
         todo.id === todoId ? { ...todo, isCalendarEvent: false, eventId: undefined } : todo
       ));
@@ -308,12 +285,10 @@ export function useTodos() {
     }
   };
 
-  // Get a todo by ID
   const getTodoById = (id: string): TodoItem | undefined => {
     return todos.find(todo => todo.id === id);
   };
 
-  // Load todos when component mounts or user changes
   useEffect(() => {
     if (user) {
       console.log('User is authenticated, fetching todos');
@@ -324,14 +299,12 @@ export function useTodos() {
       setLoading(false);
     }
     
-    // Set up real-time subscription for todos
     const todosSubscription = supabase
       .channel('todos-changes')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'todo_items', filter: `user_id=eq.${user?.id}` }, 
         (payload) => {
           console.log('Realtime update received:', payload);
-          // Only refetch when the user is authenticated
           if (user) {
             fetchTodos();
           }
