@@ -1,3 +1,4 @@
+
 import React from "react";
 import dayjs from "dayjs";
 import CalendarEvent from "../calendar/CalendarEvent";
@@ -8,6 +9,7 @@ import { getTimeInfo } from "../calendar/event-utils/touch-handlers";
 import { nanoid } from "nanoid";
 import { CalendarEventType } from "@/lib/stores/types";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
+import { useTodoCalendarIntegration } from "@/hooks/use-todo-calendar-integration";
 
 interface TimeSlotProps {
   hour: dayjs.Dayjs;
@@ -26,6 +28,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
 }) => {
   const { openEventSummary, toggleEventLock } = useEventStore();
   const { updateEvent } = useCalendarEvents();
+  const { showTodoCalendarDialog } = useTodoCalendarIntegration();
 
   // Handle dropping an event onto a time slot
   const handleDrop = (e: React.DragEvent) => {
@@ -45,9 +48,23 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       
       // Handle todo item drag
       if (data.source === 'todo-module') {
-        console.log("Todo item detected, opening form:", openEventForm !== undefined);
+        console.log("Todo item detected");
+        
+        // If we have the showTodoCalendarDialog function, use it
+        if (showTodoCalendarDialog) {
+          // Get the current date
+          const currentDate = dayjs().startOf('day').toDate();
+          
+          // Format start time from the hour
+          const startTime = hour.format("HH:00");
+          
+          // Show the integration dialog
+          showTodoCalendarDialog(data, currentDate, startTime);
+          return;
+        }
+        
+        // Fallback to openEventForm if available
         if (openEventForm) {
-          // Open event form with todo data
           openEventForm(data, hour);
           return;
         }
@@ -97,10 +114,15 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       const descriptionParts = data.description.split('|');
       const descriptionText = descriptionParts.length > 1 ? descriptionParts[1].trim() : '';
       
-      // Create the updated event
+      // Get the current date in YYYY-MM-DD format
+      const currentDate = dayjs().format('YYYY-MM-DD');
+      
+      // Create the updated event with ISO timestamps
       const updatedEvent = {
         ...data,
-        description: `${newStartTime} - ${newEndTime} | ${descriptionText}`
+        description: `${newStartTime} - ${newEndTime} | ${descriptionText}`,
+        startsAt: dayjs(`${currentDate}T${newStartTime}`).toISOString(),
+        endsAt: dayjs(`${currentDate}T${newEndTime}`).toISOString()
       };
       
       console.log("Updating event with new time:", updatedEvent);
@@ -156,7 +178,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
       if (response.success) {
         toast.success(`Todo "${todoData.text}" added to calendar at ${startTime}`);
       } else {
-        toast.error(`Failed to add todo: ${response.message}`);
+        toast.error(`Failed to add todo: ${response.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error("Error adding event from todo:", error);

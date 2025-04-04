@@ -31,4 +31,8 @@ export type CalendarEventType = {
   
   // Optional date field for backward compatibility
   date?: string; // Derived from startsAt for backward compatibility
+  
+  // Additional fields for UI display
+  timeStart?: string; // Derived from startsAt
+  timeEnd?: string; // Derived from endsAt
 };

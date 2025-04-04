@@ -1,4 +1,3 @@
-// src/components/week-view.tsx
 
 import React, { useEffect, useState } from "react";
 import { getWeekDays } from "@/lib/getTime";
@@ -13,7 +12,7 @@ import TimeColumn from "./calendar/week-view/TimeColumn";
 import DayColumn from "./calendar/week-view/DayColumn";
 import {
   handleDragOver,
-  handleDrop,
+  handleDrop as libHandleDrop,
 } from "./calendar/week-view/DragDropHandlers";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
 import { CalendarEventType } from "@/lib/stores/types";
@@ -32,6 +31,7 @@ const WeekView = () => {
     closeEventSummary,
   } = useEventStore();
   const { events, updateEvent, addEvent } = useCalendarEvents();
+  const { linkTodoToEvent, deleteTodo } = useTodos();
   const [formOpen, setFormOpen] = useState(false);
   const [selectedTime, setSelectedTime] = useState<
     { date: Date; startTime: string } | undefined
@@ -141,7 +141,7 @@ const WeekView = () => {
         return;
       }
       
-      // Use the dragdropHandlers for regular events
+      // For regular events, use the handleDrop from the library
       const options = {
         updateEventFn: updateEvent,
         addEventFn: addEvent,
@@ -153,21 +153,22 @@ const WeekView = () => {
       libHandleDrop(e, day, hour, options);
     } catch (error) {
       console.error("Error handling drop:", error);
+      toast.error("Failed to process drop event");
     }
   };
 
-  const handleUpdateEvent = async (event: CalendarEventType) => {
+  // The following handler functions are wrappers for the hook functions
+  // to ensure proper typing and avoid TypeScript errors
+  const handleUpdateEvent = async (event: CalendarEventType): Promise<void> => {
     await updateEvent(event);
   };
 
-  const handleAddEvent = async (event: CalendarEventType) => {
+  const handleAddEvent = async (event: CalendarEventType): Promise<void> => {
     await addEvent(event);
-    return;
   };
 
   const handleSaveEvent = async (event: CalendarEventType) => {
     try {
-
       if (event.isTodo && !event.todoId) {
         const newTodoId = await handleCreateTodoFromEvent(event);
         if (newTodoId) {
@@ -178,7 +179,7 @@ const WeekView = () => {
       const response = await addEvent(event);
 
       if (response.success) {
-        setFormOpen(false); // Close form if applicable
+        setFormOpen(false);
         toast({
           title: "Event Added",
           description: `${event.title} has been added to your calendar.`,
@@ -225,16 +226,7 @@ const WeekView = () => {
                   currentTime={currentTime}
                   onTimeSlotClick={handleTimeSlotClick}
                   onDragOver={handleDragOver}
-                  onDrop={(e, day, hour) =>
-                    handleDrop(
-                      e,
-                      day,
-                      hour,
-                      handleUpdateEvent,
-                      handleAddEvent,
-                      openEventForm
-                    )
-                  }
+                  onDrop={(e, day, hour) => handleDrop(e, day, hour)}
                   openEventSummary={openEventSummary}
                   toggleEventLock={toggleEventLock}
                 />
@@ -257,6 +249,17 @@ const WeekView = () => {
       />
 
       <EventDetails open={isEventSummaryOpen} onClose={closeEventSummary} />
+
+      {/* Todo Calendar Dialog for integration */}
+      {currentTodoData && (
+        <TodoCalendarDialog
+          open={isTodoCalendarDialogOpen}
+          onClose={hideTodoCalendarDialog}
+          todoTitle={currentTodoData.text}
+          onCreateBoth={handleCreateBoth}
+          onCreateCalendarOnly={handleCreateCalendarOnly}
+        />
+      )}
     </>
   );
 };

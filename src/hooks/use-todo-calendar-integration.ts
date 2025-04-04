@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { CalendarEventType } from '@/lib/stores/types';
 import { TodoDragData, createCalendarEventFromTodo, createTodoFromCalendarEvent, syncEventTitleWithTodo } from '@/lib/dragdropHandlers';
@@ -14,6 +15,7 @@ export function useTodoCalendarIntegration() {
   
   // Show the integration dialog
   const showTodoCalendarDialog = (todoData: TodoDragData, date: Date, startTime: string) => {
+    console.log("Showing todo calendar dialog with:", todoData, date, startTime);
     setCurrentTodoData(todoData);
     setCurrentDateTimeData({ date, startTime });
     setIsTodoCalendarDialogOpen(true);
@@ -37,6 +39,7 @@ export function useTodoCalendarIntegration() {
         addEventFn: addEvent,
         updateEventFn: updateEvent,
         linkTodoToEventFn: linkTodoToEvent,
+        deleteTodoFn: deleteTodo,
         onShowTodoCalendarDialog: showTodoCalendarDialog
       }
     );

@@ -10,8 +10,11 @@ interface EventLockToggleProps {
 const EventLockToggle: React.FC<EventLockToggleProps> = ({ isLocked, onToggle }) => {
   return (
     <button 
-      className="event-lock"
-      onClick={onToggle}
+      className="event-lock absolute right-1 top-1 z-20"
+      onClick={(e) => {
+        e.stopPropagation(); // Prevent triggering parent click events
+        onToggle(e);
+      }}
     >
       {isLocked ? 
         <Lock size={14} className="text-white/70" /> : 
