@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { CalendarEventType } from "@/lib/stores/types";
 import dayjs from "dayjs";
@@ -10,7 +9,6 @@ export interface TodoDragData {
   text: string;
   source: string;
   completed?: boolean;
-  eventId?: string; // For calendar events being dragged to todo
 }
 
 export interface DragHandlerOptions {
@@ -156,7 +154,6 @@ export const syncEventTitleWithTodo = async (
   }
 };
 
-// Handle dropping events onto calendar cells
 export const handleDrop = (
   e: React.DragEvent, 
   day: dayjs.Dayjs, 

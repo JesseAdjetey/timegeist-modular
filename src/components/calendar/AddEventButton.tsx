@@ -50,7 +50,7 @@ const AddEventButton = () => {
       } else {
         toast({
           title: "Error",
-          description: response.message ? String(response.message) : "Failed to add event",
+          description: response.error ? String(response.error) : "Failed to add event",
           variant: "destructive"
         });
       }

@@ -141,52 +141,8 @@ const WeekView = () => {
         return;
       }
       
-      // For regular calendar events, use the event directly
-      if (data.isLocked) return;
-      
-      // Call updateEvent directly instead of using libHandleDrop
-      const rect = e.currentTarget.getBoundingClientRect();
-      const relativeY = e.clientY - rect.top;
-      const hourHeight = rect.height;
-      const minutesWithinHour = Math.floor((relativeY / hourHeight) * 60);
-      
-      const snappedMinutes = minutesWithinHour < 30 ? 0 : 30;
-      const baseHour = hour.hour();
-      
-      const oldStartParts = data.timeStart?.split(':') || ['00', '00'];
-      const oldEndParts = data.timeEnd?.split(':') || ['01', '00'];
-      
-      const oldStartMinutes = parseInt(oldStartParts[0]) * 60 + parseInt(oldStartParts[1] || '0');
-      const oldEndMinutes = parseInt(oldEndParts[0]) * 60 + parseInt(oldEndParts[1] || '0');
-      
-      const durationMinutes = oldEndMinutes - oldStartMinutes;
-      
-      const newStartMinutes = baseHour * 60 + snappedMinutes;
-      const newEndMinutes = newStartMinutes + durationMinutes;
-      
-      const newStartHours = Math.floor(newStartMinutes / 60) % 24;
-      const newStartMins = newStartMinutes % 60;
-      const newStartTime = `${newStartHours.toString().padStart(2, '0')}:${newStartMins.toString().padStart(2, '0')}`;
-      
-      const newEndHours = Math.floor(newEndMinutes / 60) % 24;
-      const newEndMins = newEndMinutes % 60;
-      const newEndTime = `${newEndHours.toString().padStart(2, '0')}:${newEndMins.toString().padStart(2, '0')}`;
-      
-      const descriptionParts = data.description?.split('|') || ['', ''];
-      const descText = descriptionParts.length > 1 ? descriptionParts[1].trim() : '';
-      
-      const updatedEvent = {
-        ...data,
-        date: day.format('YYYY-MM-DD'),
-        description: `${newStartTime} - ${newEndTime} | ${descText}`,
-        startsAt: day.hour(newStartHours).minute(newStartMins).toISOString(),
-        endsAt: day.hour(newEndHours).minute(newEndMins).toISOString()
-      };
-      
-      // Update the event
-      updateEvent(updatedEvent);
-      
-      toast.success(`Event moved to ${day.format("MMM D")} at ${newStartTime}`);
+      // For regular calendar events, use the library handleDrop function
+      libHandleDrop(e, day, hour, updateEvent);
     } catch (error) {
       console.error("Error handling drop:", error);
       toast.error("Failed to process drop event");
@@ -218,8 +174,8 @@ const WeekView = () => {
         setFormOpen(false);
         toast.success(`${event.title} has been added to your calendar.`);
       } else {
-        toast.error(response.message
-          ? String(response.message)
+        toast.error(response.error
+          ? String(response.error)
           : "Failed to add event");
       }
     } catch (error) {
@@ -271,7 +227,6 @@ const WeekView = () => {
         initialTime={selectedTime}
         todoData={todoData}
         onSave={handleSaveEvent}
-        createTodoFromEvent={handleCreateTodoFromEvent}
       />
 
       <EventDetails open={isEventSummaryOpen} onClose={closeEventSummary} />

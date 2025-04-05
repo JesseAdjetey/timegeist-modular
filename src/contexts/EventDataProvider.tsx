@@ -9,19 +9,19 @@ interface EventDataProviderProps {
 }
 
 const EventDataProvider: React.FC<EventDataProviderProps> = ({ children }) => {
-  const { events, loadingEvents } = useCalendarEvents();
+  const { events, loading, error, addEvent, removeEvent, updateEvent, toggleEventLock } = useCalendarEvents();
   const { setEvents, setIsInitialized, isInitialized } = useEventStore();
   const { user } = useAuth();
 
   // Update the store when events change
   useEffect(() => {
-    if (!loadingEvents) {
+    if (!loading && !error) {
       setEvents(events);
       if (!isInitialized) {
         setIsInitialized(true);
       }
     }
-  }, [events, loadingEvents, setEvents, setIsInitialized, isInitialized]);
+  }, [events, loading, error, setEvents, setIsInitialized, isInitialized]);
 
   // When user logs out, clear events
   useEffect(() => {

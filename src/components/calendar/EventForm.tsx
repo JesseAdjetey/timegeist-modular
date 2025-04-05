@@ -1,4 +1,3 @@
-
 // src/components/calendar/EventForm.tsx
 
 import React, { useEffect, useState } from "react";
@@ -7,7 +6,6 @@ import { nanoid } from "nanoid";
 import { useEventStore } from "@/lib/store";
 import EnhancedEventForm from "./EnhancedEventForm";
 import { toast } from "@/components/ui/use-toast";
-import { CalendarEventType } from "@/lib/stores/types";
 
 interface EventFormProps {
   open: boolean;
@@ -18,9 +16,8 @@ interface EventFormProps {
     startTime: string;
   };
   todoData?: any;
-  onSave?: (event: CalendarEventType) => void;
+  onSave?: (event: any) => void;
   onUseAI?: () => void;
-  createTodoFromEvent?: (event: CalendarEventType) => Promise<string | null>;
 }
 
 const EventForm: React.FC<EventFormProps> = ({
@@ -31,7 +28,6 @@ const EventForm: React.FC<EventFormProps> = ({
   todoData,
   onSave: propOnSave,
   onUseAI,
-  createTodoFromEvent,
 }) => {
   const { addEvent } = useEventStore();
   const [initialEvent, setInitialEvent] = useState<any>(undefined);
