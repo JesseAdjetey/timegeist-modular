@@ -39,12 +39,12 @@ serve(async (req) => {
   }
 
   try {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
     
-    if (!OPENAI_API_KEY) {
+    if (!ANTHROPIC_API_KEY) {
       return new Response(
         JSON.stringify({ 
-          error: 'OpenAI API key is not configured. Please set the OPENAI_API_KEY in Supabase secrets.'
+          error: 'Anthropic API key is not configured. Please set the ANTHROPIC_API_KEY in Supabase secrets.'
         }),
         { 
           status: 500, 
@@ -56,7 +56,7 @@ serve(async (req) => {
     const requestData = await req.json();
     const { prompt, messages, events = [], userId } = requestData;
 
-    // Format messages for OpenAI API
+    // Format messages for Claude API
     const formattedMessages = [
       {
         role: 'system',
@@ -67,22 +67,27 @@ serve(async (req) => {
         When scheduling, check for conflicts with existing events.
         Current date: ${new Date().toLocaleDateString()}`
       },
-      ...messages,
+      ...messages.map((msg: any) => ({
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      })),
       {
         role: 'user',
         content: prompt
       }
     ];
 
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Call Claude API
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 1000,
         messages: formattedMessages,
         temperature: 0.5,
       }),
@@ -91,10 +96,10 @@ serve(async (req) => {
     const data = await response.json();
     
     if (!response.ok) {
-      throw new Error(data.error?.message || 'Failed to get response from OpenAI');
+      throw new Error(data.error?.message || 'Failed to get response from Anthropic');
     }
 
-    const aiResponse = data.choices[0].message.content;
+    const aiResponse = data.content?.[0]?.text || '';
 
     // Simple logic to extract event data - in production, use more sophisticated NLP
     const newEvents = [];
