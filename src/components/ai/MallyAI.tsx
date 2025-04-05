@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight } from 'lucide-react';
+import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2 } from 'lucide-react';
 import { useEventStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -121,10 +122,23 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
       });
 
       if (response.error) {
+        console.error('Edge function error:', response.error);
         throw new Error(response.error.message || 'Failed to get AI response');
       }
 
       const data = response.data;
+      
+      // Check if we have a valid response
+      if (!data || (!data.response && !data.error)) {
+        console.error('Invalid response from edge function:', data);
+        throw new Error('Received an invalid response from the AI service');
+      }
+      
+      // Handle error in the response data
+      if (data.error) {
+        console.error('AI processing error:', data.error);
+        throw new Error(data.error);
+      }
       
       // Update the AI message with the response
       updateAIMessage(aiMessageId, data.response || 'I couldn\'t process that request. Please try again.', false);
@@ -134,14 +148,21 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
         data.events.forEach(event => {
           if (onScheduleEvent) {
             onScheduleEvent(event);
+            toast.success(`Event "${event.title}" scheduled`);
           } else {
+            // Add event to store
+            useEventStore.getState().addEvent(event);
             toast.success(`Event "${event.title}" added to your calendar`);
           }
         });
       }
     } catch (error) {
       console.error('Error processing AI request:', error);
-      updateAIMessage(aiMessageId, 'Sorry, I encountered an error while processing your request. Please try again later.', false);
+      updateAIMessage(
+        aiMessageId, 
+        `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`, 
+        false
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -190,7 +211,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     return (
       <div 
         className="fixed z-50 flex items-center justify-center shadow-lg hover:shadow-xl transition-all" 
-        style={aiButtonStyle}
+        style={{...aiButtonStyle, right: '6rem'}} // Positioned to the left of Add Event button
         onClick={toggleAI}
       >
         <Bot size={24} className="text-white" />
@@ -250,6 +271,11 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
                 } ${message.isLoading ? 'animate-pulse' : ''}`}
               >
                 <p className="text-sm">{message.text}</p>
+                {message.isLoading && (
+                  <div className="flex justify-center mt-1">
+                    <Loader2 size={16} className="animate-spin text-white/70" />
+                  </div>
+                )}
               </div>
               <div
                 className={`text-xs opacity-70 mt-1 ${
@@ -282,18 +308,13 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
             disabled={!input.trim() || isProcessing}
             className="ml-2 p-2 rounded-full bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Send size={16} />
+            {isProcessing ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Send size={16} />
+            )}
           </button>
         </div>
-      </div>
-      
-      {/* Add Event Button */}
-      <div 
-        className="fixed bottom-6 right-24 z-50 flex items-center justify-center shadow-lg hover:shadow-xl transition-all"
-        style={{...aiButtonStyle, bottom: '8rem'}}  /* Adjust position for this button too */
-        onClick={() => onScheduleEvent && onScheduleEvent({})}
-      >
-        <Plus size={24} className="text-white" />
       </div>
     </>
   );

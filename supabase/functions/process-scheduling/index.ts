@@ -42,6 +42,7 @@ serve(async (req) => {
     const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
     
     if (!ANTHROPIC_API_KEY) {
+      console.error("ANTHROPIC_API_KEY is not set in Supabase secrets");
       return new Response(
         JSON.stringify({ 
           error: 'Anthropic API key is not configured. Please set the ANTHROPIC_API_KEY in Supabase secrets.'
@@ -55,6 +56,8 @@ serve(async (req) => {
 
     const requestData = await req.json();
     const { prompt, messages, events = [], userId } = requestData;
+    
+    console.log("Request received:", { prompt, messageCount: messages.length, eventsCount: events.length, userId });
 
     // Format messages for Claude API
     const formattedMessages = [
@@ -77,6 +80,8 @@ serve(async (req) => {
       }
     ];
 
+    console.log("Calling Anthropic API with model: claude-3-haiku-20240307");
+    
     // Call Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -93,13 +98,25 @@ serve(async (req) => {
       }),
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    console.log("API Response Status:", response.status);
+    
+    // Try to parse the response as JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error("Failed to parse API response as JSON:", responseText);
+      throw new Error(`Invalid response from Anthropic API: ${responseText.substring(0, 200)}...`);
+    }
     
     if (!response.ok) {
-      throw new Error(data.error?.message || 'Failed to get response from Anthropic');
+      console.error("API Error:", data.error || "Unknown API error");
+      throw new Error(data.error?.message || `Failed to get response from Anthropic (Status: ${response.status})`);
     }
 
     const aiResponse = data.content?.[0]?.text || '';
+    console.log("AI Response received:", aiResponse.substring(0, 100) + "...");
 
     // Simple logic to extract event data - in production, use more sophisticated NLP
     const newEvents = [];
@@ -123,6 +140,7 @@ serve(async (req) => {
         }) : null;
         
         newEvents.push({
+          id: crypto.randomUUID(),
           title: eventTitle,
           date: new Date().toISOString().split('T')[0], // Today's date as fallback
           description: `${startTime} - ${endTime} | ${eventTitle}`,
@@ -130,6 +148,8 @@ serve(async (req) => {
         });
       }
     }
+
+    console.log("New events extracted:", newEvents.length > 0 ? newEvents : "None");
 
     return new Response(
       JSON.stringify({ 
@@ -143,7 +163,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error processing scheduling request:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: "See function logs for more information" 
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
