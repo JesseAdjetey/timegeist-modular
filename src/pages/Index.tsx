@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import Mainview from '@/components/Mainview';
 import { useDateStore, useViewStore } from "@/lib/store";
+import MallyAI from '@/components/ai/MallyAI';
 
 const Index = () => {
   // Initialize stores on client side
@@ -14,8 +15,9 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col text-white">
+    <div className="min-h-screen flex flex-col text-white relative">
       <Mainview />
+      <MallyAI />
     </div>
   );
 };
