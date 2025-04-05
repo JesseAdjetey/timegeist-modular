@@ -59,30 +59,21 @@ serve(async (req) => {
     
     console.log("Request received:", { prompt, messageCount: messages.length, eventsCount: events.length, userId });
 
-    // Format messages for Claude API
-    const formattedMessages = [
-      {
-        role: 'system',
-        content: `You are Mally AI, an intelligent calendar assistant. 
-        You help users schedule and reschedule events. 
-        Be conversational but concise. 
-        Always ask for clarification if a request is ambiguous.
-        When scheduling, check for conflicts with existing events.
-        Current date: ${new Date().toLocaleDateString()}`
-      },
-      ...messages.map((msg: any) => ({
-        role: msg.role === 'user' ? 'user' : 'assistant',
-        content: msg.content
-      })),
-      {
-        role: 'user',
-        content: prompt
-      }
-    ];
+    // Format messages for Claude API - fixing the format to use system parameter correctly
+    const formattedMessages = messages.map((msg: any) => ({
+      role: msg.role === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    }));
+    
+    // Add the current prompt as the last user message
+    formattedMessages.push({
+      role: 'user',
+      content: prompt
+    });
 
     console.log("Calling Anthropic API with model: claude-3-haiku-20240307");
     
-    // Call Claude API
+    // Call Claude API with corrected format - system message is provided separately
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -94,6 +85,12 @@ serve(async (req) => {
         model: 'claude-3-haiku-20240307',
         max_tokens: 1000,
         messages: formattedMessages,
+        system: `You are Mally AI, an intelligent calendar assistant. 
+        You help users schedule and reschedule events. 
+        Be conversational but concise. 
+        Always ask for clarification if a request is ambiguous.
+        When scheduling, check for conflicts with existing events.
+        Current date: ${new Date().toLocaleDateString()}`,
         temperature: 0.5,
       }),
     });

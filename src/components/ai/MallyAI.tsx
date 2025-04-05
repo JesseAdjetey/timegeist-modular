@@ -12,6 +12,7 @@ interface Message {
   sender: 'user' | 'ai';
   timestamp: Date;
   isLoading?: boolean;
+  isError?: boolean;
 }
 
 const initialMessages: Message[] = [
@@ -74,24 +75,25 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     return userMessage.id;
   };
 
-  const addAIMessage = (text: string, isLoading = false) => {
+  const addAIMessage = (text: string, isLoading = false, isError = false) => {
     const aiMessage: Message = {
       id: Date.now().toString(),
       text,
       sender: 'ai',
       timestamp: new Date(),
-      isLoading
+      isLoading,
+      isError
     };
     
     setMessages(prev => [...prev, aiMessage]);
     return aiMessage.id;
   };
 
-  const updateAIMessage = (id: string, text: string, isLoading = false) => {
+  const updateAIMessage = (id: string, text: string, isLoading = false, isError = false) => {
     setMessages(prev => 
       prev.map(message => 
         message.id === id 
-          ? { ...message, text, isLoading } 
+          ? { ...message, text, isLoading, isError } 
           : message
       )
     );
@@ -108,11 +110,13 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     setIsProcessing(true);
 
     try {
-      // Call OpenAI via our edge function
+      console.log("Calling Supabase edge function: process-scheduling");
+      
+      // Call our edge function
       const response = await supabase.functions.invoke('process-scheduling', {
         body: { 
           prompt: messageText,
-          messages: messages.map(m => ({
+          messages: messages.filter(m => !m.isLoading).map(m => ({
             role: m.sender === 'user' ? 'user' : 'assistant',
             content: m.text
           })),
@@ -120,6 +124,8 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
           userId: user?.id
         }
       });
+
+      console.log("Edge function response:", response);
 
       if (response.error) {
         console.error('Edge function error:', response.error);
@@ -161,7 +167,8 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
       updateAIMessage(
         aiMessageId, 
         `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`, 
-        false
+        false,
+        true
       );
     } finally {
       setIsProcessing(false);
@@ -267,7 +274,9 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
                 className={`p-2 rounded-lg max-w-[85%] ${
                   message.sender === 'user'
                     ? 'bg-primary/30 ml-auto'
-                    : 'bg-secondary mr-auto'
+                    : message.isError 
+                      ? 'bg-red-500/30 mr-auto'
+                      : 'bg-secondary mr-auto'
                 } ${message.isLoading ? 'animate-pulse' : ''}`}
               >
                 <p className="text-sm">{message.text}</p>
