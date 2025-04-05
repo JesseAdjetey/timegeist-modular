@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { useEventStore } from '@/lib/store';
@@ -168,10 +167,33 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     setIsSidebarView(!isSidebarView);
   };
 
+  // AI button styling - making sure it's visible and properly positioned
+  const aiButtonStyle = {
+    position: 'fixed' as const,
+    bottom: '6rem', // Positioned above the AddEvent button
+    right: '2rem',
+    width: '3.5rem',
+    height: '3.5rem',
+    borderRadius: '50%',
+    backgroundColor: 'rgba(139, 92, 246, 0.8)', // Purple with slight transparency
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    zIndex: 50, // Make sure it's above other elements
+    transition: 'all 0.3s',
+    animation: 'pulse 2s infinite',
+  };
+
   if (!isOpen) {
     return (
-      <div className="ai-button animate-pulse-border" onClick={toggleAI}>
-        <Bot size={24} />
+      <div 
+        className="fixed z-50 flex items-center justify-center shadow-lg hover:shadow-xl transition-all" 
+        style={aiButtonStyle}
+        onClick={toggleAI}
+      >
+        <Bot size={24} className="text-white" />
       </div>
     );
   }
@@ -180,11 +202,11 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     <>
       <div 
         className={`ai-chat-container ${isExpanded ? 'w-96 h-[500px]' : 'w-80 h-[400px]'} 
-                  ${isSidebarView ? 'fixed left-[400px] bottom-0 rounded-none h-[calc(100vh-64px)] w-96' : ''}
-                  flex flex-col transition-all duration-300`}
+                  ${isSidebarView ? 'fixed left-[400px] bottom-0 rounded-none h-[calc(100vh-64px)] w-96' : 'fixed bottom-20 right-8 z-50 rounded-lg shadow-xl'} 
+                  flex flex-col transition-all duration-300 bg-gradient-to-br from-purple-900/90 to-indigo-900/90 text-white border border-purple-500/20`}
       >
         {/* Header */}
-        <div className="flex justify-between items-center mb-3">
+        <div className="flex justify-between items-center p-3 border-b border-white/10">
           <div className="flex items-center">
             <Bot size={20} className="text-primary mr-2" />
             <h3 className="font-semibold">Mally AI</h3>
@@ -212,7 +234,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
         </div>
         
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto mb-3 pr-1">
+        <div className="flex-1 overflow-y-auto mb-3 p-3">
           {messages.map(message => (
             <div
               key={message.id}
@@ -245,13 +267,13 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
         </div>
         
         {/* Input */}
-        <div className="flex items-center">
+        <div className="flex items-center p-3 border-t border-white/10">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Message Mally AI..."
-            className="glass-input w-full resize-none"
+            className="glass-input w-full resize-none bg-white/10"
             rows={1}
             disabled={isProcessing}
           />
@@ -267,11 +289,11 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
       
       {/* Add Event Button */}
       <div 
-        className="ai-button"
-        style={{ bottom: isOpen ? '24rem' : '6rem' }}
+        className="fixed bottom-6 right-24 z-50 flex items-center justify-center shadow-lg hover:shadow-xl transition-all"
+        style={aiButtonStyle}
         onClick={() => onScheduleEvent && onScheduleEvent({})}
       >
-        <Plus size={24} />
+        <Plus size={24} className="text-white" />
       </div>
     </>
   );
