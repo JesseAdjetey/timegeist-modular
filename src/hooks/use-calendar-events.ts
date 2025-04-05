@@ -1,3 +1,4 @@
+
 // Updated version of useCalendarEvents hook for the new calendar_events schema
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,6 +6,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CalendarEventType } from '@/lib/stores/types';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
+
+// Define explicit types for Supabase responses to prevent deep type instantiation
+interface SupabaseEventResponse {
+  data: any[] | null;
+  error: Error | null;
+}
+
+interface SupabaseActionResponse {
+  success: boolean;
+  data?: any;
+  error?: Error | unknown;
+}
 
 export function useCalendarEvents() {
   const [events, setEvents] = useState<CalendarEventType[]>([]);
@@ -26,7 +39,7 @@ export function useCalendarEvents() {
   };
 
   // Fetch calendar events from Supabase
-  const fetchEvents = useCallback(async () => {
+  const fetchEvents = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
@@ -48,7 +61,7 @@ export function useCalendarEvents() {
       console.log('Fetching calendar events for user:', user.id);
       
       // Query the new calendar_events table structure
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError }: SupabaseEventResponse = await supabase
         .from('calendar_events')
         .select('*')
         .eq('user_id', user.id);
@@ -115,9 +128,9 @@ export function useCalendarEvents() {
   }, [user]);
 
   // Add a new event
-  const addEvent = async (event: CalendarEventType) => {
-  console.log('===== FULL EVENT OBJECT BEFORE INSERTION =====');
-  console.log(JSON.stringify(event, null, 2));
+  const addEvent = async (event: CalendarEventType): Promise<SupabaseActionResponse> => {
+    console.log('===== FULL EVENT OBJECT BEFORE INSERTION =====');
+    console.log(JSON.stringify(event, null, 2));
     console.log('===== ADD EVENT DEBUG =====');
     console.log('Authentication Status:', {
       user: user ? 'User authenticated' : 'No user',
@@ -204,7 +217,7 @@ export function useCalendarEvents() {
   };
 
   // Update an existing event
-  const updateEvent = async (event: CalendarEventType) => {
+  const updateEvent = async (event: CalendarEventType): Promise<SupabaseActionResponse> => {
     if (!user || !event.id) {
       toast.error('Invalid event data or user not authenticated');
       return { success: false };
@@ -263,7 +276,7 @@ export function useCalendarEvents() {
   };
 
   // Remove an event
-  const removeEvent = async (eventId: string) => {
+  const removeEvent = async (eventId: string): Promise<SupabaseActionResponse> => {
     if (!user || !eventId) {
       toast.error('Invalid event ID or user not authenticated');
       return { success: false };
@@ -292,7 +305,7 @@ export function useCalendarEvents() {
   };
 
   // Toggle event lock status
-  const toggleEventLock = async (eventId: string, isLocked: boolean) => {
+  const toggleEventLock = async (eventId: string, isLocked: boolean): Promise<SupabaseActionResponse> => {
     if (!user || !eventId) {
       toast.error('Invalid event ID or user not authenticated');
       return { success: false };
@@ -321,7 +334,7 @@ export function useCalendarEvents() {
   };
 
   // Add a test event function to help debug
-  const addTestEvent = async () => {
+  const addTestEvent = async (): Promise<SupabaseActionResponse> => {
     if (!user) {
       toast.error('User not authenticated');
       return { success: false };

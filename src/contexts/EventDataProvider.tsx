@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { useCalendarEvents } from '@/hooks/use-calendar-events';
 import { useEventStore } from '@/lib/store';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface EventDataProviderProps {
   children: React.ReactNode;
@@ -29,6 +30,14 @@ const EventDataProvider: React.FC<EventDataProviderProps> = ({ children }) => {
       setEvents([]);
     }
   }, [user, isInitialized, setEvents]);
+
+  // Handle any errors from the calendar events hook
+  useEffect(() => {
+    if (error) {
+      console.error('Calendar events error:', error);
+      toast.error(`Error loading calendar events: ${error}`);
+    }
+  }, [error]);
 
   return <>{children}</>;
 };

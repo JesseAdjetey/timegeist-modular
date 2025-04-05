@@ -2,12 +2,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { useEventStore } from '@/lib/store';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'ai';
   timestamp: Date;
+  isLoading?: boolean;
 }
 
 const initialMessages: Message[] = [
@@ -21,16 +25,33 @@ const initialMessages: Message[] = [
 
 interface MallyAIProps {
   onScheduleEvent?: (event: any) => void;
+  initialPrompt?: string;
 }
 
-const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent }) => {
+const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(initialPrompt || '');
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSidebarView, setIsSidebarView] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { events } = useEventStore();
+  const { user } = useAuth();
+
+  // Auto-open if there's an initial prompt
+  useEffect(() => {
+    if (initialPrompt) {
+      setIsOpen(true);
+    }
+  }, [initialPrompt]);
+
+  // Handle initial prompt if provided
+  useEffect(() => {
+    if (initialPrompt && isOpen) {
+      handleSendMessage(initialPrompt);
+    }
+  }, [isOpen, initialPrompt]);
 
   // Auto-scroll to the bottom when messages change
   useEffect(() => {
@@ -41,49 +62,95 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent }) => {
     setIsOpen(!isOpen);
   };
 
-  const sendMessage = () => {
-    if (!input.trim()) return;
-    
-    // Add user message
+  const addUserMessage = (text: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: input,
+      text,
       sender: 'user',
       timestamp: new Date()
     };
     
     setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    return userMessage.id;
+  };
+
+  const addAIMessage = (text: string, isLoading = false) => {
+    const aiMessage: Message = {
+      id: Date.now().toString(),
+      text,
+      sender: 'ai',
+      timestamp: new Date(),
+      isLoading
+    };
     
-    // Simulate AI response
-    setTimeout(() => {
-      let aiResponse: Message;
-      
-      if (input.toLowerCase().includes('schedule') || input.toLowerCase().includes('add') || input.toLowerCase().includes('create')) {
-        aiResponse = {
-          id: (Date.now() + 1).toString(),
-          text: "I'd be happy to help you schedule that! Would you like me to add this event to your calendar now?",
-          sender: 'ai',
-          timestamp: new Date()
-        };
-      } else if (input.toLowerCase().includes('reschedule') || input.toLowerCase().includes('move')) {
-        aiResponse = {
-          id: (Date.now() + 1).toString(),
-          text: "I can help you reschedule. Some events are locked, so I'll need your permission to modify them. Would you like to proceed?",
-          sender: 'ai',
-          timestamp: new Date()
-        };
-      } else {
-        aiResponse = {
-          id: (Date.now() + 1).toString(),
-          text: "I'm here to help with your scheduling needs. You can ask me to add events, reschedule appointments, or manage your time more effectively.",
-          sender: 'ai',
-          timestamp: new Date()
-        };
+    setMessages(prev => [...prev, aiMessage]);
+    return aiMessage.id;
+  };
+
+  const updateAIMessage = (id: string, text: string, isLoading = false) => {
+    setMessages(prev => 
+      prev.map(message => 
+        message.id === id 
+          ? { ...message, text, isLoading } 
+          : message
+      )
+    );
+  };
+
+  const handleSendMessage = async (messageText: string) => {
+    if (!messageText.trim()) return;
+    
+    const userMessageId = addUserMessage(messageText);
+    setInput('');
+
+    // Add a loading message from AI
+    const aiMessageId = addAIMessage('Thinking...', true);
+    setIsProcessing(true);
+
+    try {
+      // Call OpenAI via our edge function
+      const response = await supabase.functions.invoke('process-scheduling', {
+        body: { 
+          prompt: messageText,
+          messages: messages.map(m => ({
+            role: m.sender === 'user' ? 'user' : 'assistant',
+            content: m.text
+          })),
+          events: events, // Send current events for context
+          userId: user?.id
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to get AI response');
       }
+
+      const data = response.data;
       
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
+      // Update the AI message with the response
+      updateAIMessage(aiMessageId, data.response || 'I couldn\'t process that request. Please try again.', false);
+
+      // If there are events to add/update, handle them
+      if (data.events && data.events.length > 0) {
+        data.events.forEach(event => {
+          if (onScheduleEvent) {
+            onScheduleEvent(event);
+          } else {
+            toast.success(`Event "${event.title}" added to your calendar`);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error processing AI request:', error);
+      updateAIMessage(aiMessageId, 'Sorry, I encountered an error while processing your request. Please try again later.', false);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const sendMessage = () => {
+    if (isProcessing) return;
+    handleSendMessage(input);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -158,7 +225,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent }) => {
                   message.sender === 'user'
                     ? 'bg-primary/30 ml-auto'
                     : 'bg-secondary mr-auto'
-                }`}
+                } ${message.isLoading ? 'animate-pulse' : ''}`}
               >
                 <p className="text-sm">{message.text}</p>
               </div>
@@ -186,10 +253,11 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent }) => {
             placeholder="Message Mally AI..."
             className="glass-input w-full resize-none"
             rows={1}
+            disabled={isProcessing}
           />
           <button
             onClick={sendMessage}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isProcessing}
             className="ml-2 p-2 rounded-full bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send size={16} />
