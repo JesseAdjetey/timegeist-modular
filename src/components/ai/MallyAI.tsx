@@ -170,7 +170,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   // AI button styling - making sure it's visible and properly positioned
   const aiButtonStyle = {
     position: 'fixed' as const,
-    bottom: '6rem', // Positioned above the AddEvent button
+    bottom: '12rem', // Positioned higher above the AddEvent button
     right: '2rem',
     width: '3.5rem',
     height: '3.5rem',
@@ -290,7 +290,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
       {/* Add Event Button */}
       <div 
         className="fixed bottom-6 right-24 z-50 flex items-center justify-center shadow-lg hover:shadow-xl transition-all"
-        style={aiButtonStyle}
+        style={{...aiButtonStyle, bottom: '8rem'}}  /* Adjust position for this button too */
         onClick={() => onScheduleEvent && onScheduleEvent({})}
       >
         <Plus size={24} className="text-white" />
