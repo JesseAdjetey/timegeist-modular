@@ -1,10 +1,11 @@
-
+// src/components/ai/MallyAI.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2 } from 'lucide-react';
+import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2, Calendar } from 'lucide-react';
 import { useEventStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { CalendarEventType } from '@/lib/stores/types';
 
 interface Message {
   id: string;
@@ -37,7 +38,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const [isSidebarView, setIsSidebarView] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { events } = useEventStore();
+  const { events, addEvent, updateEvent, deleteEvent } = useEventStore();
   const { user } = useAuth();
 
   // Auto-open if there's an initial prompt
@@ -149,18 +150,33 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
       // Update the AI message with the response
       updateAIMessage(aiMessageId, data.response || 'I couldn\'t process that request. Please try again.', false);
 
-      // If there are events to add/update, handle them
+      // Handle new events
       if (data.events && data.events.length > 0) {
-        data.events.forEach(event => {
+        data.events.forEach((event: CalendarEventType) => {
           if (onScheduleEvent) {
             onScheduleEvent(event);
             toast.success(`Event "${event.title}" scheduled`);
           } else {
             // Add event to store
-            useEventStore.getState().addEvent(event);
+            addEvent(event);
             toast.success(`Event "${event.title}" added to your calendar`);
           }
         });
+      }
+      
+      // Handle individual processed event (edit/delete)
+      if (data.processedEvent) {
+        const processedEvent = data.processedEvent;
+        
+        if (processedEvent._action === 'delete') {
+          // Handle delete
+          deleteEvent(processedEvent.id);
+          toast.success(`Event "${processedEvent.title}" has been deleted`);
+        } else {
+          // Handle update
+          updateEvent(processedEvent);
+          toast.success(`Event "${processedEvent.title}" has been updated`);
+        }
       }
     } catch (error) {
       console.error('Error processing AI request:', error);
@@ -328,5 +344,3 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     </>
   );
 };
-
-export default MallyAI;
