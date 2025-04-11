@@ -1,3 +1,4 @@
+
 // supabase/functions/process-scheduling/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
@@ -154,12 +155,24 @@ function extractEventDetails(text: string) {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   };
   
+  const formattedStartTime = formatTime(startTime);
+  const formattedEndTime = formatTime(endTime);
+  
+  // Get the date in YYYY-MM-DD format
+  const eventDate = dateMatch ? getNormalizedDate(dateMatch[0]) : getNormalizedDate('today');
+  
+  // Create ISO timestamps for start and end times
+  const startsAt = new Date(`${eventDate}T${formattedStartTime}`).toISOString();
+  const endsAt = new Date(`${eventDate}T${formattedEndTime}`).toISOString();
+  
   return {
     title,
-    date: dateMatch ? getNormalizedDate(dateMatch[0]) : getNormalizedDate('today'),
-    timeStart: formatTime(startTime),
-    timeEnd: formatTime(endTime),
-    description: `${formatTime(startTime)} - ${formatTime(endTime)} | ${title}`
+    date: eventDate,
+    timeStart: formattedStartTime,
+    timeEnd: formattedEndTime,
+    description: `${formattedStartTime} - ${formattedEndTime} | ${title}`,
+    startsAt,
+    endsAt
   };
 }
 
@@ -215,7 +228,12 @@ serve(async (req) => {
     const requestData = await req.json();
     const { prompt, messages, events = [], userId } = requestData;
     
-    console.log("Request received:", { prompt, messageCount: messages?.length, eventsCount: events?.length, userId });
+    console.log("Request received:", { 
+      prompt, 
+      messageCount: messages?.length, 
+      eventsCount: events?.length, 
+      userId 
+    });
 
     // Determine user intent
     const actionIntent = extractActionIntent(prompt);
@@ -277,20 +295,6 @@ IMPORTANT CAPABILITIES AND CONSTRAINTS:
 
 Be helpful, accomodating, and make the scheduling process as simple as possible.`;
 
-    // Format messages for Claude API
-    const formattedMessages = messages.map((msg: any) => ({
-      role: msg.role,
-      content: msg.content
-    }));
-    
-    // Add the current prompt as the last user message
-    formattedMessages.push({
-      role: 'user',
-      content: prompt
-    });
-
-    console.log("Calling Anthropic API with model: claude-3-haiku-20240307");
-    
     // Add context about the operation result
     let aiPrompt = prompt;
     if (operationResult) {
@@ -307,7 +311,21 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
       }
     }
 
-    // Call Claude API
+    // Format messages for Claude API
+    const formattedMessages = messages.map((msg: any) => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    
+    // Add the current prompt as the last user message
+    formattedMessages.push({
+      role: 'user',
+      content: prompt
+    });
+
+    console.log("Calling Anthropic API with model: claude-3-haiku-20240307");
+    
+    // Call Claude API with the proper format (system as a separate parameter)
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -325,6 +343,7 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
     });
 
     const responseText = await response.text();
+    console.log("Raw API response:", responseText.substring(0, 200) + "...");
     
     // Try to parse the response as JSON
     let data;
@@ -349,16 +368,15 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
     
     if (operationResult && operationResult.success) {
       if (operationResult.action === 'create' && conflicts.length === 0) {
-        // Create a new event
+        // Create a new event with the extracted details
         const newEvent = {
           id: crypto.randomUUID(),
           title: eventDetails.title,
-          date: eventDetails.date,
           description: eventDetails.description,
           color: 'bg-purple-500/70',
           user_id: userId,
-          starts_at: new Date(`${eventDetails.date}T${eventDetails.timeStart}`).toISOString(),
-          ends_at: new Date(`${eventDetails.date}T${eventDetails.timeEnd}`).toISOString()
+          starts_at: eventDetails.startsAt,
+          ends_at: eventDetails.endsAt
         };
         
         // Insert into database if possible
@@ -366,12 +384,16 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
           try {
             console.log("Attempting to insert event into database:", newEvent);
             
+            // Extract the actual description part (without time info)
+            const descriptionParts = eventDetails.description.split('|');
+            const actualDescription = descriptionParts.length > 1 ? descriptionParts[1].trim() : eventDetails.title;
+            
             // Insert into calendar_events table
             const { data, error } = await supabase
               .from('calendar_events')
               .insert({
                 title: newEvent.title,
-                description: eventDetails.title, // Store the actual description without time info
+                description: actualDescription,
                 color: newEvent.color,
                 user_id: userId,
                 starts_at: newEvent.starts_at,
@@ -414,20 +436,23 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
         const updatedEvent = {
           ...targetEvent,
           title: eventDetails.title,
-          date: eventDetails.date,
           description: eventDetails.description,
-          starts_at: new Date(`${eventDetails.date}T${eventDetails.timeStart}`).toISOString(),
-          ends_at: new Date(`${eventDetails.date}T${eventDetails.timeEnd}`).toISOString()
+          starts_at: eventDetails.startsAt,
+          ends_at: eventDetails.endsAt
         };
         
         // Update in database if possible
         if (userId) {
           try {
+            // Extract the actual description part (without time info)
+            const descriptionParts = eventDetails.description.split('|');
+            const actualDescription = descriptionParts.length > 1 ? descriptionParts[1].trim() : eventDetails.title;
+            
             const { data, error } = await supabase
               .from('calendar_events')
               .update({
                 title: updatedEvent.title,
-                description: eventDetails.title,
+                description: actualDescription,
                 starts_at: updatedEvent.starts_at,
                 ends_at: updatedEvent.ends_at
               })

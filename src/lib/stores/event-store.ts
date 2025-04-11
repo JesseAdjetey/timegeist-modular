@@ -36,21 +36,43 @@ export const useEventStore = create<EventStore>()(
           set({ isInitialized: value });
         },
         setEvents: (events) => {
-          set({ events });
+          // Format events with date field for backward compatibility
+          const formattedEvents = events.map(event => {
+            // Extract date if it doesn't exist
+            if (!event.date && event.startsAt) {
+              return {
+                ...event,
+                date: dayjs(event.startsAt).format('YYYY-MM-DD')
+              };
+            }
+            return event;
+          });
+          
+          set({ events: formattedEvents });
         },
         addEvent: (event) => {
+          // Ensure date property exists for backward compatibility
+          const eventWithDate = !event.date && event.startsAt 
+            ? { ...event, date: dayjs(event.startsAt).format('YYYY-MM-DD') }
+            : event;
+            
           set(state => ({ 
-            events: [...state.events, event] 
+            events: [...state.events, eventWithDate]
           }));
         },
         updateEvent: (event) => {
+          // Ensure date property exists for backward compatibility
+          const eventWithDate = !event.date && event.startsAt 
+            ? { ...event, date: dayjs(event.startsAt).format('YYYY-MM-DD') }
+            : event;
+            
           set(state => ({
             events: state.events.map(e => 
-              e.id === event.id ? { ...e, ...event } : e
+              e.id === event.id ? { ...e, ...eventWithDate } : e
             ),
             // If the updated event is the selected event, update selectedEvent too
             selectedEvent: state.selectedEvent?.id === event.id 
-              ? { ...state.selectedEvent, ...event } 
+              ? { ...state.selectedEvent, ...eventWithDate } 
               : state.selectedEvent
           }));
         },

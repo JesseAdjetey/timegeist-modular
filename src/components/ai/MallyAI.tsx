@@ -1,3 +1,4 @@
+
 // src/components/ai/MallyAI.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2 } from 'lucide-react';
@@ -6,6 +7,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { CalendarEventType } from '@/lib/stores/types';
+import { useCalendarEvents } from '@/hooks/use-calendar-events';
 
 interface Message {
   id: string;
@@ -38,7 +40,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const [isSidebarView, setIsSidebarView] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { events, addEvent, updateEvent, deleteEvent } = useEventStore();
+  const { events, addEvent, updateEvent, deleteEvent } = useCalendarEvents();
   const { user } = useAuth();
 
   // Auto-open if there's an initial prompt
@@ -116,7 +118,10 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     try {
       console.log("Calling Supabase edge function: process-scheduling");
       
-      // 4. Call our edge function
+      // 4. Get current events from the events hook for context
+      const currentEvents = events;
+      
+      // 5. Call our edge function
       const response = await supabase.functions.invoke('process-scheduling', {
         body: { 
           prompt: messageText,
@@ -126,7 +131,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
               role: m.sender === 'user' ? 'user' : 'assistant',
               content: m.text
             })),
-          events: events, // Send current events for context
+          events: currentEvents,
           userId: user?.id
         }
       });
@@ -152,35 +157,68 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
         throw new Error(data.error);
       }
       
-      // 5. Update the AI message with the response
+      // 6. Update the AI message with the response
       updateAIMessage(aiMessageId, data.response || 'I couldn\'t process that request. Please try again.', false);
 
-      // 6. Handle new events
+      // 7. Handle new events from the edge function
       if (data.events && data.events.length > 0) {
+        console.log("New events received from edge function:", data.events);
+        
         data.events.forEach((event: CalendarEventType) => {
           if (onScheduleEvent) {
             onScheduleEvent(event);
             toast.success(`Event "${event.title}" scheduled`);
           } else {
-            // Add event to store
-            addEvent(event);
-            toast.success(`Event "${event.title}" added to your calendar`);
+            // Add event to store using the addEvent from useCalendarEvents
+            // This ensures we're using the same function for all event creation
+            addEvent(event)
+              .then(response => {
+                if (response.success) {
+                  toast.success(`Event "${event.title}" added to your calendar`);
+                } else {
+                  toast.error(`Failed to add event: ${response.error || 'Unknown error'}`);
+                }
+              })
+              .catch(err => {
+                console.error("Error adding event:", err);
+                toast.error(`Error adding event: ${err.message || 'Unknown error'}`);
+              });
           }
         });
       }
       
-      // 7. Handle individual processed event (edit/delete)
+      // 8. Handle individual processed event (edit/delete)
       if (data.processedEvent) {
         const processedEvent = data.processedEvent;
         
         if (processedEvent._action === 'delete') {
-          // Handle delete
-          deleteEvent(processedEvent.id);
-          toast.success(`Event "${processedEvent.title}" has been deleted`);
+          // Handle delete using the useCalendarEvents hook
+          deleteEvent(processedEvent.id)
+            .then(response => {
+              if (response.success) {
+                toast.success(`Event "${processedEvent.title}" has been deleted`);
+              } else {
+                toast.error(`Failed to delete event: ${response.error || 'Unknown error'}`);
+              }
+            })
+            .catch(err => {
+              console.error("Error deleting event:", err);
+              toast.error(`Error deleting event: ${err.message || 'Unknown error'}`);
+            });
         } else {
-          // Handle update
-          updateEvent(processedEvent);
-          toast.success(`Event "${processedEvent.title}" has been updated`);
+          // Handle update using the useCalendarEvents hook
+          updateEvent(processedEvent)
+            .then(response => {
+              if (response.success) {
+                toast.success(`Event "${processedEvent.title}" has been updated`);
+              } else {
+                toast.error(`Failed to update event: ${response.error || 'Unknown error'}`);
+              }
+            })
+            .catch(err => {
+              console.error("Error updating event:", err);
+              toast.error(`Error updating event: ${err.message || 'Unknown error'}`);
+            });
         }
       }
     } catch (error) {
@@ -226,7 +264,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const aiButtonStyle = {
     position: 'fixed' as const,
     bottom: '12rem', // Positioned higher above the AddEvent button
-    right: '2rem',
+    right: '6rem', // Positioned to the left of Add Event button
     width: '3.5rem',
     height: '3.5rem',
     borderRadius: '50%',
@@ -237,7 +275,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     cursor: 'pointer',
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
     zIndex: 50, // Make sure it's above other elements
-    transition: 'all 0.3s',
+    transition: 'all 0.3s ease',
     animation: 'pulse 2s infinite',
   };
 
@@ -245,7 +283,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     return (
       <div 
         className="fixed z-50 flex items-center justify-center shadow-lg hover:shadow-xl transition-all" 
-        style={{...aiButtonStyle, right: '6rem'}} // Positioned to the left of Add Event button
+        style={aiButtonStyle}
         onClick={toggleAI}
       >
         <Bot size={24} className="text-white" />
