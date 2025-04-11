@@ -55,25 +55,35 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
     setIsRescheduling(true);
   };
 
-  const handleAIEvent = (eventData: any) => {
+  // Fix: Update handleAIEvent to return a Promise
+  const handleAIEvent = async (eventData: any): Promise<any> => {
     // Implement AI rescheduling logic
     if (eventData && Object.keys(eventData).length > 0) {
-      const rescheduleEvent = {
-        ...selectedEvent,
-        ...eventData
-      };
-      
-      updateEvent(rescheduleEvent)
-        .then(() => {
+      try {
+        const rescheduleEvent = {
+          ...selectedEvent,
+          ...eventData
+        };
+        
+        const result = await updateEvent(rescheduleEvent);
+        
+        if (result.success) {
           toast.success("Event rescheduled successfully");
           setIsRescheduling(false);
           onClose();
-        })
-        .catch(error => {
-          console.error("Error rescheduling event:", error);
-          toast.error("Failed to reschedule event");
-        });
+          return { success: true };
+        } else {
+          toast.error("Failed to reschedule event: " + (result.error || "Unknown error"));
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error("Error rescheduling event:", error);
+        toast.error("Failed to reschedule event");
+        return { success: false, error };
+      }
     }
+    // Return a resolved promise for the case where no event data is provided
+    return Promise.resolve({ success: false, message: "No event data provided" });
   };
 
   // Extract time and description from event description
