@@ -1,8 +1,6 @@
-
 // src/components/ai/MallyAI.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2 } from 'lucide-react';
-import { useEventStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,7 +38,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const [isSidebarView, setIsSidebarView] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { events, addEvent, updateEvent, removeEvent, toggleEventLock } = useCalendarEvents();
+  const { addEvent, updateEvent, removeEvent, toggleEventLock } = useCalendarEvents();
   const { user } = useAuth();
 
   // Auto-open if there's an initial prompt
@@ -119,7 +117,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
       console.log("Calling Supabase edge function: process-scheduling");
       
       // 4. Get current events from the events hook for context
-      const currentEvents = events;
+      const currentEvents = await fetchEvents();
       
       // 5. Call our edge function
       const response = await supabase.functions.invoke('process-scheduling', {
@@ -165,25 +163,26 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
         console.log("New events received from edge function:", data.events);
         
         // Process each event from the response
-        for (const event of data.events) {
+        for (const eventData of data.events) {
           try {
-            console.log("Processing event from AI response:", event);
+            console.log("Processing event from AI response:", eventData);
             
             // Format the event properly for the addEvent function
             const formattedEvent: CalendarEventType = {
-              id: event.id,
-              title: event.title,
-              description: event.description || `${event.starts_at} - ${event.ends_at} | ${event.title}`,
-              startsAt: event.starts_at,
-              endsAt: event.ends_at,
-              date: new Date(event.starts_at).toISOString().split('T')[0],
-              color: event.color || 'bg-purple-500/70',
-              isLocked: event.is_locked || false,
-              isTodo: event.is_todo || false,
-              hasAlarm: event.has_alarm || false,
-              hasReminder: event.has_reminder || false,
-              todoId: event.todo_id
+              id: eventData.id,
+              title: eventData.title,
+              description: eventData.description || '', 
+              startsAt: eventData.starts_at,
+              endsAt: eventData.ends_at,
+              date: new Date(eventData.starts_at).toISOString().split('T')[0],
+              color: eventData.color || 'bg-purple-500/70',
+              isLocked: false,
+              isTodo: false,
+              hasAlarm: false,
+              hasReminder: false
             };
+            
+            console.log("Formatted event for calendar:", formattedEvent);
             
             // Use the onScheduleEvent callback if provided, otherwise use addEvent from the hook
             if (onScheduleEvent) {
@@ -227,8 +226,23 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
               toast.error(`Error deleting event: ${err instanceof Error ? err.message : 'Unknown error'}`);
             });
         } else {
+          // Format event for update
+          const eventToUpdate: CalendarEventType = {
+            id: processedEvent.id,
+            title: processedEvent.title,
+            description: processedEvent.description || '',
+            startsAt: processedEvent.starts_at,
+            endsAt: processedEvent.ends_at,
+            date: new Date(processedEvent.starts_at).toISOString().split('T')[0],
+            color: processedEvent.color || 'bg-purple-500/70',
+            isLocked: processedEvent.is_locked || false,
+            isTodo: processedEvent.is_todo || false,
+            hasAlarm: processedEvent.has_alarm || false,
+            hasReminder: processedEvent.has_reminder || false
+          };
+          
           // Handle update using the useCalendarEvents hook
-          updateEvent(processedEvent)
+          updateEvent(eventToUpdate)
             .then(response => {
               if (response.success) {
                 toast.success(`Event "${processedEvent.title}" has been updated`);
@@ -252,6 +266,25 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
       );
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Function to fetch events for context
+  const fetchEvents = async () => {
+    try {
+      if (!user) return [];
+      
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .eq('user_id', user.id);
+        
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error("Error fetching events for AI context:", error);
+      return [];
     }
   };
 
