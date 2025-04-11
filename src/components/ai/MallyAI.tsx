@@ -39,7 +39,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const [isSidebarView, setIsSidebarView] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { addEvent, updateEvent, removeEvent, toggleEventLock } = useCalendarEvents();
+  const { addEvent, updateEvent, removeEvent } = useCalendarEvents();
   const { user } = useAuth();
 
   // Auto-open if there's an initial prompt
@@ -168,19 +168,19 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
           try {
             console.log("Processing event from AI response:", eventData);
             
-            // Format the event properly for the addEvent function
+            // Format the event properly for the calendar
             const formattedEvent: CalendarEventType = {
-              id: eventData.id,
+              id: eventData.id || crypto.randomUUID(),
               title: eventData.title,
-              description: eventData.description || '', 
+              description: formatEventDescription(eventData.starts_at, eventData.ends_at, eventData.description || ''),
               startsAt: eventData.starts_at,
               endsAt: eventData.ends_at,
               date: new Date(eventData.starts_at).toISOString().split('T')[0],
               color: eventData.color || 'bg-purple-500/70',
-              isLocked: false,
-              isTodo: false,
-              hasAlarm: false,
-              hasReminder: false
+              isLocked: eventData.is_locked || false,
+              isTodo: eventData.is_todo || false,
+              hasAlarm: eventData.has_alarm || false,
+              hasReminder: eventData.has_reminder || false
             };
             
             console.log("Formatted event for calendar:", formattedEvent);
@@ -190,7 +190,13 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
               console.log("Using onScheduleEvent callback for event:", formattedEvent);
               const result = await onScheduleEvent(formattedEvent);
               console.log("Result from onScheduleEvent:", result);
-              toast.success(`Event "${formattedEvent.title}" scheduled`);
+              
+              if (result && result.success) {
+                toast.success(`Event "${formattedEvent.title}" scheduled`);
+              } else {
+                console.error("Failed to schedule event:", result?.error || "unknown error");
+                toast.error(`Failed to schedule event: ${result?.error || 'Unknown error'}`);
+              }
             } else {
               console.log("Using addEvent hook for event:", formattedEvent);
               const result = await addEvent(formattedEvent);
@@ -216,24 +222,22 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
         
         if (processedEvent._action === 'delete') {
           // Handle delete using the useCalendarEvents hook
-          removeEvent(processedEvent.id)
-            .then(response => {
-              if (response.success) {
-                toast.success(`Event "${processedEvent.title}" has been deleted`);
-              } else {
-                toast.error(`Failed to delete event: ${response.error || 'Unknown error'}`);
-              }
-            })
-            .catch(err => {
-              console.error("Error deleting event:", err);
-              toast.error(`Error deleting event: ${err instanceof Error ? err.message : 'Unknown error'}`);
-            });
-        } else {
+          const response = await removeEvent(processedEvent.id);
+          if (response.success) {
+            toast.success(`Event "${processedEvent.title}" has been deleted`);
+          } else {
+            toast.error(`Failed to delete event: ${response.error || 'Unknown error'}`);
+          }
+        } else if (processedEvent.id) {
           // Format event for update
           const eventToUpdate: CalendarEventType = {
             id: processedEvent.id,
             title: processedEvent.title,
-            description: processedEvent.description || '',
+            description: formatEventDescription(
+              processedEvent.starts_at, 
+              processedEvent.ends_at, 
+              processedEvent.description || ''
+            ),
             startsAt: processedEvent.starts_at,
             endsAt: processedEvent.ends_at,
             date: new Date(processedEvent.starts_at).toISOString().split('T')[0],
@@ -245,18 +249,12 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
           };
           
           // Handle update using the useCalendarEvents hook
-          updateEvent(eventToUpdate)
-            .then(response => {
-              if (response.success) {
-                toast.success(`Event "${processedEvent.title}" has been updated`);
-              } else {
-                toast.error(`Failed to update event: ${response.error || 'Unknown error'}`);
-              }
-            })
-            .catch(err => {
-              console.error("Error updating event:", err);
-              toast.error(`Error updating event: ${err instanceof Error ? err.message : 'Unknown error'}`);
-            });
+          const response = await updateEvent(eventToUpdate);
+          if (response.success) {
+            toast.success(`Event "${processedEvent.title}" has been updated`);
+          } else {
+            toast.error(`Failed to update event: ${response.error || 'Unknown error'}`);
+          }
         }
       }
     } catch (error) {
@@ -270,6 +268,13 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Helper function to format event description consistently
+  const formatEventDescription = (startsAt: string, endsAt: string, description: string): string => {
+    const startTime = new Date(startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    const endTime = new Date(endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `${startTime} - ${endTime} | ${description}`;
   };
 
   // Function to fetch events for context

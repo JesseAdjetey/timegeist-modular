@@ -1,10 +1,11 @@
 
 import React, { useEffect } from 'react';
 import Mainview from '@/components/Mainview';
-import { useDateStore, useViewStore, useEventStore } from "@/lib/store";
+import { useDateStore, useViewStore } from "@/lib/store";
 import MallyAI from '@/components/ai/MallyAI';
 import { useCalendarEvents } from '@/hooks/use-calendar-events';
 import { toast } from 'sonner';
+import { CalendarEventType } from '@/lib/stores/types';
 
 const Index = () => {
   const { addEvent } = useCalendarEvents();
@@ -19,11 +20,11 @@ const Index = () => {
   }, []);
 
   // Handler for event scheduling via MallyAI
-  const handleScheduleEvent = async (event: any) => {
+  const handleScheduleEvent = async (event: CalendarEventType): Promise<any> => {
     try {
       console.log("Index component handling MallyAI event:", event);
       
-      if (!event || !event.title || !event.startsAt || !event.endsAt) {
+      if (!event || !event.title) {
         console.error("Invalid event data received:", event);
         toast.error("Invalid event data received");
         return { success: false, error: "Invalid event data" };

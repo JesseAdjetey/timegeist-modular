@@ -50,28 +50,24 @@ function getNormalizedDate(dateText: string) {
 // Helper to check for event conflicts
 function detectConflicts(proposedEvent: any, existingEvents: any[]) {
   // Filter to only check events on the same day
-  const sameDay = existingEvents.filter(event => event.date === proposedEvent.date);
+  const eventDate = new Date(proposedEvent.starts_at).toISOString().split('T')[0];
+  const sameDay = existingEvents.filter(event => {
+    const eventStartDate = new Date(event.starts_at).toISOString().split('T')[0];
+    return eventStartDate === eventDate;
+  });
   
-  // Parse time strings to minutes for comparison
-  const getMinutes = (timeStr: string) => {
-    let [hours, minutes] = timeStr.split(':').map(Number);
-    if (timeStr.toLowerCase().includes('pm') && hours < 12) hours += 12;
-    if (timeStr.toLowerCase().includes('am') && hours === 12) hours = 0;
-    return hours * 60 + (minutes || 0);
+  // Convert ISO timestamps to minutes for comparison
+  const getMinutes = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.getHours() * 60 + date.getMinutes();
   };
   
-  const proposedStart = getMinutes(proposedEvent.timeStart);
-  const proposedEnd = getMinutes(proposedEvent.timeEnd);
+  const proposedStart = getMinutes(proposedEvent.starts_at);
+  const proposedEnd = getMinutes(proposedEvent.ends_at);
   
   return sameDay.filter(event => {
-    // Extract times from event description
-    const timeRegex = /(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)\s*-\s*(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)/i;
-    const timesMatch = event.description.match(timeRegex);
-    
-    if (!timesMatch) return false;
-    
-    const eventStart = getMinutes(timesMatch[1]);
-    const eventEnd = getMinutes(timesMatch[2]);
+    const eventStart = getMinutes(event.starts_at);
+    const eventEnd = getMinutes(event.ends_at);
     
     // Check for overlap
     return (
@@ -168,9 +164,7 @@ function extractEventDetails(text: string) {
   return {
     title,
     date: eventDate,
-    timeStart: formattedStartTime,
-    timeEnd: formattedEndTime,
-    description: `${formattedStartTime} - ${formattedEndTime} | ${title}`,
+    description: title, // Use title as the description base
     starts_at: startsAt,
     ends_at: endsAt
   };
@@ -293,7 +287,7 @@ IMPORTANT CAPABILITIES AND CONSTRAINTS:
 - If time information is not provided, suggest a time but don't require it
 - If date information is not provided, assume today or suggest a good time
 
-Be helpful, accomodating, and make the scheduling process as simple as possible.`;
+Be helpful, accommodating, and make the scheduling process as simple as possible.`;
 
     // Add context about the operation result
     let aiPrompt = prompt;
@@ -374,7 +368,6 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
           title: eventDetails.title,
           description: eventDetails.description,
           color: 'bg-purple-500/70',
-          user_id: userId,
           starts_at: eventDetails.starts_at,
           ends_at: eventDetails.ends_at
         };
@@ -384,16 +377,12 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
           try {
             console.log("Attempting to insert event into database:", newEvent);
             
-            // Extract the actual description part (without time info)
-            const descriptionParts = eventDetails.description.split('|');
-            const actualDescription = descriptionParts.length > 1 ? descriptionParts[1].trim() : eventDetails.title;
-            
             // Insert into calendar_events table
             const { data, error } = await supabase
               .from('calendar_events')
               .insert({
                 title: newEvent.title,
-                description: actualDescription,
+                description: newEvent.description || newEvent.title,
                 color: newEvent.color,
                 user_id: userId,
                 starts_at: newEvent.starts_at,
@@ -444,15 +433,11 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
         // Update in database if possible
         if (userId && targetEvent.id) {
           try {
-            // Extract the actual description part (without time info)
-            const descriptionParts = eventDetails.description.split('|');
-            const actualDescription = descriptionParts.length > 1 ? descriptionParts[1].trim() : eventDetails.title;
-            
             const { data, error } = await supabase
               .from('calendar_events')
               .update({
                 title: updatedEvent.title,
-                description: actualDescription,
+                description: updatedEvent.description,
                 starts_at: updatedEvent.starts_at,
                 ends_at: updatedEvent.ends_at
               })
