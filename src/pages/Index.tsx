@@ -7,6 +7,7 @@ import { useCalendarEvents } from '@/hooks/use-calendar-events';
 
 const Index = () => {
   const { addEvent } = useCalendarEvents();
+  
   // Initialize stores on client side
   useEffect(() => {
     // Hydrate zustand stores if needed
@@ -19,6 +20,7 @@ const Index = () => {
   // Handler for event scheduling via MallyAI
   const handleScheduleEvent = async (event: any) => {
     try {
+      console.log("Index component handling MallyAI event:", event);
       const result = await addEvent(event);
       return result;
     } catch (error) {

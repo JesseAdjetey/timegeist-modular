@@ -164,27 +164,48 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
       if (data.events && data.events.length > 0) {
         console.log("New events received from edge function:", data.events);
         
-        data.events.forEach((event: CalendarEventType) => {
-          if (onScheduleEvent) {
-            onScheduleEvent(event);
-            toast.success(`Event "${event.title}" scheduled`);
-          } else {
-            // Add event to store using the addEvent from useCalendarEvents
-            // This ensures we're using the same function for all event creation
-            addEvent(event)
-              .then(response => {
-                if (response.success) {
-                  toast.success(`Event "${event.title}" added to your calendar`);
-                } else {
-                  toast.error(`Failed to add event: ${response.error || 'Unknown error'}`);
-                }
-              })
-              .catch(err => {
-                console.error("Error adding event:", err);
-                toast.error(`Error adding event: ${err.message || 'Unknown error'}`);
-              });
+        // Process each event from the response
+        for (const event of data.events) {
+          try {
+            console.log("Processing event from AI response:", event);
+            
+            // Format the event properly for the addEvent function
+            const formattedEvent: CalendarEventType = {
+              id: event.id,
+              title: event.title,
+              description: event.description || `${event.starts_at} - ${event.ends_at} | ${event.title}`,
+              startsAt: event.starts_at,
+              endsAt: event.ends_at,
+              date: new Date(event.starts_at).toISOString().split('T')[0],
+              color: event.color || 'bg-purple-500/70',
+              isLocked: event.is_locked || false,
+              isTodo: event.is_todo || false,
+              hasAlarm: event.has_alarm || false,
+              hasReminder: event.has_reminder || false,
+              todoId: event.todo_id
+            };
+            
+            // Use the onScheduleEvent callback if provided, otherwise use addEvent from the hook
+            if (onScheduleEvent) {
+              console.log("Using onScheduleEvent callback for event:", formattedEvent);
+              await onScheduleEvent(formattedEvent);
+              toast.success(`Event "${formattedEvent.title}" scheduled`);
+            } else {
+              console.log("Using addEvent hook for event:", formattedEvent);
+              const result = await addEvent(formattedEvent);
+              
+              if (result.success) {
+                toast.success(`Event "${formattedEvent.title}" added to your calendar`);
+              } else {
+                console.error("Failed to add event:", result.error);
+                toast.error(`Failed to add event: ${result.error || 'Unknown error'}`);
+              }
+            }
+          } catch (err) {
+            console.error("Error processing AI-created event:", err);
+            toast.error(`Error adding event: ${err instanceof Error ? err.message : 'Unknown error'}`);
           }
-        });
+        }
       }
       
       // 8. Handle individual processed event (edit/delete)
@@ -203,7 +224,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
             })
             .catch(err => {
               console.error("Error deleting event:", err);
-              toast.error(`Error deleting event: ${err.message || 'Unknown error'}`);
+              toast.error(`Error deleting event: ${err instanceof Error ? err.message : 'Unknown error'}`);
             });
         } else {
           // Handle update using the useCalendarEvents hook
@@ -217,7 +238,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
             })
             .catch(err => {
               console.error("Error updating event:", err);
-              toast.error(`Error updating event: ${err.message || 'Unknown error'}`);
+              toast.error(`Error updating event: ${err instanceof Error ? err.message : 'Unknown error'}`);
             });
         }
       }
@@ -263,8 +284,8 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   // AI button styling - making sure it's visible and properly positioned
   const aiButtonStyle = {
     position: 'fixed' as const,
-    bottom: '12rem', // Positioned higher above the AddEvent button
-    right: '6rem', // Positioned to the left of Add Event button
+    bottom: '6rem', // Positioned higher above the AddEvent button
+    right: '2rem', // Positioned to the left of Add Event button
     width: '3.5rem',
     height: '3.5rem',
     borderRadius: '50%',
