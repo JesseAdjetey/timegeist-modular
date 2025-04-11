@@ -364,28 +364,49 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
         // Insert into database if possible
         if (userId) {
           try {
+            console.log("Attempting to insert event into database:", newEvent);
+            
+            // Insert into calendar_events table
             const { data, error } = await supabase
               .from('calendar_events')
-              .insert(newEvent)
+              .insert({
+                title: newEvent.title,
+                description: eventDetails.title, // Store the actual description without time info
+                color: newEvent.color,
+                user_id: userId,
+                starts_at: newEvent.starts_at,
+                ends_at: newEvent.ends_at,
+                has_reminder: false,
+                has_alarm: false,
+                is_locked: false,
+                is_todo: false
+              })
               .select();
             
-            if (error) throw error;
+            if (error) {
+              console.error("Database insert error details:", error);
+              throw error;
+            }
             
             // Use the newly created event with DB ID
             if (data && data[0]) {
-              processedEvent = data[0];
+              console.log("Successfully created event in database with ID:", data[0].id);
+              processedEvent = {
+                ...newEvent,
+                id: data[0].id
+              };
               newEvents.push(processedEvent);
             } else {
+              console.log("No data returned from insert operation, using generated event");
               newEvents.push(newEvent);
             }
-            
-            console.log("Successfully created event in database");
           } catch (error) {
             console.error("Failed to insert event into database:", error);
             // Fall back to client-side handling
             newEvents.push(newEvent);
           }
         } else {
+          console.log("No user ID provided, skipping database insertion");
           newEvents.push(newEvent);
         }
       } else if (operationResult.action === 'edit' && targetEvent) {
@@ -404,7 +425,12 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
           try {
             const { data, error } = await supabase
               .from('calendar_events')
-              .update(updatedEvent)
+              .update({
+                title: updatedEvent.title,
+                description: eventDetails.title,
+                starts_at: updatedEvent.starts_at,
+                ends_at: updatedEvent.ends_at
+              })
               .eq('id', targetEvent.id)
               .select();
             
