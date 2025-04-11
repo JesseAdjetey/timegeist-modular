@@ -40,7 +40,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const [isSidebarView, setIsSidebarView] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { events, addEvent, updateEvent, deleteEvent } = useCalendarEvents();
+  const { events, addEvent, updateEvent, removeEvent, toggleEventLock } = useCalendarEvents();
   const { user } = useAuth();
 
   // Auto-open if there's an initial prompt
@@ -193,7 +193,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
         
         if (processedEvent._action === 'delete') {
           // Handle delete using the useCalendarEvents hook
-          deleteEvent(processedEvent.id)
+          removeEvent(processedEvent.id)
             .then(response => {
               if (response.success) {
                 toast.success(`Event "${processedEvent.title}" has been deleted`);
