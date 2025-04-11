@@ -1,6 +1,6 @@
 // src/components/ai/MallyAI.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2, Calendar } from 'lucide-react';
+import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2 } from 'lucide-react';
 import { useEventStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -103,24 +103,29 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim()) return;
     
+    // 1. Add user message to the chat
     const userMessageId = addUserMessage(messageText);
+    
+    // 2. Clear input AFTER adding the message to chat
     setInput('');
 
-    // Add a loading message from AI
+    // 3. Add a loading message from AI
     const aiMessageId = addAIMessage('Thinking...', true);
     setIsProcessing(true);
 
     try {
       console.log("Calling Supabase edge function: process-scheduling");
       
-      // Call our edge function
+      // 4. Call our edge function
       const response = await supabase.functions.invoke('process-scheduling', {
         body: { 
           prompt: messageText,
-          messages: messages.filter(m => !m.isLoading).map(m => ({
-            role: m.sender === 'user' ? 'user' : 'assistant',
-            content: m.text
-          })),
+          messages: messages
+            .filter(m => !m.isLoading)
+            .map(m => ({
+              role: m.sender === 'user' ? 'user' : 'assistant',
+              content: m.text
+            })),
           events: events, // Send current events for context
           userId: user?.id
         }
@@ -147,10 +152,10 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
         throw new Error(data.error);
       }
       
-      // Update the AI message with the response
+      // 5. Update the AI message with the response
       updateAIMessage(aiMessageId, data.response || 'I couldn\'t process that request. Please try again.', false);
 
-      // Handle new events
+      // 6. Handle new events
       if (data.events && data.events.length > 0) {
         data.events.forEach((event: CalendarEventType) => {
           if (onScheduleEvent) {
@@ -164,7 +169,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
         });
       }
       
-      // Handle individual processed event (edit/delete)
+      // 7. Handle individual processed event (edit/delete)
       if (data.processedEvent) {
         const processedEvent = data.processedEvent;
         
@@ -193,7 +198,13 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
 
   const sendMessage = () => {
     if (isProcessing) return;
-    handleSendMessage(input);
+    
+    // Store the current input text before sending
+    const messageToSend = input.trim();
+    
+    if (messageToSend) {
+      handleSendMessage(messageToSend);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -277,7 +288,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
           </div>
         </div>
         
-        {/* Messages */}
+        {/* Messages Container */}
         <div className="flex-1 overflow-y-auto mb-3 p-3">
           {messages.map(message => (
             <div
@@ -344,3 +355,5 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     </>
   );
 };
+
+export default MallyAI;
