@@ -1,4 +1,3 @@
-
 // src/components/ai/MallyAI.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2 } from 'lucide-react';
@@ -42,21 +41,18 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const { addEvent, updateEvent, removeEvent } = useCalendarEvents();
   const { user } = useAuth();
 
-  // Auto-open if there's an initial prompt
   useEffect(() => {
     if (initialPrompt) {
       setIsOpen(true);
     }
   }, [initialPrompt]);
 
-  // Handle initial prompt if provided
   useEffect(() => {
     if (initialPrompt && isOpen) {
       handleSendMessage(initialPrompt);
     }
   }, [isOpen, initialPrompt]);
 
-  // Auto-scroll to the bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -104,23 +100,16 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim()) return;
     
-    // 1. Add user message to the chat
     const userMessageId = addUserMessage(messageText);
-    
-    // 2. Clear input AFTER adding the message to chat
     setInput('');
-
-    // 3. Add a loading message from AI
     const aiMessageId = addAIMessage('Thinking...', true);
     setIsProcessing(true);
 
     try {
       console.log("Calling Supabase edge function: process-scheduling");
       
-      // 4. Get current events from the events hook for context
       const currentEvents = await fetchEvents();
       
-      // 5. Call our edge function
       const response = await supabase.functions.invoke('process-scheduling', {
         body: { 
           prompt: messageText,
@@ -144,48 +133,46 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
 
       const data = response.data;
       
-      // Check if we have a valid response
       if (!data || (!data.response && !data.error)) {
         console.error('Invalid response from edge function:', data);
         throw new Error('Received an invalid response from the AI service');
       }
       
-      // Handle error in the response data
       if (data.error) {
         console.error('AI processing error:', data.error);
         throw new Error(data.error);
       }
       
-      // 6. Update the AI message with the response
       updateAIMessage(aiMessageId, data.response || 'I couldn\'t process that request. Please try again.', false);
 
-      // 7. Handle new events from the edge function
       if (data.events && data.events.length > 0) {
         console.log("New events received from edge function:", data.events);
         
-        // Process each event from the response
         for (const eventData of data.events) {
           try {
-            console.log("Processing event from AI response:", eventData);
+            const startsAt = eventData.starts_at || eventData.startsAt || new Date().toISOString();
+            const endsAt = eventData.ends_at || eventData.endsAt || new Date(new Date(startsAt).getTime() + 60*60*1000).toISOString();
+            const eventDate = new Date(startsAt).toISOString().split('T')[0];
             
-            // Format the event properly for the calendar
+            const startTime = new Date(startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            const endTime = new Date(endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            const description = `${startTime} - ${endTime} | ${eventData.description || ''}`;
+            
             const formattedEvent: CalendarEventType = {
               id: eventData.id || crypto.randomUUID(),
               title: eventData.title,
-              description: formatEventDescription(eventData.starts_at, eventData.ends_at, eventData.description || ''),
-              startsAt: eventData.starts_at,
-              endsAt: eventData.ends_at,
-              date: new Date(eventData.starts_at).toISOString().split('T')[0],
+              description: description,
+              startsAt: startsAt,
+              endsAt: endsAt,
+              date: eventDate,
               color: eventData.color || 'bg-purple-500/70',
-              isLocked: eventData.is_locked || false,
-              isTodo: eventData.is_todo || false,
-              hasAlarm: eventData.has_alarm || false,
-              hasReminder: eventData.has_reminder || false
+              isLocked: eventData.is_locked || eventData.isLocked || false,
+              isTodo: eventData.is_todo || eventData.isTodo || false,
+              hasAlarm: eventData.has_alarm || eventData.hasAlarm || false,
+              hasReminder: eventData.has_reminder || eventData.hasReminder || false,
+              todoId: eventData.todo_id || eventData.todoId
             };
             
-            console.log("Formatted event for calendar:", formattedEvent);
-            
-            // Use the onScheduleEvent callback if provided, otherwise use addEvent from the hook
             if (onScheduleEvent) {
               console.log("Using onScheduleEvent callback for event:", formattedEvent);
               const result = await onScheduleEvent(formattedEvent);
@@ -198,7 +185,6 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
                 toast.error(`Failed to schedule event: ${result?.error || 'Unknown error'}`);
               }
             } else {
-              console.log("Using addEvent hook for event:", formattedEvent);
               const result = await addEvent(formattedEvent);
               console.log("Result from addEvent hook:", result);
               
@@ -216,12 +202,10 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
         }
       }
       
-      // 8. Handle individual processed event (edit/delete)
       if (data.processedEvent) {
         const processedEvent = data.processedEvent;
         
         if (processedEvent._action === 'delete') {
-          // Handle delete using the useCalendarEvents hook
           const response = await removeEvent(processedEvent.id);
           if (response.success) {
             toast.success(`Event "${processedEvent.title}" has been deleted`);
@@ -229,7 +213,6 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
             toast.error(`Failed to delete event: ${response.error || 'Unknown error'}`);
           }
         } else if (processedEvent.id) {
-          // Format event for update
           const eventToUpdate: CalendarEventType = {
             id: processedEvent.id,
             title: processedEvent.title,
@@ -248,7 +231,6 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
             hasReminder: processedEvent.has_reminder || false
           };
           
-          // Handle update using the useCalendarEvents hook
           const response = await updateEvent(eventToUpdate);
           if (response.success) {
             toast.success(`Event "${processedEvent.title}" has been updated`);
@@ -270,14 +252,12 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     }
   };
 
-  // Helper function to format event description consistently
   const formatEventDescription = (startsAt: string, endsAt: string, description: string): string => {
     const startTime = new Date(startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
     const endTime = new Date(endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
     return `${startTime} - ${endTime} | ${description}`;
   };
 
-  // Function to fetch events for context
   const fetchEvents = async () => {
     try {
       if (!user) return [];
@@ -299,7 +279,6 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const sendMessage = () => {
     if (isProcessing) return;
     
-    // Store the current input text before sending
     const messageToSend = input.trim();
     
     if (messageToSend) {
@@ -322,21 +301,20 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     setIsSidebarView(!isSidebarView);
   };
 
-  // AI button styling - making sure it's visible and properly positioned
   const aiButtonStyle = {
     position: 'fixed' as const,
-    bottom: '6rem', // Positioned higher above the AddEvent button
-    right: '2rem', // Positioned to the right side
+    bottom: '6rem',
+    right: '2rem',
     width: '3.5rem',
     height: '3.5rem',
     borderRadius: '50%',
-    backgroundColor: 'rgba(139, 92, 246, 0.8)', // Purple with slight transparency
+    backgroundColor: 'rgba(139, 92, 246, 0.8)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    zIndex: 50, // Make sure it's above other elements
+    zIndex: 50,
     transition: 'all 0.3s ease',
     animation: 'pulse 2s infinite',
   };
@@ -360,7 +338,6 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
                   ${isSidebarView ? 'fixed left-[400px] bottom-0 rounded-none h-[calc(100vh-64px)] w-96' : 'fixed bottom-20 right-8 z-50 rounded-lg shadow-xl'} 
                   flex flex-col transition-all duration-300 bg-gradient-to-br from-purple-900/90 to-indigo-900/90 text-white border border-purple-500/20`}
       >
-        {/* Header */}
         <div className="flex justify-between items-center p-3 border-b border-white/10">
           <div className="flex items-center">
             <Bot size={20} className="text-primary mr-2" />
@@ -388,7 +365,6 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
           </div>
         </div>
         
-        {/* Messages Container */}
         <div className="flex-1 overflow-y-auto mb-3 p-3">
           {messages.map(message => (
             <div
@@ -428,7 +404,6 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
           <div ref={messagesEndRef} />
         </div>
         
-        {/* Input */}
         <div className="flex items-center p-3 border-t border-white/10">
           <textarea
             value={input}

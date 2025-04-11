@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useEventStore } from '@/lib/store';
@@ -55,15 +54,22 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
     setIsRescheduling(true);
   };
 
-  // Fix: Update handleAIEvent to return a Promise
+  // Updated handleAIEvent to properly return a Promise
   const handleAIEvent = async (eventData: any): Promise<any> => {
+    console.log("EventDetails handling AI event:", eventData);
+    
     // Implement AI rescheduling logic
     if (eventData && Object.keys(eventData).length > 0) {
       try {
-        const rescheduleEvent = {
+        // Make sure we have all required fields from the original event
+        const rescheduleEvent: CalendarEventType = {
           ...selectedEvent,
-          ...eventData
+          ...eventData,
+          // Ensure we keep the original ID
+          id: selectedEvent.id
         };
+        
+        console.log("Rescheduling event with data:", rescheduleEvent);
         
         const result = await updateEvent(rescheduleEvent);
         

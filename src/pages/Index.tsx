@@ -30,8 +30,26 @@ const Index = () => {
         return { success: false, error: "Invalid event data" };
       }
       
+      // Ensure the event has all required fields before passing to addEvent
+      const formattedEvent: CalendarEventType = {
+        id: event.id || crypto.randomUUID(),
+        title: event.title,
+        description: event.description,
+        date: event.date,
+        startsAt: event.startsAt,
+        endsAt: event.endsAt,
+        color: event.color || 'bg-purple-500/70',
+        isLocked: event.isLocked || false,
+        isTodo: event.isTodo || false,
+        hasAlarm: event.hasAlarm || false,
+        hasReminder: event.hasReminder || false,
+        todoId: event.todoId
+      };
+      
+      console.log("Formatted event ready for addEvent:", formattedEvent);
+      
       // Use the addEvent function from the hook
-      const result = await addEvent(event);
+      const result = await addEvent(formattedEvent);
       
       if (result.success) {
         console.log("Event successfully added:", event.title);
