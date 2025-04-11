@@ -1,3 +1,4 @@
+
 // src/components/ai/MallyAI.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2 } from 'lucide-react';
@@ -26,7 +27,7 @@ const initialMessages: Message[] = [
 ];
 
 interface MallyAIProps {
-  onScheduleEvent?: (event: any) => void;
+  onScheduleEvent?: (event: any) => Promise<any>;
   initialPrompt?: string;
 }
 
@@ -187,11 +188,13 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
             // Use the onScheduleEvent callback if provided, otherwise use addEvent from the hook
             if (onScheduleEvent) {
               console.log("Using onScheduleEvent callback for event:", formattedEvent);
-              await onScheduleEvent(formattedEvent);
+              const result = await onScheduleEvent(formattedEvent);
+              console.log("Result from onScheduleEvent:", result);
               toast.success(`Event "${formattedEvent.title}" scheduled`);
             } else {
               console.log("Using addEvent hook for event:", formattedEvent);
               const result = await addEvent(formattedEvent);
+              console.log("Result from addEvent hook:", result);
               
               if (result.success) {
                 toast.success(`Event "${formattedEvent.title}" added to your calendar`);
@@ -318,7 +321,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const aiButtonStyle = {
     position: 'fixed' as const,
     bottom: '6rem', // Positioned higher above the AddEvent button
-    right: '2rem', // Positioned to the left of Add Event button
+    right: '2rem', // Positioned to the right side
     width: '3.5rem',
     height: '3.5rem',
     borderRadius: '50%',

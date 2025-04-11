@@ -171,8 +171,8 @@ function extractEventDetails(text: string) {
     timeStart: formattedStartTime,
     timeEnd: formattedEndTime,
     description: `${formattedStartTime} - ${formattedEndTime} | ${title}`,
-    startsAt,
-    endsAt
+    starts_at: startsAt,
+    ends_at: endsAt
   };
 }
 
@@ -375,8 +375,8 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
           description: eventDetails.description,
           color: 'bg-purple-500/70',
           user_id: userId,
-          starts_at: eventDetails.startsAt,
-          ends_at: eventDetails.endsAt
+          starts_at: eventDetails.starts_at,
+          ends_at: eventDetails.ends_at
         };
         
         // Insert into database if possible
@@ -437,12 +437,12 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
           ...targetEvent,
           title: eventDetails.title,
           description: eventDetails.description,
-          starts_at: eventDetails.startsAt,
-          ends_at: eventDetails.endsAt
+          starts_at: eventDetails.starts_at,
+          ends_at: eventDetails.ends_at
         };
         
         // Update in database if possible
-        if (userId) {
+        if (userId && targetEvent.id) {
           try {
             // Extract the actual description part (without time info)
             const descriptionParts = eventDetails.description.split('|');
@@ -471,7 +471,7 @@ Be helpful, accomodating, and make the scheduling process as simple as possible.
         }
       } else if (operationResult.action === 'delete' && targetEvent) {
         // Delete the event
-        if (userId) {
+        if (userId && targetEvent.id) {
           try {
             const { error } = await supabase
               .from('calendar_events')
