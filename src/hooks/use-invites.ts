@@ -73,8 +73,9 @@ export function useInvites() {
                             typeof item.event === 'object' && 
                             !('error' in item.event);
         
+        // Create a fallback event object if the event has an error or is null
         const eventData = hasValidEvent 
-          ? item.event as CalendarEventType
+          ? (item.event as CalendarEventType)
           : undefined;
         
         return {
@@ -91,8 +92,9 @@ export function useInvites() {
                             typeof item.event === 'object' && 
                             !('error' in item.event);
         
+        // Create a fallback event object if the event has an error or is null
         const eventData = hasValidEvent 
-          ? item.event as CalendarEventType
+          ? (item.event as CalendarEventType)
           : undefined;
         
         return {
