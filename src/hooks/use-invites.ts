@@ -74,16 +74,29 @@ export function useInvites() {
                             !('error' in (item.event || {}));
         
         // Create a fallback event object if the event has an error or is null
-        const eventData = hasValidEvent && item.event
-          ? {
-              id: item.event.id,
-              title: item.event.title,
-              description: item.event.description,
-              startsAt: item.event.startsAt,
-              endsAt: item.event.endsAt,
-              color: item.event.color,
-            } as CalendarEventType
-          : undefined;
+        let eventData = undefined;
+        
+        if (hasValidEvent && item.event) {
+          // Only try to access properties if we have a valid event object
+          const event = item.event as any; // Use any temporarily to avoid type errors
+          
+          if (typeof event === 'object' && 
+              'id' in event && 
+              'title' in event && 
+              'description' in event && 
+              'startsAt' in event && 
+              'endsAt' in event) {
+            
+            eventData = {
+              id: event.id,
+              title: event.title,
+              description: event.description,
+              startsAt: event.startsAt,
+              endsAt: event.endsAt,
+              color: event.color || undefined,
+            } as CalendarEventType;
+          }
+        }
         
         return {
           ...item,
@@ -100,16 +113,29 @@ export function useInvites() {
                             !('error' in (item.event || {}));
         
         // Create a fallback event object if the event has an error or is null
-        const eventData = hasValidEvent && item.event
-          ? {
-              id: item.event.id,
-              title: item.event.title,
-              description: item.event.description,
-              startsAt: item.event.startsAt,
-              endsAt: item.event.endsAt,
-              color: item.event.color,
-            } as CalendarEventType
-          : undefined;
+        let eventData = undefined;
+        
+        if (hasValidEvent && item.event) {
+          // Only try to access properties if we have a valid event object
+          const event = item.event as any; // Use any temporarily to avoid type errors
+          
+          if (typeof event === 'object' && 
+              'id' in event && 
+              'title' in event && 
+              'description' in event && 
+              'startsAt' in event && 
+              'endsAt' in event) {
+            
+            eventData = {
+              id: event.id,
+              title: event.title,
+              description: event.description,
+              startsAt: event.startsAt,
+              endsAt: event.endsAt,
+              color: event.color || undefined,
+            } as CalendarEventType;
+          }
+        }
         
         return {
           ...item,
