@@ -2,11 +2,12 @@
 import React, { useEffect } from 'react';
 import Mainview from '@/components/Mainview';
 import { useDateStore, useViewStore } from "@/lib/store";
-import MallyAI from '@/components/ai/MallyAI';
 import { useCalendarEvents } from '@/hooks/use-calendar-events';
 import { toast } from 'sonner';
 import { CalendarEventType } from '@/lib/stores/types';
 import '../styles/ai-animations.css';
+import DraggableMallyAI from '@/components/ai/DraggableMallyAI';
+import { motion } from 'framer-motion';
 
 const Index = () => {
   const { addEvent } = useCalendarEvents();
@@ -71,7 +72,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col text-white relative">
       <Mainview />
-      <MallyAI onScheduleEvent={handleScheduleEvent} />
+      <DraggableMallyAI onScheduleEvent={handleScheduleEvent} />
     </div>
   );
 };
