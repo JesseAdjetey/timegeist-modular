@@ -68,8 +68,12 @@ export function useInvites() {
 
       // Process sent invites with proper type checking
       const processedSent = sent?.map(item => {
-        // Check if event property exists and is not an error
-        const eventData = item.event && typeof item.event === 'object' && !('error' in item.event)
+        // Fix: Add proper null checking for item.event
+        const hasValidEvent = item.event !== null && 
+                            typeof item.event === 'object' && 
+                            !('error' in item.event);
+        
+        const eventData = hasValidEvent 
           ? item.event as CalendarEventType
           : undefined;
         
@@ -82,8 +86,12 @@ export function useInvites() {
 
       // Process received invites with proper type checking
       const processedReceived = received?.map(item => {
-        // Check if event property exists and is not an error
-        const eventData = item.event && typeof item.event === 'object' && !('error' in item.event)
+        // Fix: Add proper null checking for item.event
+        const hasValidEvent = item.event !== null && 
+                            typeof item.event === 'object' && 
+                            !('error' in item.event);
+        
+        const eventData = hasValidEvent 
           ? item.event as CalendarEventType
           : undefined;
         
