@@ -110,7 +110,7 @@ const InvitesModule: React.FC<InvitesModuleProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{invite.event?.title || 'Unnamed event'}</div>
                   <div className="text-xs opacity-70 flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> {formatTime(invite.event?.starts_at || invite.created_at)}
+                    <Clock className="h-3 w-3" /> {formatTime(invite.event?.startsAt || invite.created_at)}
                   </div>
                 </div>
                 

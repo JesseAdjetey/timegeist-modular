@@ -21,7 +21,7 @@ const DraggableMallyAI: React.FC<DraggableMallyAIProps> = ({ onScheduleEvent }) 
     const setDefaultPosition = () => {
       // Position above the add event button (which is at bottom right)
       const defaultX = window.innerWidth - 100;
-      const defaultY = window.innerHeight - 160; // Above the add event button
+      const defaultY = window.innerHeight - 220; // Even higher above the add event button
       
       if (!position.x && !position.y) {
         setPosition({ x: defaultX, y: defaultY });

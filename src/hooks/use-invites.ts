@@ -39,8 +39,8 @@ export function useInvites() {
             id,
             title,
             description,
-            starts_at,
-            ends_at,
+            startsAt,
+            endsAt,
             color
           )
         `)
@@ -57,17 +57,28 @@ export function useInvites() {
             id,
             title,
             description,
-            starts_at,
-            ends_at,
+            startsAt,
+            endsAt,
             color
           )
         `)
         .eq('invitee_id', user.id);
         
       if (receivedError) throw receivedError;
+
+      // Cast the data to the correct types
+      const typedSent = sent?.map(item => ({
+        ...item,
+        status: (item.status as 'pending' | 'accepted' | 'declined') || 'pending'
+      })) || [];
+
+      const typedReceived = received?.map(item => ({
+        ...item,
+        status: (item.status as 'pending' | 'accepted' | 'declined') || 'pending'
+      })) || [];
       
-      setSentInvites(sent || []);
-      setReceivedInvites(received || []);
+      setSentInvites(typedSent as Invite[]);
+      setReceivedInvites(typedReceived as Invite[]);
     } catch (error) {
       console.error('Error fetching invites:', error);
       toast.error('Failed to fetch invites');
@@ -84,27 +95,15 @@ export function useInvites() {
     }
     
     try {
-      // First, find user by email
-      const { data: userData, error: userError } = await supabase
-        .from('auth.users')
-        .select('id')
-        .eq('email', inviteeEmail)
-        .single();
-        
-      if (userError) {
-        console.log('User lookup error:', userError);
-        // Continue with just email if user not found
-      }
+      // Try to find the user by email directly in the invite creation
+      // We'll need to handle this server-side since we can't query auth.users directly
       
-      const inviteeId = userData?.id;
-      
-      // Create the invite
+      // Create the invite with just the email
       const { data, error } = await supabase
         .from('invites')
         .insert({
           event_id: eventId,
           inviter_id: user.id,
-          invitee_id: inviteeId,
           invitee_email: inviteeEmail,
           invitation_message: message || null,
           status: 'pending'
