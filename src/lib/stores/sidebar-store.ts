@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { ModuleInstance, ModuleType, SidebarPage } from "./types";
@@ -13,7 +12,7 @@ interface SidebarStoreType {
   updatePageTitle: (pageIndex: number, title: string) => void;
   updateModuleTitle: (pageIndex: number, moduleIndex: number, title: string) => void;
   reorderModules: (pageIndex: number, fromIndex: number, toIndex: number) => void;
-  toggleModuleMinimized: (pageIndex: number, moduleIndex: number) => void; // New method
+  toggleModuleMinimized: (pageIndex: number, moduleIndex: number) => void;
 }
 
 export const useSidebarStore = create<SidebarStoreType>()(
@@ -34,7 +33,7 @@ export const useSidebarStore = create<SidebarStoreType>()(
             title: 'Tools',
             modules: [
               { type: 'pomodoro', title: 'Pomodoro' },
-              { type: 'alarms', title: 'Alarms' },
+              { type: 'alarms', title: 'Reminders' },
               { type: 'invites', title: 'Event Invites' }
             ]
           }
@@ -60,7 +59,7 @@ export const useSidebarStore = create<SidebarStoreType>()(
               switch (moduleType) {
                 case 'todo': defaultTitle = 'To-Do List'; break;
                 case 'pomodoro': defaultTitle = 'Pomodoro'; break;
-                case 'alarms': defaultTitle = 'Alarms'; break;
+                case 'alarms': defaultTitle = 'Reminders'; break;
                 case 'eisenhower': defaultTitle = 'Eisenhower Matrix'; break;
                 case 'invites': defaultTitle = 'Event Invites'; break;
               }

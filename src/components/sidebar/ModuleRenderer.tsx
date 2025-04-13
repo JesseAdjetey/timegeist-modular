@@ -5,7 +5,7 @@ import TodoModule from '../modules/TodoModule';
 import InvitesModule from '../modules/InvitesModule';
 import PomodoroModule from '../modules/PomodoroModule';
 import EisenhowerModule from '../modules/EisenhowerModule';
-import AlarmsModule from '../modules/AlarmsModule';
+import RemindersModule from '../modules/RemindersModule';
 
 interface ModuleRendererProps {
   module: ModuleInstance;
@@ -57,10 +57,10 @@ const ModuleRenderer: React.FC<ModuleRendererProps> = ({
           <PomodoroModule {...moduleProps} />
         </div>
       );
-    case 'alarms':
+    case 'alarms': // Updated to use the new RemindersModule
       return (
         <div key={index} style={moduleStyle} className={moduleClassName}>
-          <AlarmsModule {...moduleProps} />
+          <RemindersModule {...moduleProps} />
         </div>
       );
     case 'eisenhower':

@@ -502,6 +502,56 @@ export type Database = {
           },
         ]
       }
+      reminders: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_id: string | null
+          id: string
+          is_active: boolean | null
+          reminder_time: string
+          sound_id: string | null
+          time_after_event_minutes: number | null
+          time_before_event_minutes: number | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          reminder_time: string
+          sound_id?: string | null
+          time_after_event_minutes?: number | null
+          time_before_event_minutes?: number | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          reminder_time?: string
+          sound_id?: string | null
+          time_after_event_minutes?: number | null
+          time_before_event_minutes?: number | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           color: string | null
