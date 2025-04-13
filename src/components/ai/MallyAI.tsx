@@ -1,11 +1,13 @@
+
 // src/components/ai/MallyAI.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2 } from 'lucide-react';
+import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2, Sparkles, Brain } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { CalendarEventType } from '@/lib/stores/types';
 import { useCalendarEvents } from '@/hooks/use-calendar-events';
+import '../../styles/ai-animations.css';
 
 interface Message {
   id: string;
@@ -37,9 +39,36 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSidebarView, setIsSidebarView] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [particles, setParticles] = useState<{x: number, y: number, size: number, life: number}[]>([]);
+  const [showEntranceAnimation, setShowEntranceAnimation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const { addEvent, updateEvent, removeEvent } = useCalendarEvents();
   const { user } = useAuth();
+
+  // Create particles at random intervals
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const interval = setInterval(() => {
+      if (chatContainerRef.current) {
+        const containerRect = chatContainerRef.current.getBoundingClientRect();
+        const x = Math.random() * containerRect.width;
+        const y = Math.random() * containerRect.height;
+        const size = Math.random() * 8 + 2;
+        const life = Math.random() * 2000 + 1000;
+
+        setParticles(prev => [...prev, { x, y, size, life }]);
+
+        // Clean up old particles
+        setTimeout(() => {
+          setParticles(prev => prev.filter(p => p.x !== x || p.y !== y));
+        }, life);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialPrompt) {
@@ -58,7 +87,15 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   }, [messages]);
 
   const toggleAI = () => {
+    setShowEntranceAnimation(true);
     setIsOpen(!isOpen);
+    
+    // Reset entrance animation flag after animation completes
+    if (!isOpen) {
+      setTimeout(() => {
+        setShowEntranceAnimation(false);
+      }, 500);
+    }
   };
 
   const addUserMessage = (text: string) => {
@@ -95,6 +132,19 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
           : message
       )
     );
+  };
+
+  const createSendRipple = (x: number, y: number) => {
+    const ripple = document.createElement('div');
+    ripple.className = 'send-ripple';
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    document.body.appendChild(ripple);
+    
+    // Remove the ripple after animation completes
+    setTimeout(() => {
+      ripple.remove();
+    }, 1000);
   };
 
   const handleSendMessage = async (messageText: string) => {
@@ -293,6 +343,12 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     const messageToSend = input.trim();
     
     if (messageToSend) {
+      // Create send ripple effect
+      if (chatContainerRef.current) {
+        const rect = chatContainerRef.current.getBoundingClientRect();
+        createSendRipple(rect.right - 30, rect.bottom - 30);
+      }
+      
       handleSendMessage(messageToSend);
     }
   };
@@ -312,31 +368,31 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     setIsSidebarView(!isSidebarView);
   };
 
-  const aiButtonStyle = {
-    position: 'fixed' as const,
-    bottom: '6rem',
-    right: '2rem',
-    width: '3.5rem',
-    height: '3.5rem',
-    borderRadius: '50%',
-    backgroundColor: 'rgba(139, 92, 246, 0.8)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    zIndex: 50,
-    transition: 'all 0.3s ease',
-    animation: 'pulse 2s infinite',
-  };
+  // Typing indicator component
+  const TypingIndicator = () => (
+    <div className="typing-indicator">
+      <div className="typing-dot"></div>
+      <div className="typing-dot"></div>
+      <div className="typing-dot"></div>
+    </div>
+  );
 
   if (!isOpen) {
     return (
       <div 
-        className="fixed z-50 flex items-center justify-center shadow-lg hover:shadow-xl transition-all" 
-        style={aiButtonStyle}
+        className="fixed z-50 flex items-center justify-center shadow-lg hover:shadow-xl transition-all ai-button"
+        style={{
+          bottom: '6rem',
+          right: '2rem',
+          width: '3.5rem',
+          height: '3.5rem',
+          borderRadius: '50%',
+          backgroundColor: 'rgba(139, 92, 246, 0.8)',
+          animation: 'floatButton 2s ease-in-out infinite'
+        }}
         onClick={toggleAI}
       >
+        <Sparkles size={16} className="absolute text-white/50 animate-sparkle" style={{ top: '8px', right: '8px' }} />
         <Bot size={24} className="text-white" />
       </div>
     );
@@ -345,13 +401,30 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   return (
     <>
       <div 
+        ref={chatContainerRef}
         className={`ai-chat-container ${isExpanded ? 'w-96 h-[500px]' : 'w-80 h-[400px]'} 
                   ${isSidebarView ? 'fixed left-[400px] bottom-0 rounded-none h-[calc(100vh-64px)] w-96' : 'fixed bottom-20 right-8 z-50 rounded-lg shadow-xl'} 
-                  flex flex-col transition-all duration-300 bg-gradient-to-br from-purple-900/90 to-indigo-900/90 text-white border border-purple-500/20`}
+                  flex flex-col transition-all duration-300 bg-gradient-to-br from-purple-900/90 to-indigo-900/90 text-white border border-purple-500/20
+                  ${showEntranceAnimation ? 'ai-chat-enter' : ''} glow-border`}
       >
-        <div className="flex justify-between items-center p-3 border-b border-white/10">
+        {/* Floating particles */}
+        {particles.map((particle, index) => (
+          <div 
+            key={index} 
+            className="particle" 
+            style={{
+              left: `${particle.x}px`,
+              top: `${particle.y}px`,
+              width: `${particle.size}px`,
+              height: `${particle.size}px`,
+              opacity: 0.6
+            }}
+          />
+        ))}
+        
+        <div className="flex justify-between items-center p-3 border-b border-white/10 backdrop-blur-sm">
           <div className="flex items-center">
-            <Bot size={20} className="text-primary mr-2" />
+            <Bot size={20} className="text-primary animate-pulse mr-2" />
             <h3 className="font-semibold">Mally AI</h3>
           </div>
           <div className="flex items-center space-x-1">
@@ -377,26 +450,26 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
         </div>
         
         <div className="flex-1 overflow-y-auto mb-3 p-3">
-          {messages.map(message => (
+          {messages.map((message, index) => (
             <div
               key={message.id}
-              className={`mb-3 ${
-                message.sender === 'user' ? 'ml-auto' : 'mr-auto'
-              }`}
+              className={`mb-3 ${message.sender === 'user' ? 'ml-auto' : 'mr-auto'}`}
+              style={{ animationDelay: `${index * 100}ms` }}
             >
               <div
-                className={`p-2 rounded-lg max-w-[85%] ${
+                className={`p-2 rounded-lg max-w-[85%] message-in ${
                   message.sender === 'user'
                     ? 'bg-primary/30 ml-auto'
                     : message.isError 
                       ? 'bg-red-500/30 mr-auto'
                       : 'bg-secondary mr-auto'
                 } ${message.isLoading ? 'animate-pulse' : ''}`}
+                style={{ animationDelay: `${index * 100}ms` }}
               >
                 <p className="text-sm">{message.text}</p>
                 {message.isLoading && (
                   <div className="flex justify-center mt-1">
-                    <Loader2 size={16} className="animate-spin text-white/70" />
+                    {isProcessing ? <TypingIndicator /> : <Loader2 size={16} className="animate-spin text-white/70" />}
                   </div>
                 )}
               </div>
@@ -415,20 +488,26 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
           <div ref={messagesEndRef} />
         </div>
         
-        <div className="flex items-center p-3 border-t border-white/10">
+        {isProcessing && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <Brain size={80} className="text-purple-400/10 brain-pulse" />
+          </div>
+        )}
+        
+        <div className="flex items-center p-3 border-t border-white/10 backdrop-blur-sm relative z-10">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Message Mally AI..."
-            className="glass-input w-full resize-none bg-white/10"
+            className="glass-input w-full resize-none bg-white/10 transition-all focus:bg-white/20 rounded-md p-2"
             rows={1}
             disabled={isProcessing}
           />
           <button
             onClick={sendMessage}
             disabled={!input.trim() || isProcessing}
-            className="ml-2 p-2 rounded-full bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="ml-2 p-2 rounded-full bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-110 active:scale-95"
           >
             {isProcessing ? (
               <Loader2 size={16} className="animate-spin" />

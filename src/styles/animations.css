@@ -169,3 +169,6 @@
 .achievement {
   animation: achievement-unlock 0.6s forwards;
 }
+
+/* New AI animations from ai-animations.css */
+/* These imports are now done through direct file imports in the components that need them */

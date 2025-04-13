@@ -6,6 +6,7 @@ import MallyAI from '@/components/ai/MallyAI';
 import { useCalendarEvents } from '@/hooks/use-calendar-events';
 import { toast } from 'sonner';
 import { CalendarEventType } from '@/lib/stores/types';
+import '../styles/ai-animations.css';
 
 const Index = () => {
   const { addEvent } = useCalendarEvents();

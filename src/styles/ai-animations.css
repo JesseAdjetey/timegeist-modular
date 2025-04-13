@@ -1,0 +1,183 @@
+
+/* AI Chat animations */
+@keyframes fadeSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
+  }
+}
+
+@keyframes floatButton {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes typing {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* AI Button animation */
+.ai-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.ai-button::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 60%);
+  opacity: 0;
+  transform: scale(0.5);
+  animation: sparkle 3s infinite;
+}
+
+.ai-button:hover {
+  animation: floatButton 2s ease-in-out infinite;
+}
+
+/* Message animations */
+.message-in {
+  animation: fadeSlideIn 0.3s ease-out forwards;
+}
+
+.message-out {
+  animation: fadeSlideOut 0.3s ease-out forwards;
+}
+
+/* Typing indicator animation */
+.typing-indicator {
+  display: inline-flex;
+  align-items: center;
+}
+
+.typing-dot {
+  width: 4px;
+  height: 4px;
+  margin: 0 1px;
+  background-color: currentColor;
+  border-radius: 50%;
+}
+
+.typing-dot:nth-child(1) {
+  animation: typing 0.6s infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation: typing 0.6s infinite 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation: typing 0.6s infinite 0.4s;
+}
+
+/* AI Chat container animations */
+.ai-chat-enter {
+  animation: fadeSlideIn 0.5s ease-out forwards;
+}
+
+.ai-chat-leave {
+  animation: fadeSlideOut 0.5s ease-out forwards;
+}
+
+/* Glowing border effect */
+.glow-border {
+  border-width: 1px;
+  border-style: solid;
+  border-color: rgba(139, 92, 246, 0.5);
+  animation: pulseGlow 2s infinite;
+}
+
+/* Particle effects */
+.particle {
+  position: absolute;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.8) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Message sent effect */
+@keyframes sendRipple {
+  0% {
+    transform: scale(0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.send-ripple {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.8) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: sendRipple 1s ease-out forwards;
+}
+
+/* AI brain thinking animation */
+@keyframes brainPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+.brain-pulse {
+  animation: brainPulse 2s ease-in-out infinite;
+}

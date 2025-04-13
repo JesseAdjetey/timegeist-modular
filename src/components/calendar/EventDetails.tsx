@@ -110,7 +110,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
   return (
     <>
       <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-        <DialogContent className="sm:max-w-[500px] bg-background/95 border-white/10">
+        <DialogContent className="sm:max-w-[500px] bg-background/95 border-white/10 animate-scale-in">
           <DialogTitle className="sr-only">Event Details</DialogTitle>
           
           {isEditing ? (
@@ -123,8 +123,8 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
           ) : (
             <div className="py-6">
               <div className="mb-4">
-                <h2 className="text-2xl font-bold gradient-text mb-1">{selectedEvent.title}</h2>
-                <div className="flex items-center text-muted-foreground mb-4">
+                <h2 className="text-2xl font-bold gradient-text mb-1 animate-fade-in">{selectedEvent.title}</h2>
+                <div className="flex items-center text-muted-foreground mb-4 animate-fade-in" style={{animationDelay: "100ms"}}>
                   <Calendar className="h-4 w-4 mr-2" />
                   <span>{selectedEvent.date}</span>
                   
@@ -133,14 +133,15 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
                 </div>
                 
                 {desc && (
-                  <p className="text-sm text-foreground/80 mt-2">{desc}</p>
+                  <p className="text-sm text-foreground/80 mt-2 animate-fade-in" style={{animationDelay: "200ms"}}>{desc}</p>
                 )}
               </div>
               
               <div className="flex flex-col gap-3 mt-6">
                 <Button 
                   onClick={() => setIsEditing(true)}
-                  className="bg-primary hover:bg-primary/80"
+                  className="bg-primary hover:bg-primary/80 transition-all hover:scale-105 animate-fade-in"
+                  style={{animationDelay: "300ms"}}
                 >
                   Edit Event
                 </Button>
@@ -148,15 +149,18 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
                 <Button 
                   onClick={handleReschedule}
                   variant="outline" 
-                  className="border-primary/20 text-primary hover:bg-primary/10 hover:text-primary"
+                  className="border-primary/20 text-primary hover:bg-primary/10 hover:text-primary transition-all hover:scale-105 animate-fade-in"
+                  style={{animationDelay: "400ms"}}
                 >
-                  <Sparkles size={16} className="mr-2" />
+                  <Sparkles size={16} className="mr-2 animate-pulse" />
                   Reschedule with Mally AI
                 </Button>
                 
                 <Button 
                   onClick={handleDelete}
                   variant="destructive"
+                  className="transition-all hover:scale-105 animate-fade-in"
+                  style={{animationDelay: "500ms"}}
                 >
                   Delete Event
                 </Button>
@@ -169,7 +173,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
       {/* AI Rescheduling Dialog */}
       {isRescheduling && (
         <Dialog open={isRescheduling} onOpenChange={(isOpen) => !isOpen && setIsRescheduling(false)}>
-          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden bg-background/95 border-white/10">
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden bg-background/95 border-white/10 animate-scale-in">
             <DialogTitle className="text-xl font-bold gradient-text">Reschedule with Mally AI</DialogTitle>
             <div className="h-[70vh]">
               <MallyAI 
