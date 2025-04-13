@@ -1,7 +1,6 @@
-
 // src/components/ai/MallyAI.tsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2, Sparkles, Brain } from 'lucide-react';
+import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2, Sparkles, Brain, Mic } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,9 +29,10 @@ const initialMessages: Message[] = [
 interface MallyAIProps {
   onScheduleEvent?: (event: any) => Promise<any>;
   initialPrompt?: string;
+  preventOpenOnClick?: boolean;
 }
 
-const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => {
+const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preventOpenOnClick = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState(initialPrompt || '');
@@ -41,10 +41,16 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   const [isProcessing, setIsProcessing] = useState(false);
   const [particles, setParticles] = useState<{x: number, y: number, size: number, life: number}[]>([]);
   const [showEntranceAnimation, setShowEntranceAnimation] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isButtonRecording, setIsButtonRecording] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const { addEvent, updateEvent, removeEvent } = useCalendarEvents();
   const { user } = useAuth();
+  const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const buttonPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Create particles at random intervals
   useEffect(() => {
@@ -87,6 +93,9 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
   }, [messages]);
 
   const toggleAI = () => {
+    // Don't toggle if we're coming from a drag operation
+    if (preventOpenOnClick) return;
+    
     setShowEntranceAnimation(true);
     setIsOpen(!isOpen);
     
@@ -95,6 +104,39 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
       setTimeout(() => {
         setShowEntranceAnimation(false);
       }, 500);
+    }
+  };
+
+  // Start recording when holding the button
+  const startButtonRecording = () => {
+    buttonPressTimerRef.current = setTimeout(() => {
+      setIsButtonRecording(true);
+      startRecording();
+    }, 500); // Start recording after 500ms hold
+  };
+
+  // Stop recording when releasing the button
+  const stopButtonRecording = () => {
+    if (buttonPressTimerRef.current) {
+      clearTimeout(buttonPressTimerRef.current);
+      buttonPressTimerRef.current = null;
+    }
+
+    if (isButtonRecording) {
+      stopRecording();
+      setIsButtonRecording(false);
+      
+      // Open the chat if it's not already open
+      if (!isOpen) {
+        setShowEntranceAnimation(true);
+        setIsOpen(true);
+        setTimeout(() => {
+          setShowEntranceAnimation(false);
+        }, 500);
+      }
+    } else {
+      // If it was a quick click, just toggle the AI
+      toggleAI();
     }
   };
 
@@ -368,6 +410,103 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
     setIsSidebarView(!isSidebarView);
   };
 
+  // Speech to text functionality
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      
+      mediaRecorder.addEventListener('dataavailable', (event) => {
+        audioChunksRef.current.push(event.data);
+      });
+      
+      mediaRecorder.addEventListener('stop', async () => {
+        if (audioChunksRef.current.length > 0) {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          await transcribeAudio(audioBlob);
+        }
+      });
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      
+      // Auto-stop after 10 seconds
+      recordingTimeoutRef.current = setTimeout(() => {
+        if (isRecording) {
+          stopRecording();
+        }
+      }, 10000);
+      
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      toast.error('Could not access microphone');
+    }
+  };
+  
+  const stopRecording = () => {
+    if (recordingTimeoutRef.current) {
+      clearTimeout(recordingTimeoutRef.current);
+      recordingTimeoutRef.current = null;
+    }
+    
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+  
+  const transcribeAudio = async (audioBlob: Blob) => {
+    try {
+      setIsProcessing(true);
+      
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      
+      reader.onloadend = async () => {
+        const base64Audio = reader.result?.toString().split(',')[1];
+        
+        if (!base64Audio) {
+          throw new Error('Failed to convert audio to base64');
+        }
+        
+        const response = await supabase.functions.invoke('transcribe-audio', {
+          body: { audio: base64Audio }
+        });
+        
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+        
+        const { text } = response.data;
+        
+        if (text && text.trim()) {
+          setInput(text);
+          // Don't automatically send - let the user review first
+          toast.success('Speech transcribed!');
+        } else {
+          toast.error('No speech detected');
+        }
+      };
+      
+    } catch (error) {
+      console.error('Error transcribing audio:', error);
+      toast.error(`Transcription error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Typing indicator component
   const TypingIndicator = () => (
     <div className="typing-indicator">
@@ -391,9 +530,20 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
           animation: 'floatButton 2s ease-in-out infinite'
         }}
         onClick={toggleAI}
+        onMouseDown={startButtonRecording}
+        onMouseUp={stopButtonRecording}
+        onTouchStart={startButtonRecording}
+        onTouchEnd={stopButtonRecording}
       >
         <Sparkles size={16} className="absolute text-white/50 animate-sparkle" style={{ top: '8px', right: '8px' }} />
-        <Bot size={24} className="text-white" />
+        {isButtonRecording ? (
+          <div className="relative">
+            <Mic size={24} className="text-white animate-pulse" />
+            <div className="mic-wave absolute -inset-4"></div>
+          </div>
+        ) : (
+          <Bot size={24} className="text-white" />
+        )}
       </div>
     );
   }
@@ -504,6 +654,14 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
             rows={1}
             disabled={isProcessing}
           />
+          <button
+            onClick={toggleRecording}
+            disabled={isProcessing}
+            className={`ml-2 p-2 rounded-full ${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-white/10 hover:bg-white/20'} transition-all`}
+            title={isRecording ? "Stop recording" : "Start voice input"}
+          >
+            <Mic size={16} className={`${isRecording ? 'animate-pulse' : ''}`} />
+          </button>
           <button
             onClick={sendMessage}
             disabled={!input.trim() || isProcessing}

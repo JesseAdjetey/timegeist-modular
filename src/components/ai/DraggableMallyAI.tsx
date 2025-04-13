@@ -15,6 +15,7 @@ const DraggableMallyAI: React.FC<DraggableMallyAIProps> = ({ onScheduleEvent }) 
   const [position, setPosition] = useLocalStorage<{ x: number; y: number }>('mally-ai-position', { x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [wasDragged, setWasDragged] = useState(false);
 
   // Initial position
   useEffect(() => {
@@ -41,6 +42,22 @@ const DraggableMallyAI: React.FC<DraggableMallyAIProps> = ({ onScheduleEvent }) 
     return () => window.removeEventListener('resize', setDefaultPosition);
   }, []);
 
+  // Handler for handling click vs. drag
+  const handleDragEnd = (e: any, info: any) => {
+    setIsDragging(false);
+    
+    // Update position in localStorage
+    const newX = Math.min(Math.max(position.x + info.offset.x, 20), window.innerWidth - 100);
+    const newY = Math.min(Math.max(position.y + info.offset.y, 20), window.innerHeight - 100);
+    setPosition({ x: newX, y: newY });
+    
+    // If the drag distance was significant, mark as dragged to prevent dialog opening
+    if (Math.abs(info.offset.x) > 5 || Math.abs(info.offset.y) > 5) {
+      setWasDragged(true);
+      setTimeout(() => setWasDragged(false), 300); // Reset after a short delay
+    }
+  };
+
   return (
     <motion.div
       ref={containerRef}
@@ -48,13 +65,7 @@ const DraggableMallyAI: React.FC<DraggableMallyAIProps> = ({ onScheduleEvent }) 
       dragMomentum={false}
       dragElastic={0}
       onDragStart={() => setIsDragging(true)}
-      onDragEnd={(e, info) => {
-        setIsDragging(false);
-        // Update position in localStorage
-        const newX = Math.min(Math.max(position.x + info.offset.x, 20), window.innerWidth - 100);
-        const newY = Math.min(Math.max(position.y + info.offset.y, 20), window.innerHeight - 100);
-        setPosition({ x: newX, y: newY });
-      }}
+      onDragEnd={handleDragEnd}
       initial={false}
       animate={{
         x: position.x,
@@ -67,7 +78,10 @@ const DraggableMallyAI: React.FC<DraggableMallyAIProps> = ({ onScheduleEvent }) 
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
-      <MallyAI onScheduleEvent={onScheduleEvent} />
+      <MallyAI 
+        onScheduleEvent={onScheduleEvent} 
+        preventOpenOnClick={wasDragged}
+      />
     </motion.div>
   );
 };

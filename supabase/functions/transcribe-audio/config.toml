@@ -1,0 +1,14 @@
+
+# Binary does not mean "compiled binary", but binary assets that should be copied
+# as-is, instead of being transpiled as TypeScript
+#
+# See: https://deno.com/manual/advanced/typescript/overview
+
+[build]
+
+binary = []
+
+[deploy]
+# Whether to include source maps and the TypeScript source when deployed
+source_maps = false
+include_source = false
