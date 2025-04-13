@@ -179,12 +179,13 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
               console.log("Result from onScheduleEvent:", result);
               
               if (result && result.success) {
-                toast.success(`Event "${formattedEvent.title}" scheduled`);
+                toast.success(`Event "${formattedEvent.title}" scheduled successfully`);
               } else {
                 console.error("Failed to schedule event:", result?.error || "unknown error");
                 toast.error(`Failed to schedule event: ${result?.error || 'Unknown error'}`);
               }
             } else {
+              console.log("Using addEvent hook directly");
               const result = await addEvent(formattedEvent);
               console.log("Result from addEvent hook:", result);
               
@@ -213,14 +214,24 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt }) => 
             toast.error(`Failed to delete event: ${response.error || 'Unknown error'}`);
           }
         } else if (processedEvent.id) {
+          const startTime = new Date(processedEvent.starts_at).toLocaleTimeString([], {
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false
+          });
+          
+          const endTime = new Date(processedEvent.ends_at).toLocaleTimeString([], {
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false
+          });
+          
+          const eventDescription = `${startTime} - ${endTime} | ${processedEvent.description || ''}`;
+          
           const eventToUpdate: CalendarEventType = {
             id: processedEvent.id,
             title: processedEvent.title,
-            description: formatEventDescription(
-              processedEvent.starts_at, 
-              processedEvent.ends_at, 
-              processedEvent.description || ''
-            ),
+            description: eventDescription,
             startsAt: processedEvent.starts_at,
             endsAt: processedEvent.ends_at,
             date: new Date(processedEvent.starts_at).toISOString().split('T')[0],

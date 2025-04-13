@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useEventStore } from '@/lib/store';
@@ -54,7 +55,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
     setIsRescheduling(true);
   };
 
-  // Updated handleAIEvent to properly return a Promise
+  // Fixed to properly return a Promise
   const handleAIEvent = async (eventData: any): Promise<any> => {
     console.log("EventDetails handling AI event:", eventData);
     
@@ -88,7 +89,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
         return { success: false, error };
       }
     }
-    // Return a resolved promise for the case where no event data is provided
+    // Return a resolved promise with error message for the case where no event data is provided
     return Promise.resolve({ success: false, message: "No event data provided" });
   };
 

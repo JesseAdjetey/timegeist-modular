@@ -163,10 +163,12 @@ function extractEventDetails(text: string) {
   
   return {
     title,
-    date: eventDate,
+    date: eventDate, // Keep date field for compatibility
     description: title, // Use title as the description base
     starts_at: startsAt,
-    ends_at: endsAt
+    ends_at: endsAt,
+    startsAt: startsAt, // Add this for frontend compatibility 
+    endsAt: endsAt // Add this for frontend compatibility
   };
 }
 
@@ -369,7 +371,11 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
           description: eventDetails.description,
           color: 'bg-purple-500/70',
           starts_at: eventDetails.starts_at,
-          ends_at: eventDetails.ends_at
+          ends_at: eventDetails.ends_at,
+          // Add these fields for frontend compatibility
+          startsAt: eventDetails.starts_at,
+          endsAt: eventDetails.ends_at,
+          date: new Date(eventDetails.starts_at).toISOString().split('T')[0]
         };
         
         // Insert into database if possible
@@ -427,7 +433,11 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
           title: eventDetails.title,
           description: eventDetails.description,
           starts_at: eventDetails.starts_at,
-          ends_at: eventDetails.ends_at
+          ends_at: eventDetails.ends_at,
+          // Add these fields for frontend compatibility
+          startsAt: eventDetails.starts_at,
+          endsAt: eventDetails.ends_at,
+          date: new Date(eventDetails.starts_at).toISOString().split('T')[0]
         };
         
         // Update in database if possible
