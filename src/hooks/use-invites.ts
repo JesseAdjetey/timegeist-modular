@@ -66,19 +66,37 @@ export function useInvites() {
         
       if (receivedError) throw receivedError;
 
-      // Cast the data to the correct types
-      const typedSent = sent?.map(item => ({
-        ...item,
-        status: (item.status as 'pending' | 'accepted' | 'declined') || 'pending'
-      })) || [];
+      // Process sent invites with proper type checking
+      const processedSent = sent?.map(item => {
+        // Check if event property exists and is not an error
+        const eventData = item.event && typeof item.event === 'object' && !('error' in item.event)
+          ? item.event as CalendarEventType
+          : undefined;
+        
+        return {
+          ...item,
+          status: (item.status as 'pending' | 'accepted' | 'declined') || 'pending',
+          event: eventData
+        };
+      }) || [];
 
-      const typedReceived = received?.map(item => ({
-        ...item,
-        status: (item.status as 'pending' | 'accepted' | 'declined') || 'pending'
-      })) || [];
+      // Process received invites with proper type checking
+      const processedReceived = received?.map(item => {
+        // Check if event property exists and is not an error
+        const eventData = item.event && typeof item.event === 'object' && !('error' in item.event)
+          ? item.event as CalendarEventType
+          : undefined;
+        
+        return {
+          ...item,
+          status: (item.status as 'pending' | 'accepted' | 'declined') || 'pending',
+          event: eventData
+        };
+      }) || [];
       
-      setSentInvites(typedSent as Invite[]);
-      setReceivedInvites(typedReceived as Invite[]);
+      // Now safely assign the processed data to state
+      setSentInvites(processedSent as Invite[]);
+      setReceivedInvites(processedReceived as Invite[]);
     } catch (error) {
       console.error('Error fetching invites:', error);
       toast.error('Failed to fetch invites');
@@ -95,9 +113,6 @@ export function useInvites() {
     }
     
     try {
-      // Try to find the user by email directly in the invite creation
-      // We'll need to handle this server-side since we can't query auth.users directly
-      
       // Create the invite with just the email
       const { data, error } = await supabase
         .from('invites')
