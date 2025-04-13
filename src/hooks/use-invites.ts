@@ -71,11 +71,18 @@ export function useInvites() {
         // Fix: Add proper null checking for item.event
         const hasValidEvent = item.event !== null && 
                             typeof item.event === 'object' && 
-                            !('error' in item.event);
+                            !('error' in (item.event || {}));
         
         // Create a fallback event object if the event has an error or is null
-        const eventData = hasValidEvent 
-          ? (item.event as CalendarEventType)
+        const eventData = hasValidEvent && item.event
+          ? {
+              id: item.event.id,
+              title: item.event.title,
+              description: item.event.description,
+              startsAt: item.event.startsAt,
+              endsAt: item.event.endsAt,
+              color: item.event.color,
+            } as CalendarEventType
           : undefined;
         
         return {
@@ -90,11 +97,18 @@ export function useInvites() {
         // Fix: Add proper null checking for item.event
         const hasValidEvent = item.event !== null && 
                             typeof item.event === 'object' && 
-                            !('error' in item.event);
+                            !('error' in (item.event || {}));
         
         // Create a fallback event object if the event has an error or is null
-        const eventData = hasValidEvent 
-          ? (item.event as CalendarEventType)
+        const eventData = hasValidEvent && item.event
+          ? {
+              id: item.event.id,
+              title: item.event.title,
+              description: item.event.description,
+              startsAt: item.event.startsAt,
+              endsAt: item.event.endsAt,
+              color: item.event.color,
+            } as CalendarEventType
           : undefined;
         
         return {
