@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { ModuleInstance, ModuleType, SidebarPage } from "./types";
@@ -25,17 +24,17 @@ export const useSidebarStore = create<SidebarStoreType>()(
             id: '1',
             title: 'Tasks',
             modules: [
-              { type: 'todo', title: 'To-Do List', instanceId: 'todo-default-1' },
-              { type: 'eisenhower', title: 'Eisenhower Matrix', instanceId: 'eisenhower-default-1' }
+              { type: 'todo', title: 'To-Do List' },
+              { type: 'eisenhower', title: 'Eisenhower Matrix' }
             ]
           },
           {
             id: '2',
             title: 'Tools',
             modules: [
-              { type: 'pomodoro', title: 'Pomodoro', instanceId: 'pomodoro-default-1' },
-              { type: 'alarms', title: 'Reminders', instanceId: 'alarms-default-1' },
-              { type: 'invites', title: 'Event Invites', instanceId: 'invites-default-1' }
+              { type: 'pomodoro', title: 'Pomodoro' },
+              { type: 'alarms', title: 'Reminders' },
+              { type: 'invites', title: 'Event Invites' }
             ]
           }
         ],
@@ -65,19 +64,9 @@ export const useSidebarStore = create<SidebarStoreType>()(
                 case 'invites': defaultTitle = 'Event Invites'; break;
               }
               
-              // Count existing modules of this type to create unique instanceId
-              const existingModuleCount = state.pages.flatMap(page => page.modules)
-                .filter(module => module.type === moduleType).length;
-              
-              const instanceId = `${moduleType}-${Date.now()}-${existingModuleCount + 1}`;
-              
               newPages[pageIndex].modules = [
                 ...newPages[pageIndex].modules, 
-                { 
-                  type: moduleType, 
-                  title: defaultTitle,
-                  instanceId: instanceId
-                }
+                { type: moduleType, title: defaultTitle }
               ];
             }
             return { pages: newPages };

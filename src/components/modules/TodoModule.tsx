@@ -16,7 +16,6 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface TodoModuleProps {
   title: string;
-  instanceId: string;
   onRemove?: () => void;
   onTitleChange?: (title: string) => void;
   initialItems?: TodoItem[];
@@ -27,7 +26,6 @@ interface TodoModuleProps {
 
 const TodoModule: React.FC<TodoModuleProps> = ({
   title,
-  instanceId,
   onRemove,
   onTitleChange,
   isMinimized,
@@ -49,7 +47,7 @@ const TodoModule: React.FC<TodoModuleProps> = ({
     linkTodoToEvent,
     refetchTodos,
     lastResponse,
-  } = useTodos({ instanceId });
+  } = useTodos();
   const { user } = useAuth();
 
   useEffect(() => {
@@ -142,7 +140,6 @@ const TodoModule: React.FC<TodoModuleProps> = ({
     return (
       <ModuleContainer
         title={title}
-        instanceId={instanceId}
         onRemove={onRemove}
         onTitleChange={onTitleChange}
         isMinimized={isMinimized}
@@ -159,7 +156,6 @@ const TodoModule: React.FC<TodoModuleProps> = ({
     return (
       <ModuleContainer
         title={title}
-        instanceId={instanceId}
         onRemove={onRemove}
         onTitleChange={onTitleChange}
         isMinimized={isMinimized}
@@ -175,7 +171,6 @@ const TodoModule: React.FC<TodoModuleProps> = ({
   return (
     <ModuleContainer
       title={title}
-      instanceId={instanceId}
       onRemove={onRemove}
       onTitleChange={onTitleChange}
       isMinimized={isMinimized}

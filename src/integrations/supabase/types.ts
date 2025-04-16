@@ -192,7 +192,6 @@ export type Database = {
           created_at: string
           event_id: string | null
           id: string
-          module_instance_id: string | null
           quadrant: Database["public"]["Enums"]["eisenhower_quadrant"]
           text: string
           updated_at: string
@@ -202,7 +201,6 @@ export type Database = {
           created_at?: string
           event_id?: string | null
           id?: string
-          module_instance_id?: string | null
           quadrant: Database["public"]["Enums"]["eisenhower_quadrant"]
           text: string
           updated_at?: string
@@ -212,7 +210,6 @@ export type Database = {
           created_at?: string
           event_id?: string | null
           id?: string
-          module_instance_id?: string | null
           quadrant?: Database["public"]["Enums"]["eisenhower_quadrant"]
           text?: string
           updated_at?: string
@@ -414,39 +411,6 @@ export type Database = {
           },
         ]
       }
-      module_instances: {
-        Row: {
-          created_at: string
-          id: string
-          instance_id: string
-          module_type: Database["public"]["Enums"]["module_type"]
-          settings: Json | null
-          title: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          instance_id: string
-          module_type: Database["public"]["Enums"]["module_type"]
-          settings?: Json | null
-          title: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          instance_id?: string
-          module_type?: Database["public"]["Enums"]["module_type"]
-          settings?: Json | null
-          title?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       pomodoro_sessions: {
         Row: {
           break_duration: number
@@ -456,7 +420,6 @@ export type Database = {
           id: string
           long_break_duration: number
           long_break_interval: number
-          module_instance_id: string | null
           paused_at: string | null
           started_at: string | null
           user_id: string | null
@@ -470,7 +433,6 @@ export type Database = {
           id?: string
           long_break_duration?: number
           long_break_interval?: number
-          module_instance_id?: string | null
           paused_at?: string | null
           started_at?: string | null
           user_id?: string | null
@@ -484,7 +446,6 @@ export type Database = {
           id?: string
           long_break_duration?: number
           long_break_interval?: number
-          module_instance_id?: string | null
           paused_at?: string | null
           started_at?: string | null
           user_id?: string | null
@@ -548,7 +509,6 @@ export type Database = {
           event_id: string | null
           id: string
           is_active: boolean | null
-          module_instance_id: string | null
           reminder_time: string
           sound_id: string | null
           time_after_event_minutes: number | null
@@ -562,7 +522,6 @@ export type Database = {
           event_id?: string | null
           id?: string
           is_active?: boolean | null
-          module_instance_id?: string | null
           reminder_time: string
           sound_id?: string | null
           time_after_event_minutes?: number | null
@@ -576,7 +535,6 @@ export type Database = {
           event_id?: string | null
           id?: string
           is_active?: boolean | null
-          module_instance_id?: string | null
           reminder_time?: string
           sound_id?: string | null
           time_after_event_minutes?: number | null
@@ -622,7 +580,6 @@ export type Database = {
           created_at: string
           event_id: string | null
           id: string
-          module_instance_id: string | null
           order_position: number
           title: string
           updated_at: string | null
@@ -634,7 +591,6 @@ export type Database = {
           created_at?: string
           event_id?: string | null
           id?: string
-          module_instance_id?: string | null
           order_position: number
           title: string
           updated_at?: string | null
@@ -646,7 +602,6 @@ export type Database = {
           created_at?: string
           event_id?: string | null
           id?: string
-          module_instance_id?: string | null
           order_position?: number
           title?: string
           updated_at?: string | null
@@ -684,7 +639,6 @@ export type Database = {
         | "bg-teal-500/70"
         | "bg-orange-500/70"
         | "bg-pink-500/70"
-      module_type: "todo" | "pomodoro" | "alarms" | "eisenhower" | "invites"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -816,7 +770,6 @@ export const Constants = {
         "bg-orange-500/70",
         "bg-pink-500/70",
       ],
-      module_type: ["todo", "pomodoro", "alarms", "eisenhower", "invites"],
     },
   },
 } as const
