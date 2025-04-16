@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from 'react';
 import { getWeekDays } from "@/lib/getTime";
 import { useDateStore, useEventStore } from "@/lib/store";
 import dayjs from "dayjs";
@@ -37,7 +36,6 @@ const WeekView = () => {
     { date: Date; startTime: string } | undefined
   >();
   const [todoData, setTodoData] = useState<any>(null);
-  // Add this new state for pending time selection
   const [pendingTimeSelection, setPendingTimeSelection] = useState<{
     day: dayjs.Dayjs;
     hour: dayjs.Dayjs;
@@ -60,22 +58,17 @@ const WeekView = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // New useEffect to handle time slot selection properly
   useEffect(() => {
     if (pendingTimeSelection) {
       const { day, hour } = pendingTimeSelection;
 
-      // First update the selected time
       setSelectedTime({
         date: day.toDate(),
         startTime: hour.format("HH:00"),
       });
 
-      // Then open the form in the next render cycle
-      // This ensures selectedTime is updated before the form uses it
       setTimeout(() => {
         setFormOpen(true);
-        // Clear the pending selection
         setPendingTimeSelection(null);
       }, 0);
     }
@@ -86,11 +79,8 @@ const WeekView = () => {
     return events.filter((event) => event.date === dayStr);
   };
 
-  // Update to use the pending time selection approach
   const handleTimeSlotClick = (day: dayjs.Dayjs, hour: dayjs.Dayjs) => {
-    setTodoData(null); // Reset todo data
-    // Instead of immediately updating state and opening form,
-    // set a pending time selection that will be processed by the useEffect
+    setTodoData(null);
     setPendingTimeSelection({ day, hour });
   };
 
@@ -103,7 +93,6 @@ const WeekView = () => {
     );
     setTodoData(todoData);
 
-    // Create a dayjs object from the date and hour for the pending selection
     const dayObj = dayjs(date);
     const hourObj = dayjs(date).hour(parseInt(startTime.split(":")[0]));
 
@@ -111,7 +100,6 @@ const WeekView = () => {
   };
 
   const handleDrop = (e: React.DragEvent, day: dayjs.Dayjs, hour: dayjs.Dayjs) => {
-    // Extract logic to parse todo data, calculate time, and show dialog
     try {
       const dataString = e.dataTransfer.getData('application/json');
       if (!dataString) {
@@ -121,27 +109,21 @@ const WeekView = () => {
       
       const data = JSON.parse(dataString);
       
-      // Handle todo item drag
       if (data.source === 'todo-module') {
-        // Calculate precise drop time based on cursor position
         const rect = e.currentTarget.getBoundingClientRect();
         const relativeY = e.clientY - rect.top;
         const hourHeight = rect.height;
         const minutesWithinHour = Math.floor((relativeY / hourHeight) * 60);
         
-        // Snap to nearest 30-minute interval (0 or 30)
         const snappedMinutes = minutesWithinHour < 30 ? 0 : 30;
         
-        // Get the base hour and add the snapped minutes
         const baseHour = hour.hour();
         const startTime = `${baseHour.toString().padStart(2, '0')}:${snappedMinutes.toString().padStart(2, '0')}`;
         
-        // Show the integration dialog
         showTodoCalendarDialog(data, day.toDate(), startTime);
         return;
       }
       
-      // For regular calendar events, use the library handleDrop function
       libHandleDrop(e, day, hour, updateEvent);
     } catch (error) {
       console.error("Error handling drop:", error);
@@ -149,8 +131,6 @@ const WeekView = () => {
     }
   };
 
-  // The following handler functions are wrappers for the hook functions
-  // to ensure proper typing and avoid TypeScript errors
   const handleUpdateEvent = async (event: CalendarEventType): Promise<void> => {
     await updateEvent(event);
   };
@@ -184,18 +164,23 @@ const WeekView = () => {
     }
   };
 
+  const handleCreateTodoFromEvent = async (event: CalendarEventType) => {
+    if (!todoCalendarIntegration || !event) {
+      console.error("Todo-Calendar integration not available");
+      return null;
+    }
+    
+    return await todoCalendarIntegration.handleCreateTodoFromEvent(event);
+  };
+
   return (
     <>
       <div className="glass m-4 rounded-xl overflow-hidden">
         <WeekHeader userSelectedDate={userSelectedDate} />
 
-        {/* Time Column & Corresponding Boxes of time per each date */}
         <ScrollArea className="h-[80vh]">
           <div className="grid grid-cols-[auto_1fr_1fr_1fr_1fr_1fr_1fr_1fr] px-4 py-2">
-            {/* Time Column */}
             <TimeColumn />
-
-            {/* Week Days Corresponding Boxes */}
             {getWeekDays(userSelectedDate).map(({ currentDate }, index) => {
               const dayEvents = getEventsForDay(currentDate);
 
@@ -231,7 +216,6 @@ const WeekView = () => {
 
       <EventDetails open={isEventSummaryOpen} onClose={closeEventSummary} />
 
-      {/* Todo Calendar Dialog for integration */}
       {currentTodoData && (
         <TodoCalendarDialog
           open={isTodoCalendarDialogOpen}

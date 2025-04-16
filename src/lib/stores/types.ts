@@ -1,5 +1,5 @@
 
-export type ModuleType = 'todo' | 'pomodoro' | 'alarms' | 'eisenhower' | 'invites';
+export type ModuleType = 'todo' | 'pomodoro' | 'alarms' | 'reminders' | 'eisenhower' | 'invites';
 
 export interface ModuleInstance {
   type: ModuleType;

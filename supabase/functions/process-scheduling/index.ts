@@ -78,19 +78,37 @@ function detectConflicts(proposedEvent: any, existingEvents: any[]) {
   });
 }
 
-// Extract action intent from user message
+// Extract action intent from user message - enhanced for more natural language understanding
 function extractActionIntent(text: string) {
   const text_lower = text.toLowerCase();
   
-  if (text_lower.includes('delete') || text_lower.includes('remove') || text_lower.includes('cancel')) {
+  // Look for deletion patterns
+  if (/(delete|remove|cancel|get rid of|eliminate|trash|erase|take off|clear|drop)/i.test(text_lower)) {
     return 'delete';
-  } else if (text_lower.includes('edit') || text_lower.includes('update') || text_lower.includes('change') || text_lower.includes('reschedule')) {
+  } 
+  
+  // Look for editing patterns
+  if (/(edit|update|change|modify|reschedule|move|postpone|shift|adjust|amend|revise|alter)/i.test(text_lower)) {
     return 'edit';
-  } else if (text_lower.includes('schedule') || text_lower.includes('add') || text_lower.includes('create') || text_lower.includes('new')) {
+  }
+  
+  // Default to create if there's any time or date reference
+  const hasTimeReference = /(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?|\d{1,2}\s*o'clock|noon|midnight|morning|afternoon|evening)/i.test(text_lower);
+  const hasDateReference = /(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next week|weekend|[\d]{1,2}\/[\d]{1,2}(?:\/[\d]{2,4})?)/i.test(text_lower);
+  
+  // Look for creation patterns (more flexible now)
+  if (hasTimeReference || hasDateReference || 
+      /(schedule|add|create|new|put|set up|arrange|book|plan|make|organize|remind me|appointment|call|meeting)/i.test(text_lower)) {
     return 'create';
   }
   
-  return null;
+  // If no strong intent is detected but there's a mention of an event, assume query/lookup
+  if (/(meeting|appointment|event|schedule|calendar|reminder|what|when|where|who|how|tell me about)/i.test(text_lower)) {
+    return 'query';
+  }
+  
+  // Fallback to create as most messages are likely to be about creating events
+  return 'create';
 }
 
 const formatTime = (timeStr: string) => {
@@ -104,59 +122,66 @@ const formatTime = (timeStr: string) => {
     minutes = 0;
   }
 
-// Extract event details from text
+// Extract event details from text - enhanced for more natural language
 function extractEventDetails(text: string) {
-  const timePattern = /(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)\s*(?:to|-)\s*(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)/i;
-  const datePattern = /(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next week|[\d]{1,2}\/[\d]{1,2}(?:\/[\d]{2,4})?)/i;
-  
-  const timeMatch = text.match(timePattern);
-  const dateMatch = text.match(datePattern);
-  
-  // Try to extract a title - this is basic and should be enhanced
-  let title = '';
-  
-  // Look for keywords followed by possible title
-  const titlePatterns = [
-    /(?:schedule|add|create|new event|event for|meeting for|call with|appointment with|appointment for)\s+(?:a|an)?\s*"?([^"]*?)"?(?:\s+on|\s+at|\s+from|\s+with|\s+for|$)/i,
-    /(?:schedule|add|create|new)\s+(?:a|an)?\s*"?([^"]*?)"?(?:\s+on|\s+at|\s+from|\s+with|\s+for|$)/i,
-    /(?:about|regarding|titled|called|named)\s+(?:a|an)?\s*"?([^"]*?)"?(?:\s+on|\s+at|\s+from|\s+with|\s+for|$)/i
+  // More flexible time pattern matching
+  const timePatterns = [
+    /(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)\s*(?:to|-)\s*(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)/i,  // 3pm to 4pm
+    /from\s*(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)\s*(?:to|till|until|-)\s*(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)/i,  // from 3pm to 4pm
+    /at\s*(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)/i  // at 3pm (single time)
   ];
   
-  for (const pattern of titlePatterns) {
-    const match = text.match(pattern);
-    if (match && match[1] && match[1].trim()) {
-      title = match[1].trim();
+  let timeMatch = null;
+  let startTime = null;
+  let endTime = null;
+  
+  // Try each pattern
+  for (const pattern of timePatterns) {
+    timeMatch = text.match(pattern);
+    if (timeMatch) {
+      startTime = timeMatch[1];
+      endTime = timeMatch[2] || null;
       break;
     }
   }
   
-  // If no title found via patterns, use a generic one
-  if (!title) {
-    title = 'New Event';
+  // If only start time is found, set end time to start time + 1 hour
+  if (startTime && !endTime) {
+    const parsedHour = parseInt(startTime.match(/\d+/)[0]);
+    const isPM = /pm/i.test(startTime);
+    const hour = isPM && parsedHour < 12 ? parsedHour + 12 : parsedHour;
+    endTime = `${(hour + 1) % 24}:00${isPM ? 'pm' : 'am'}`;
   }
   
-  // Normalize time format
-  let startTime = timeMatch ? timeMatch[1].trim() : '9:00';
-  let endTime = timeMatch ? timeMatch[2].trim() : '10:00';
-
-  if (timeMatch) {
-    const rawStart = timeMatch[1];
-    const rawEnd = timeMatch[2];
-
-    startTime = formatTime(rawStart);
-
-    if (rawEnd) {
-      endTime = formatTime(rawEnd);
-    } else {
-      // If no end time is specified, add 1 hour to startTime
-      const [h, m] = startTime.split(":").map(Number);
-      const endHour = (h + 1) % 24;
-      endTime = `${endHour.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  // Default times if none found
+  if (!startTime) {
+    const now = new Date();
+    const hour = now.getHours();
+    const roundedHour = Math.ceil(hour / 1) * 1; // Round to nearest hour
+    startTime = `${roundedHour}:00`;
+    endTime = `${(roundedHour + 1) % 24}:00`;
+  }
+  
+  // More flexible date pattern matching
+  const datePatterns = [
+    /(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next week|[\d]{1,2}\/[\d]{1,2}(?:\/[\d]{2,4})?)/i,
+    /on\s*([\w]+day|[\d]{1,2}\/[\d]{1,2}(?:\/[\d]{2,4})?)/i,
+    /this\s*([\w]+day|weekend)/i,
+    /next\s*([\w]+day|weekend|month|week)/i
+  ];
+  
+  let dateMatch = null;
+  
+  // Try each pattern
+  for (const pattern of datePatterns) {
+    dateMatch = text.match(pattern);
+    if (dateMatch) {
+      break;
     }
   }
   
-  // Ensure HH:MM format for times
-
+  // Extract the date (or default to today)
+  const dateText = dateMatch ? dateMatch[1] || dateMatch[0] : 'today';
     
     // Handle AM/PM
     if (timeStr.toLowerCase().includes('pm') && hours < 12) {
@@ -169,11 +194,46 @@ function extractEventDetails(text: string) {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   };
   
+  // Extract title using more sophisticated patterns
+  const titlePatterns = [
+    // Looking for phrases that indicate a title
+    /(?:schedule|add|create|new event|event for|meeting for|call with|appointment with|appointment for)\s+(?:a|an)?\s*"?([^"]*?)"?(?:\s+on|\s+at|\s+from|\s+with|\s+for|$)/i,
+    /(?:about|regarding|titled|called|named)\s+(?:a|an)?\s*"?([^"]*?)"?(?:\s+on|\s+at|\s+from|\s+with|\s+for|$)/i,
+    // Generic catch-all pattern as fallback
+    /(?:meeting|call|event|appointment)\s+(?:with|about|for)?\s+([^,\.]+)/i
+  ];
+  
+  // Try to extract a title
+  let title = '';
+  
+  for (const pattern of titlePatterns) {
+    const match = text.match(pattern);
+    if (match && match[1] && match[1].trim()) {
+      title = match[1].trim();
+      break;
+    }
+  }
+  
+  // If no title found, try to extract a meaningful noun phrase
+  if (!title) {
+    // Remove time and date references
+    let cleanedText = text.replace(/(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)/g, '');
+    cleanedText = cleanedText.replace(/(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next week|[\d]{1,2}\/[\d]{1,2}(?:\/[\d]{2,4})?)/g, '');
+    
+    // Look for possible noun phrases - naive approach
+    const words = cleanedText.split(/\s+/);
+    if (words.length >= 2) {
+      title = words.slice(0, Math.min(5, words.length)).join(' ');
+    } else {
+      title = 'New Event';
+    }
+  }
+  
   const formattedStartTime = formatTime(startTime);
-  const formattedEndTime = formatTime(endTime);
+  const formattedEndTime = endTime ? formatTime(endTime) : formatTime(`${parseInt(formattedStartTime.split(':')[0]) + 1}:00`);
   
   // Get the date in YYYY-MM-DD format
-  const eventDate = dateMatch ? getNormalizedDate(dateMatch[0]) : getNormalizedDate('today');
+  const eventDate = dateMatch ? getNormalizedDate(dateText) : getNormalizedDate('today');
   
   // Create ISO timestamps for start and end times
   const startsAt = new Date(`${eventDate}T${formattedStartTime}`).toISOString();
@@ -190,7 +250,7 @@ function extractEventDetails(text: string) {
   };
 }
 
-// Identify event by title/description for edit/delete operations
+// Identify event by title/description for edit/delete operations - enhanced to be more flexible
 function findEventByTitle(title: string, events: any[]) {
   if (!title || events.length === 0) return null;
   
@@ -207,6 +267,46 @@ function findEventByTitle(title: string, events: any[]) {
       event.title.toLowerCase().includes(titleLower) || 
       titleLower.includes(event.title.toLowerCase())
     );
+  }
+  
+  // If still no match, try fuzzy match using Levenshtein distance
+  if (!matchedEvent) {
+    const getLevenshteinDistance = (a: string, b: string) => {
+      const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
+      
+      for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
+      for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+      
+      for (let j = 1; j <= b.length; j++) {
+        for (let i = 1; i <= a.length; i++) {
+          const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
+          matrix[j][i] = Math.min(
+            matrix[j][i - 1] + 1,
+            matrix[j - 1][i] + 1,
+            matrix[j - 1][i - 1] + indicator
+          );
+        }
+      }
+      
+      return matrix[b.length][a.length];
+    };
+    
+    // Find closest match
+    let bestMatch = null;
+    let bestScore = Infinity;
+    
+    for (const event of events) {
+      const distance = getLevenshteinDistance(event.title.toLowerCase(), titleLower);
+      const normalizedDistance = distance / Math.max(event.title.length, titleLower.length);
+      
+      // Consider it a match if normalized distance is less than 0.4 (threshold)
+      if (normalizedDistance < 0.4 && normalizedDistance < bestScore) {
+        bestMatch = event;
+        bestScore = normalizedDistance;
+      }
+    }
+    
+    matchedEvent = bestMatch;
   }
   
   return matchedEvent;
@@ -292,36 +392,51 @@ serve(async (req) => {
       }
     }
 
-    // Format conversation with system message for Claude
+    // Format conversation with system message for Claude - Enhanced prompt
     const systemPrompt = `You are Mally AI, an intelligent calendar assistant in the Malleabite time management app.
-Your job is to help users manage their calendar by scheduling, rescheduling, or canceling events.
+You specialize in natural language calendar management through conversational interface.
 
-IMPORTANT CAPABILITIES AND CONSTRAINTS:
-- You can create, edit, and delete events in the user's calendar
+CAPABILITIES:
+- Create, modify, delete events in the user's calendar
+- Understand natural language date/time references (today, tomorrow, next week, etc)
+- Extract meeting details from unstructured text
+- Resolve scheduling conflicts
+- Answer questions about the user's calendar
+
+APPROACH:
+- Be conversational and efficient - users want quick responses
+- Don't require specific keywords - understand intent from context
+- Extract event details even from vague requests
+- When time/date information is ambiguous, make reasonable assumptions
+- Match user's conversational style (formal/casual)
 - Today's date is ${new Date().toLocaleDateString()}
 - The user has ${events.length} events in their calendar
-- Be conversational but efficient - users want to complete tasks quickly
-- NEVER claim there are scheduling conflicts unless specifically indicated
-- When a user asks to schedule something, respond with confirmation with specific date/time details
-- Don't ask for information they've already provided (like time, date, or event title)
-- If time information is not provided, suggest a time but don't require it
-- If date information is not provided, assume today or suggest a good time
 
-Be helpful, accommodating, and make the scheduling process as simple as possible.`;
+RESPONSE GUIDELINES:
+- Always confirm actions with specific details
+- For event creation, acknowledge the event details you've understood
+- For modifications, show old vs. new details when possible
+- For deletions, confirm which event is being removed
+- For conflicts, suggest alternatives or ask for guidance
+- Keep responses helpful but concise
+
+Your goal is to be the most natural and intuitive calendar assistant possible, requiring minimal effort from users to manage their schedule efficiently.`;
 
     // Add context about the operation result
     let aiPrompt = prompt;
     if (operationResult) {
       if (operationResult.action === 'create' && conflicts.length === 0) {
-        aiPrompt += "\n\n[SYSTEM: No scheduling conflicts found. You can proceed with creating this event.]";
+        aiPrompt += "\n\n[SYSTEM: Event details extracted successfully. No scheduling conflicts found. You can proceed with creating this event with the details I've extracted.]";
       } else if (operationResult.action === 'create' && conflicts.length > 0) {
         aiPrompt += `\n\n[SYSTEM: Found ${conflicts.length} scheduling conflicts. Suggest an alternative time or ask the user how to proceed.]`;
       } else if (operationResult.action === 'edit' && targetEvent) {
-        aiPrompt += "\n\n[SYSTEM: Event found and ready to be edited.]";
+        aiPrompt += "\n\n[SYSTEM: Event found and ready to be edited with the new details I've extracted.]";
       } else if (operationResult.action === 'delete' && targetEvent) {
-        aiPrompt += "\n\n[SYSTEM: Event found and ready to be deleted.]";
+        aiPrompt += "\n\n[SYSTEM: Event found and ready to be deleted. Please confirm the action.]";
       } else if ((operationResult.action === 'edit' || operationResult.action === 'delete') && !targetEvent) {
-        aiPrompt += "\n\n[SYSTEM: Could not find the specified event. Ask the user for clarification.]";
+        aiPrompt += "\n\n[SYSTEM: Could not find the specified event. Ask the user for clarification about which event they're referring to.]";
+      } else if (operationResult.action === 'query') {
+        aiPrompt += "\n\n[SYSTEM: This appears to be a query about the calendar. Provide relevant information from the user's events.]";
       }
     }
 
