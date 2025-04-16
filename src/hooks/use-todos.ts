@@ -11,6 +11,7 @@ export interface TodoItem {
   completed_at?: string;
   isCalendarEvent?: boolean;
   eventId?: string;
+  module_instance_id?: string;
 }
 
 export interface TodoResponse {
@@ -20,7 +21,11 @@ export interface TodoResponse {
   error?: any;
 }
 
-export function useTodos() {
+interface UseTodosProps {
+  instanceId: string;
+}
+
+export function useTodos({ instanceId }: UseTodosProps) {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,12 +42,13 @@ export function useTodos() {
         return;
       }
       
-      console.log('Fetching todos for user:', user.id);
+      console.log('Fetching todos for user:', user.id, 'and instance:', instanceId);
       
       const { data, error } = await supabase
         .from('todo_items')
-        .select('id, title, completed, created_at, completed_at, event_id')
+        .select('id, title, completed, created_at, completed_at, event_id, module_instance_id')
         .eq('user_id', user.id)
+        .eq('module_instance_id', instanceId)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -59,7 +65,8 @@ export function useTodos() {
         created_at: item.created_at,
         completed_at: item.completed_at,
         isCalendarEvent: item.event_id ? true : false,
-        eventId: item.event_id
+        eventId: item.event_id,
+        module_instance_id: item.module_instance_id
       }));
       
       setTodos(transformedTodos);
@@ -70,7 +77,7 @@ export function useTodos() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, instanceId]);
 
   const addTodo = async (title: string) => {
     try {
@@ -83,13 +90,14 @@ export function useTodos() {
         return response;
       }
       
-      console.log('Adding new todo:', title);
+      console.log('Adding new todo:', title, 'to instance:', instanceId);
       
       const newTodo = {
         title: title.trim(),
         completed: false,
         order_position: 0,
-        user_id: user.id
+        user_id: user.id,
+        module_instance_id: instanceId
       };
       
       console.log('Inserting todo with data:', newTodo);
@@ -118,7 +126,8 @@ export function useTodos() {
           title: title.trim(),
           completed: false,
           created_at: new Date().toISOString(),
-          isCalendarEvent: false
+          isCalendarEvent: false,
+          module_instance_id: instanceId
         }, ...prevTodos]);
         
         const response = {
@@ -210,7 +219,8 @@ export function useTodos() {
         .from('todo_items')
         .update({ event_id: eventId })
         .eq('id', todoId)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('module_instance_id', instanceId);
       
       if (error) {
         console.error('Error details:', error);
@@ -225,6 +235,32 @@ export function useTodos() {
     } catch (err: any) {
       console.error('Error linking todo to event:', err);
       return { success: false, message: err.message || 'Failed to link todo to event' };
+    }
+  };
+
+  const unlinkTodoFromEvent = async (todoId: string) => {
+    try {
+      if (!user) return { success: false, message: 'User not authenticated' };
+      
+      const { error } = await supabase
+        .from('todo_items')
+        .update({ event_id: null })
+        .eq('id', todoId)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('Error unlinking todo from event:', error);
+        return { success: false, message: error.message };
+      }
+      
+      setTodos(prevTodos => prevTodos.map(todo => 
+        todo.id === todoId ? { ...todo, isCalendarEvent: false, eventId: undefined } : todo
+      ));
+      
+      return { success: true, message: 'Todo unlinked from event successfully' };
+    } catch (err: any) {
+      console.error('Error unlinking todo from event:', err);
+      return { success: false, message: err.message || 'Failed to unlink todo from event' };
     }
   };
 
@@ -259,53 +295,32 @@ export function useTodos() {
     }
   };
 
-  const unlinkTodoFromEvent = async (todoId: string) => {
-    try {
-      if (!user) return { success: false, message: 'User not authenticated' };
-      
-      const { error } = await supabase
-        .from('todo_items')
-        .update({ event_id: null })
-        .eq('id', todoId)
-        .eq('user_id', user.id);
-      
-      if (error) {
-        console.error('Error unlinking todo from event:', error);
-        return { success: false, message: error.message };
-      }
-      
-      setTodos(prevTodos => prevTodos.map(todo => 
-        todo.id === todoId ? { ...todo, isCalendarEvent: false, eventId: undefined } : todo
-      ));
-      
-      return { success: true, message: 'Todo unlinked from event successfully' };
-    } catch (err: any) {
-      console.error('Error unlinking todo from event:', err);
-      return { success: false, message: err.message || 'Failed to unlink todo from event' };
-    }
-  };
-
   const getTodoById = (id: string): TodoItem | undefined => {
     return todos.find(todo => todo.id === id);
   };
 
   useEffect(() => {
-    if (user) {
-      console.log('User is authenticated, fetching todos');
+    if (user && instanceId) {
+      console.log('User is authenticated and instanceId provided, fetching todos');
       fetchTodos();
     } else {
-      console.log('No user, clearing todos');
+      console.log('No user or instanceId, clearing todos');
       setTodos([]);
       setLoading(false);
     }
     
-    const todosSubscription = supabase
-      .channel('todos-changes')
+    const channel = supabase
+      .channel('todo-changes')
       .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'todo_items', filter: `user_id=eq.${user?.id}` }, 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'todo_items', 
+          filter: `user_id=eq.${user?.id} AND module_instance_id=eq.${instanceId}` 
+        }, 
         (payload) => {
           console.log('Realtime update received:', payload);
-          if (user) {
+          if (user && instanceId) {
             fetchTodos();
           }
         }
@@ -314,9 +329,9 @@ export function useTodos() {
       
     return () => {
       console.log('Cleaning up subscription');
-      supabase.removeChannel(todosSubscription);
+      supabase.removeChannel(channel);
     };
-  }, [user, fetchTodos]);
+  }, [user, instanceId, fetchTodos]);
 
   return {
     todos,
