@@ -75,9 +75,13 @@ export function useModuleInstance(instanceId: string, defaultTitle: string): Mod
         } else if (data) {
           // Update local data with database data
           console.log('Module instance found, updating with database data:', data);
+          
+          // Explicitly cast and access settings as an object with minimized property
+          const settings = data.settings as { minimized?: boolean } || {};
+          
           setLocalData({
             title: data.title,
-            minimized: data.settings?.minimized || false,
+            minimized: settings.minimized || false,
             lastUpdated: new Date().toISOString()
           });
         }
@@ -94,7 +98,7 @@ export function useModuleInstance(instanceId: string, defaultTitle: string): Mod
   // Update title in both localStorage and database
   const updateTitle = async (title: string) => {
     // Update local state first for immediate feedback
-    setLocalData((prev) => ({ 
+    setLocalData((prev: ModuleInstanceData) => ({ 
       ...prev, 
       title, 
       lastUpdated: new Date().toISOString() 
@@ -129,7 +133,7 @@ export function useModuleInstance(instanceId: string, defaultTitle: string): Mod
     const newMinimized = !localData.minimized;
     
     // Update local state first for immediate feedback
-    setLocalData((prev) => ({ 
+    setLocalData((prev: ModuleInstanceData) => ({ 
       ...prev, 
       minimized: newMinimized,
       lastUpdated: new Date().toISOString() 
