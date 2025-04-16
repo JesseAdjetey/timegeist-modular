@@ -4,7 +4,8 @@ export type ModuleType = 'todo' | 'pomodoro' | 'alarms' | 'eisenhower' | 'invite
 export interface ModuleInstance {
   type: ModuleType;
   title: string;
-  minimized?: boolean; // New property to track minimized state
+  minimized?: boolean; // Property to track minimized state
+  instanceId: string;  // New unique identifier for module instances
 }
 
 export interface SidebarPage {

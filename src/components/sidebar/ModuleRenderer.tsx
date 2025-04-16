@@ -35,6 +35,7 @@ const ModuleRenderer: React.FC<ModuleRendererProps> = ({
   // Add common props to each module type
   const moduleProps = {
     title: module.title,
+    instanceId: module.instanceId, // Pass the instanceId to each module
     onRemove: onRemove,
     onTitleChange: onTitleChange,
     onMinimize: onToggleMinimize,

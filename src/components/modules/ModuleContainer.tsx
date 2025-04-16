@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 
 interface ModuleContainerProps {
   title: string;
+  instanceId?: string; // Add instanceId as an optional prop
   children: ReactNode;
   onRemove?: () => void;
   onTitleChange?: (newTitle: string) => void;
@@ -15,6 +16,7 @@ interface ModuleContainerProps {
 
 const ModuleContainer: React.FC<ModuleContainerProps> = ({ 
   title, 
+  instanceId,
   children, 
   onRemove,
   onTitleChange,
@@ -102,7 +104,7 @@ const ModuleContainer: React.FC<ModuleContainerProps> = ({
           )}
         </div>
       </div>
-      {!isMinimized && <div className="module-content">{children}</div>}
+      {!isMinimized && <div className="module-content" data-instance-id={instanceId}>{children}</div>}
     </div>
   );
 };

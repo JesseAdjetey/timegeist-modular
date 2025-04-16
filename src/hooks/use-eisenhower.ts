@@ -12,6 +12,7 @@ export interface EisenhowerItem {
   created_at?: string;
   updated_at?: string;
   event_id?: string;
+  module_instance_id?: string; // Add module instance ID
 }
 
 interface EisenhowerResponse {
@@ -21,7 +22,11 @@ interface EisenhowerResponse {
   error?: any;
 }
 
-export function useEisenhower() {
+interface UseEisenhowerProps {
+  instanceId: string; // Add instanceId as a required prop
+}
+
+export function useEisenhower({ instanceId }: UseEisenhowerProps) {
   const [items, setItems] = useState<EisenhowerItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,12 +44,13 @@ export function useEisenhower() {
         return;
       }
       
-      console.log('Fetching Eisenhower items for user:', user.id);
+      console.log('Fetching Eisenhower items for user:', user.id, 'and instance:', instanceId);
       
       const { data, error } = await supabase
         .from('eisenhower_items')
-        .select('id, text, quadrant, created_at, event_id')
+        .select('id, text, quadrant, created_at, event_id, module_instance_id')
         .eq('user_id', user.id)
+        .eq('module_instance_id', instanceId) // Filter by the module instance ID
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -61,7 +67,7 @@ export function useEisenhower() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, instanceId]); // Make instanceId a dependency
 
   // Add a new Eisenhower item to Supabase
   const addItem = async (text: string, quadrant: EisenhowerItem['quadrant']) => {
@@ -75,12 +81,13 @@ export function useEisenhower() {
         return response;
       }
       
-      console.log('Adding new Eisenhower item:', text, 'to quadrant:', quadrant);
+      console.log('Adding new Eisenhower item:', text, 'to quadrant:', quadrant, 'for instance:', instanceId);
       
       const newItem = {
         text: text.trim(),
         quadrant,
-        user_id: user.id
+        user_id: user.id,
+        module_instance_id: instanceId // Include the module instance ID
       };
       
       const { data, error } = await supabase
@@ -143,7 +150,8 @@ export function useEisenhower() {
         .from('eisenhower_items')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('module_instance_id', instanceId); // Only delete items matching this instance
       
       if (error) {
         console.error('Error details:', error);
@@ -172,7 +180,8 @@ export function useEisenhower() {
         .from('eisenhower_items')
         .update({ quadrant })
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('module_instance_id', instanceId); // Only update items matching this instance
       
       if (error) {
         console.error('Error details:', error);
@@ -187,13 +196,13 @@ export function useEisenhower() {
     }
   };
 
-  // Load items when component mounts or user changes
+  // Load items when component mounts or user/instanceId changes
   useEffect(() => {
-    if (user) {
-      console.log('User is authenticated, fetching Eisenhower items');
+    if (user && instanceId) {
+      console.log('User is authenticated and instanceId provided, fetching Eisenhower items');
       fetchItems();
     } else {
-      console.log('No user, clearing Eisenhower items');
+      console.log('No user or instanceId, clearing Eisenhower items');
       setItems([]);
       setLoading(false);
     }
@@ -202,11 +211,16 @@ export function useEisenhower() {
     const eisenhowerSubscription = supabase
       .channel('eisenhower-changes')
       .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'eisenhower_items', filter: `user_id=eq.${user?.id}` }, 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'eisenhower_items', 
+          filter: `user_id=eq.${user?.id} AND module_instance_id=eq.${instanceId}` 
+        }, 
         (payload) => {
           console.log('Realtime update received:', payload);
           // Only refetch when the user is authenticated
-          if (user) {
+          if (user && instanceId) {
             fetchItems();
           }
         }
@@ -217,7 +231,7 @@ export function useEisenhower() {
       console.log('Cleaning up subscription');
       supabase.removeChannel(eisenhowerSubscription);
     };
-  }, [user, fetchItems]);
+  }, [user, instanceId, fetchItems]); // Add instanceId as a dependency
 
   return {
     items,
