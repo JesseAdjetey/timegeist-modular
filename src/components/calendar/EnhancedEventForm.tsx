@@ -123,7 +123,7 @@ const EnhancedEventForm: React.FC<EnhancedEventFormProps> = ({
         <Checkbox
           id="isLocked"
           checked={isLocked}
-          onCheckedChange={(checked) => setIsLocked(!!checked)}
+          onCheckedChange={(checked) => setIsLocked(checked === true)}
         />
         <Label htmlFor="isLocked">Is Locked</Label>
       </div>
@@ -132,7 +132,7 @@ const EnhancedEventForm: React.FC<EnhancedEventFormProps> = ({
         <Checkbox
           id="isTodo"
           checked={isTodo}
-          onCheckedChange={(checked) => setIsTodo(!!checked)}
+          onCheckedChange={(checked) => setIsTodo(checked === true)}
         />
         <Label htmlFor="isTodo">Is Todo</Label>
       </div>
@@ -144,7 +144,11 @@ const EnhancedEventForm: React.FC<EnhancedEventFormProps> = ({
           </Button>
         ) : null}
         <div>
-          <Button variant="secondary" onClick={handleCreateTodo} type="button">
+          <Button 
+            variant="secondary" 
+            onClick={handleCreateTodo} 
+            type="button"
+          >
             Create Todo
           </Button>
           <Button className="ml-2" onClick={handleSubmit}>

@@ -122,6 +122,17 @@ const formatTime = (timeStr: string) => {
     minutes = 0;
   }
 
+  // Handle AM/PM
+  if (timeStr.toLowerCase().includes('pm') && hours < 12) {
+    hours += 12;
+  }
+  if (timeStr.toLowerCase().includes('am') && hours === 12) {
+    hours = 0;
+  }
+  
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
 // Extract event details from text - enhanced for more natural language
 function extractEventDetails(text: string) {
   // More flexible time pattern matching
@@ -182,17 +193,6 @@ function extractEventDetails(text: string) {
   
   // Extract the date (or default to today)
   const dateText = dateMatch ? dateMatch[1] || dateMatch[0] : 'today';
-    
-    // Handle AM/PM
-    if (timeStr.toLowerCase().includes('pm') && hours < 12) {
-      hours += 12;
-    }
-    if (timeStr.toLowerCase().includes('am') && hours === 12) {
-      hours = 0;
-    }
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  };
   
   // Extract title using more sophisticated patterns
   const titlePatterns = [
@@ -233,7 +233,7 @@ function extractEventDetails(text: string) {
   const formattedEndTime = endTime ? formatTime(endTime) : formatTime(`${parseInt(formattedStartTime.split(':')[0]) + 1}:00`);
   
   // Get the date in YYYY-MM-DD format
-  const eventDate = dateMatch ? getNormalizedDate(dateText) : getNormalizedDate('today');
+  const eventDate = dateText ? getNormalizedDate(dateText) : getNormalizedDate('today');
   
   // Create ISO timestamps for start and end times
   const startsAt = new Date(`${eventDate}T${formattedStartTime}`).toISOString();
