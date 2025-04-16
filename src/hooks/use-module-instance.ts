@@ -98,11 +98,11 @@ export function useModuleInstance(instanceId: string, defaultTitle: string): Mod
   // Update title in both localStorage and database
   const updateTitle = async (title: string) => {
     // Update local state first for immediate feedback
-    setLocalData((prev: ModuleInstanceData) => ({ 
-      ...prev, 
-      title, 
-      lastUpdated: new Date().toISOString() 
-    }));
+    setLocalData({
+      title,
+      minimized: localData.minimized,
+      lastUpdated: new Date().toISOString()
+    });
     
     // Then update in database if user is authenticated
     if (user && instanceId) {
@@ -133,11 +133,11 @@ export function useModuleInstance(instanceId: string, defaultTitle: string): Mod
     const newMinimized = !localData.minimized;
     
     // Update local state first for immediate feedback
-    setLocalData((prev: ModuleInstanceData) => ({ 
-      ...prev, 
+    setLocalData({
+      title: localData.title,
       minimized: newMinimized,
-      lastUpdated: new Date().toISOString() 
-    }));
+      lastUpdated: new Date().toISOString()
+    });
     
     // Then update in database if user is authenticated
     if (user && instanceId) {
