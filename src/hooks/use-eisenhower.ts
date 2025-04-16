@@ -208,7 +208,7 @@ export function useEisenhower({ instanceId }: UseEisenhowerProps) {
     }
     
     // Set up real-time subscription for Eisenhower items
-    const eisenhowerSubscription = supabase
+    const channel = supabase
       .channel('eisenhower-changes')
       .on('postgres_changes', 
         { 
@@ -229,7 +229,7 @@ export function useEisenhower({ instanceId }: UseEisenhowerProps) {
       
     return () => {
       console.log('Cleaning up subscription');
-      supabase.removeChannel(eisenhowerSubscription);
+      supabase.removeChannel(channel);
     };
   }, [user, instanceId, fetchItems]); // Add instanceId as a dependency
 
