@@ -93,6 +93,17 @@ function extractActionIntent(text: string) {
   return null;
 }
 
+const formatTime = (timeStr: string) => {
+  let [hours, minutes] = [12, 0]; // Default
+
+  // Handle different input formats
+  if (timeStr.includes(':')) {
+    [hours, minutes] = timeStr.split(':').map(num => parseInt(num));
+  } else {
+    hours = parseInt(timeStr);
+    minutes = 0;
+  }
+
 // Extract event details from text
 function extractEventDetails(text: string) {
   const timePattern = /(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)\s*(?:to|-)\s*(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)/i;
@@ -127,18 +138,25 @@ function extractEventDetails(text: string) {
   // Normalize time format
   let startTime = timeMatch ? timeMatch[1].trim() : '9:00';
   let endTime = timeMatch ? timeMatch[2].trim() : '10:00';
+
+  if (timeMatch) {
+    const rawStart = timeMatch[1];
+    const rawEnd = timeMatch[2];
+
+    startTime = formatTime(rawStart);
+
+    if (rawEnd) {
+      endTime = formatTime(rawEnd);
+    } else {
+      // If no end time is specified, add 1 hour to startTime
+      const [h, m] = startTime.split(":").map(Number);
+      const endHour = (h + 1) % 24;
+      endTime = `${endHour.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    }
+  }
   
   // Ensure HH:MM format for times
-  const formatTime = (timeStr: string) => {
-    let [hours, minutes] = [12, 0]; // Default
-    
-    // Handle different input formats
-    if (timeStr.includes(':')) {
-      [hours, minutes] = timeStr.split(':').map(num => parseInt(num));
-    } else {
-      hours = parseInt(timeStr);
-      minutes = 0;
-    }
+
     
     // Handle AM/PM
     if (timeStr.toLowerCase().includes('pm') && hours < 12) {

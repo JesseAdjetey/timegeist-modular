@@ -237,6 +237,9 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
       
       updateAIMessage(aiMessageId, data.response || 'I couldn\'t process that request. Please try again.', false);
 
+      //TODO: Clear this console log
+      console.log("Length of data events:", data.events?.length);
+
       if (data.events && data.events.length > 0) {
         console.log("New events received from edge function:", data.events);
         
