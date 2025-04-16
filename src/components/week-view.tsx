@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { getWeekDays } from "@/lib/getTime";
 import { useDateStore, useEventStore } from "@/lib/store";
@@ -48,7 +49,7 @@ const WeekView = () => {
     hideTodoCalendarDialog,
     handleCreateBoth,
     handleCreateCalendarOnly,
-    handleCreateTodoFromEvent
+    handleCreateTodoFromEvent: createTodoFromCalendarEvent
   } = useTodoCalendarIntegration();
 
   useEffect(() => {
@@ -142,7 +143,7 @@ const WeekView = () => {
   const handleSaveEvent = async (event: CalendarEventType) => {
     try {
       if (event.isTodo && !event.todoId) {
-        const newTodoId = await handleCreateTodoFromEvent(event);
+        const newTodoId = await createTodoFromCalendarEvent(event);
         if (newTodoId) {
           event.todoId = newTodoId;
         }
@@ -162,15 +163,6 @@ const WeekView = () => {
       console.error("Error adding event:", error);
       toast.error("An unexpected error occurred");
     }
-  };
-
-  const handleCreateTodoFromEvent = async (event: CalendarEventType) => {
-    if (!todoCalendarIntegration || !event) {
-      console.error("Todo-Calendar integration not available");
-      return null;
-    }
-    
-    return await todoCalendarIntegration.handleCreateTodoFromEvent(event);
   };
 
   return (

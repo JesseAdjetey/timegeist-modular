@@ -1,69 +1,93 @@
+
 import React, { useState, useEffect } from 'react';
 import { CalendarEventType } from '@/lib/stores/types';
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
 import { useTodoCalendarIntegration } from '@/hooks/use-todo-calendar-integration';
 
 interface EnhancedEventFormProps {
-  event: CalendarEventType | null;
-  onUpdateEvent: (event: CalendarEventType) => void;
-  onClose: () => void;
+  event?: CalendarEventType | null;
+  initialEvent?: CalendarEventType | null;
+  onUpdateEvent?: (event: CalendarEventType) => void;
+  onSave?: (event: CalendarEventType) => void;
+  onClose?: () => void;
+  onCancel?: () => void;
+  onUseAI?: () => void;
 }
 
-const EnhancedEventForm = ({ 
+const EnhancedEventForm: React.FC<EnhancedEventFormProps> = ({ 
   event, 
-  onUpdateEvent, 
-  onClose 
+  initialEvent,
+  onUpdateEvent,
+  onSave,
+  onClose,
+  onCancel,
+  onUseAI
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isLocked, setIsLocked] = useState(false);
   const [isTodo, setIsTodo] = useState(false);
   const { handleCreateTodoFromEvent } = useTodoCalendarIntegration();
+  
+  // Use either the event or initialEvent prop, whichever is provided
+  const eventData = event || initialEvent;
 
   useEffect(() => {
-    if (event) {
-      setTitle(event.title);
-      setDescription(event.description);
-      setIsLocked(event.isLocked || false);
-      setIsTodo(event.isTodo || false);
+    if (eventData) {
+      setTitle(eventData.title);
+      setDescription(eventData.description);
+      setIsLocked(eventData.isLocked || false);
+      setIsTodo(eventData.isTodo || false);
     }
-  }, [event]);
+  }, [eventData]);
 
   const handleSubmit = () => {
-    if (!event) return;
+    if (!eventData) return;
 
-    const updatedEvent = {
-      ...event,
+    const updatedEvent: CalendarEventType = {
+      ...eventData,
       title: title,
       description: description,
       isLocked: isLocked,
       isTodo: isTodo
     };
 
-    onUpdateEvent(updatedEvent);
-    onClose();
+    if (onUpdateEvent) {
+      onUpdateEvent(updatedEvent);
+    } else if (onSave) {
+      onSave(updatedEvent);
+    }
+    
+    if (onClose) onClose();
+    else if (onCancel) onCancel();
   };
 
-  const handleCreateTodoFromEvent = async () => {
-    if (!event) return;
+  const handleCreateTodo = async () => {
+    if (!eventData) return;
     
     try {
-      // Fix: Pass an empty object as the argument since the function expects a parameter
-      const todoId = await handleCreateTodoFromEvent({});
+      // Create a properly formed event object to pass to the handler
+      const todoId = await handleCreateTodoFromEvent(eventData);
       
       if (todoId) {
         toast.success("Todo created from event");
+        
         // Update the event to link it with the todo
         const updatedEvent = {
-          ...event,
+          ...eventData,
           todoId,
           isTodo: true
         };
-        onUpdateEvent(updatedEvent);
+        
+        if (onUpdateEvent) {
+          onUpdateEvent(updatedEvent);
+        } else if (onSave) {
+          onSave(updatedEvent);
+        }
       }
     } catch (error) {
       console.error("Error creating todo from event:", error);
@@ -99,7 +123,7 @@ const EnhancedEventForm = ({
         <Checkbox
           id="isLocked"
           checked={isLocked}
-          onCheckedChange={(checked) => setIsLocked(checked || false)}
+          onCheckedChange={(checked) => setIsLocked(!!checked)}
         />
         <Label htmlFor="isLocked">Is Locked</Label>
       </div>
@@ -108,21 +132,23 @@ const EnhancedEventForm = ({
         <Checkbox
           id="isTodo"
           checked={isTodo}
-          onCheckedChange={(checked) => setIsTodo(checked || false)}
+          onCheckedChange={(checked) => setIsTodo(!!checked)}
         />
         <Label htmlFor="isTodo">Is Todo</Label>
       </div>
 
       <div className="flex justify-between">
-        <Button variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
+        {onCancel || onClose ? (
+          <Button variant="ghost" onClick={onCancel || onClose}>
+            Cancel
+          </Button>
+        ) : null}
         <div>
-          <Button variant="secondary" onClick={handleCreateTodoFromEvent}>
+          <Button variant="secondary" onClick={handleCreateTodo} type="button">
             Create Todo
           </Button>
           <Button className="ml-2" onClick={handleSubmit}>
-            Update Event
+            {onUpdateEvent ? "Update Event" : "Save Event"}
           </Button>
         </div>
       </div>

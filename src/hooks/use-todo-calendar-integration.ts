@@ -69,8 +69,14 @@ export function useTodoCalendarIntegration() {
     hideTodoCalendarDialog();
   };
   
-  // Create todo from calendar event - fixed to properly accept event parameter
+  // Create todo from calendar event
   const handleCreateTodoFromEvent = async (event: CalendarEventType): Promise<string | null> => {
+    // Make sure we have a valid event object to work with
+    if (!event || !event.id || !event.title) {
+      console.error("Invalid event object provided to createTodoFromEvent:", event);
+      return null;
+    }
+    
     return await createTodoFromCalendarEvent(
       event,
       linkTodoToEvent,

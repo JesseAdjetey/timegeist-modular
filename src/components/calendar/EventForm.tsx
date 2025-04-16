@@ -1,3 +1,4 @@
+
 // src/components/calendar/EventForm.tsx
 
 import React, { useEffect, useState } from "react";
@@ -6,6 +7,7 @@ import { nanoid } from "nanoid";
 import { useEventStore } from "@/lib/store";
 import EnhancedEventForm from "./EnhancedEventForm";
 import { toast } from "@/components/ui/use-toast";
+import { CalendarEventType } from "@/lib/stores/types";
 
 interface EventFormProps {
   open: boolean;
@@ -30,7 +32,7 @@ const EventForm: React.FC<EventFormProps> = ({
   onUseAI,
 }) => {
   const { addEvent } = useEventStore();
-  const [initialEvent, setInitialEvent] = useState<any>(undefined);
+  const [initialEvent, setInitialEvent] = useState<CalendarEventType | undefined>(undefined);
 
   // Use onCancel or onClose, whichever is provided
   const handleClose = onCancel || onClose;
@@ -47,12 +49,26 @@ const EventForm: React.FC<EventFormProps> = ({
     if (initialTime) {
       // Start with time data - make sure we have the current initialTime
       console.log("Setting initialEvent with time:", initialTime.startTime);
+      
+      const startDate = initialTime.date.toISOString().split("T")[0];
+      const startsAt = new Date(
+        `${startDate}T${initialTime.startTime}:00`
+      ).toISOString();
+      
+      const startHour = parseInt(initialTime.startTime.split(":")[0]);
+      const startMinutes = parseInt(initialTime.startTime.split(":")[1] || "0");
+      const endTime = `${(startHour + 1) % 24}:${startMinutes.toString().padStart(2, "0")}`;
+      const endsAt = new Date(
+        `${startDate}T${endTime}:00`
+      ).toISOString();
 
-      let event: any = {
-        date: initialTime.date.toISOString().split("T")[0],
-        description: `${initialTime.startTime} - ${getEndTime(
-          initialTime.startTime
-        )} | `,
+      let event: CalendarEventType = {
+        id: nanoid(),
+        title: "",
+        description: `${initialTime.startTime} - ${getEndTime(initialTime.startTime)} | `,
+        date: startDate,
+        startsAt: startsAt,
+        endsAt: endsAt
       };
 
       // If we have todo data, add it
@@ -60,9 +76,7 @@ const EventForm: React.FC<EventFormProps> = ({
         event = {
           ...event,
           title: todoData.text,
-          description: `${initialTime.startTime} - ${getEndTime(
-            initialTime.startTime
-          )} | ${todoData.text}`,
+          description: `${initialTime.startTime} - ${getEndTime(initialTime.startTime)} | ${todoData.text}`,
           isTodo: true,
           todoId: todoData.id,
           color: "bg-purple-500/70", // Special color for todo events
@@ -75,8 +89,8 @@ const EventForm: React.FC<EventFormProps> = ({
     }
   }, [initialTime, todoData]);
 
-  const handleSave = (event: any) => {
-    // Generate a unique ID for the new event
+  const handleSave = (event: CalendarEventType) => {
+    // Generate a unique ID for the new event if it doesn't have one
     console.log("Event being saved:", event);
 
     if (propOnSave) {
@@ -101,10 +115,14 @@ const EventForm: React.FC<EventFormProps> = ({
   };
 
   const handleUseAI = () => {
-    toast({
-      title: "Mally AI",
-      description: "AI assistance is coming soon!",
-    });
+    if (onUseAI) {
+      onUseAI();
+    } else {
+      toast({
+        title: "Mally AI",
+        description: "AI assistance is coming soon!",
+      });
+    }
   };
 
   return (
@@ -118,7 +136,7 @@ const EventForm: React.FC<EventFormProps> = ({
           initialEvent={initialEvent}
           onSave={handleSave}
           onCancel={handleClose}
-          onUseAI={onUseAI || handleUseAI}
+          onUseAI={handleUseAI}
         />
       </DialogContent>
     </Dialog>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useEventStore } from '@/lib/store';
@@ -115,7 +114,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
           
           {isEditing ? (
             <EnhancedEventForm
-              initialEvent={selectedEvent}
+              event={selectedEvent}
               onSave={handleSave}
               onCancel={() => setIsEditing(false)}
               onUseAI={handleReschedule}
