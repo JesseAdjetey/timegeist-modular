@@ -18,7 +18,7 @@ interface EventDetailsProps {
 const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
   const { selectedEvent } = useEventStore();
   const { updateEvent, removeEvent } = useCalendarEvents();
-  const { handleCompleteTodo, deleteTodo } = useTodos();
+  const { toggleTodo, deleteTodo } = useTodos();
   const [isEditing, setIsEditing] = useState(false);
 
   if (!selectedEvent) return null;
@@ -52,7 +52,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
         return;
       }
       
-      await handleCompleteTodo(selectedEvent.todoId);
+      await toggleTodo(selectedEvent.todoId, true);
       toast.success("Todo marked as complete");
       
       // Update calendar event to reflect completion
@@ -103,8 +103,8 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
       <DialogContent className="sm:max-w-[500px] bg-background/95 border-white/10">
         {isEditing ? (
           <EnhancedEventForm 
-            event={selectedEvent}
-            onUpdateEvent={handleUpdate}
+            initialEvent={selectedEvent}
+            onSave={handleUpdate}
             onCancel={handleCancel}
             onUseAI={handleUseAI}
           />
