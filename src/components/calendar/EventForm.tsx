@@ -50,40 +50,46 @@ const EventForm: React.FC<EventFormProps> = ({
       // Start with time data - make sure we have the current initialTime
       console.log("Setting initialEvent with time:", initialTime.startTime);
       
-      const startDate = initialTime.date.toISOString().split("T")[0];
-      const startsAt = new Date(
-        `${startDate}T${initialTime.startTime}:00`
-      ).toISOString();
-      
-      const startHour = parseInt(initialTime.startTime.split(":")[0]);
-      const startMinutes = parseInt(initialTime.startTime.split(":")[1] || "0");
-      const endTime = `${(startHour + 1) % 24}:${startMinutes.toString().padStart(2, "0")}`;
-      const endsAt = new Date(
-        `${startDate}T${endTime}:00`
-      ).toISOString();
+      try {
+        const startDate = initialTime.date.toISOString().split("T")[0];
+        const startHour = parseInt(initialTime.startTime.split(":")[0]);
+        const startMinutes = parseInt(initialTime.startTime.split(":")[1] || "0");
+        
+        const startsAt = new Date(`${startDate}T${initialTime.startTime}:00`);
+        
+        const endTime = `${(startHour + 1) % 24}:${startMinutes.toString().padStart(2, "0")}`;
+        const endsAt = new Date(`${startDate}T${endTime}:00`);
 
-      let event: CalendarEventType = {
-        id: nanoid(),
-        title: "",
-        description: `${initialTime.startTime} - ${getEndTime(initialTime.startTime)} | `,
-        date: startDate,
-        startsAt: startsAt,
-        endsAt: endsAt
-      };
-
-      // If we have todo data, add it
-      if (todoData) {
-        event = {
-          ...event,
-          title: todoData.text,
-          description: `${initialTime.startTime} - ${getEndTime(initialTime.startTime)} | ${todoData.text}`,
-          isTodo: true,
-          todoId: todoData.id,
-          color: "bg-purple-500/70", // Special color for todo events
+        let event: CalendarEventType = {
+          id: nanoid(),
+          title: "",
+          description: `${initialTime.startTime} - ${endTime} | `,
+          date: startDate,
+          startsAt: startsAt.toISOString(),
+          endsAt: endsAt.toISOString()
         };
-      }
 
-      setInitialEvent(event);
+        // If we have todo data, add it
+        if (todoData) {
+          event = {
+            ...event,
+            title: todoData.text,
+            description: `${initialTime.startTime} - ${endTime} | ${todoData.text}`,
+            isTodo: true,
+            todoId: todoData.id,
+            color: "bg-purple-500/70", // Special color for todo events
+          };
+        }
+
+        setInitialEvent(event);
+      } catch (error) {
+        console.error("Error creating initial event:", error);
+        toast({
+          title: "Error",
+          description: "Failed to create event with the selected time",
+          variant: "destructive"
+        });
+      }
     } else {
       setInitialEvent(undefined);
     }

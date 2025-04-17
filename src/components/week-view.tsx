@@ -49,7 +49,7 @@ const WeekView = () => {
     hideTodoCalendarDialog,
     handleCreateBoth,
     handleCreateCalendarOnly,
-    handleCreateTodoFromEvent: createTodoFromCalendarEvent
+    handleCreateTodoFromEvent
   } = useTodoCalendarIntegration();
 
   useEffect(() => {
@@ -143,7 +143,7 @@ const WeekView = () => {
   const handleSaveEvent = async (event: CalendarEventType) => {
     try {
       if (event.isTodo && !event.todoId) {
-        const newTodoId = await createTodoFromCalendarEvent(event);
+        const newTodoId = await handleCreateTodoFromEvent(event);
         if (newTodoId) {
           event.todoId = newTodoId;
         }
