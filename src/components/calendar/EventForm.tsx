@@ -138,7 +138,7 @@ const EventForm: React.FC<EventFormProps> = ({
       open={open}
       onOpenChange={(isOpen) => !isOpen && handleClose && handleClose()}
     >
-      <DialogContent className="sm:max-w-[500px] bg-background/95 border-white/10">
+      <DialogContent className="sm:max-w-[550px] bg-background/95 border-white/10">
         <DialogTitle className="sr-only">Add Event</DialogTitle>
         <EnhancedEventForm
           initialEvent={initialEvent}
