@@ -29,6 +29,8 @@ const EnhancedEventForm: React.FC<EnhancedEventFormProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [isLocked, setIsLocked] = useState(false);
   const [isTodo, setIsTodo] = useState(false);
   const { handleCreateTodoFromEvent } = useTodoCalendarIntegration();
@@ -39,7 +41,20 @@ const EnhancedEventForm: React.FC<EnhancedEventFormProps> = ({
   useEffect(() => {
     if (eventData) {
       setTitle(eventData.title);
-      setDescription(eventData.description);
+      
+      // Extract time information from description (format: "HH:MM - HH:MM | Description")
+      const descriptionParts = eventData.description.split('|');
+      const timeRange = descriptionParts[0].trim();
+      const actualDescription = descriptionParts.length > 1 ? descriptionParts[1].trim() : '';
+      
+      // Split time range into start and end times
+      const times = timeRange.split('-');
+      if (times.length === 2) {
+        setStartTime(times[0].trim());
+        setEndTime(times[1].trim());
+      }
+      
+      setDescription(actualDescription);
       setIsLocked(eventData.isLocked || false);
       setIsTodo(eventData.isTodo || false);
     }
@@ -48,10 +63,13 @@ const EnhancedEventForm: React.FC<EnhancedEventFormProps> = ({
   const handleSubmit = () => {
     if (!eventData) return;
 
+    // Reconstruct the description with time information
+    const fullDescription = `${startTime} - ${endTime} | ${description}`;
+    
     const updatedEvent: CalendarEventType = {
       ...eventData,
       title: title,
-      description: description,
+      description: fullDescription,
       isLocked: isLocked,
       isTodo: isTodo
     };
@@ -107,6 +125,29 @@ const EnhancedEventForm: React.FC<EnhancedEventFormProps> = ({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <Label htmlFor="startTime">Start Time</Label>
+          <Input
+            type="text"
+            id="startTime"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            placeholder="HH:MM"
+          />
+        </div>
+        <div>
+          <Label htmlFor="endTime">End Time</Label>
+          <Input
+            type="text"
+            id="endTime"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            placeholder="HH:MM"
+          />
+        </div>
       </div>
 
       <div className="mb-4">

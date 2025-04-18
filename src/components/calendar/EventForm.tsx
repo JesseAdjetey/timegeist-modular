@@ -55,15 +55,17 @@ const EventForm: React.FC<EventFormProps> = ({
         const startHour = parseInt(initialTime.startTime.split(":")[0]);
         const startMinutes = parseInt(initialTime.startTime.split(":")[1] || "0");
         
-        const startsAt = new Date(`${startDate}T${initialTime.startTime}:00`);
+        const startTimeFormatted = `${startHour.toString().padStart(2, "0")}:${startMinutes.toString().padStart(2, "0")}`;
+        const startsAt = new Date(`${startDate}T${startTimeFormatted}:00`);
         
-        const endTime = `${(startHour + 1) % 24}:${startMinutes.toString().padStart(2, "0")}`;
+        const endHour = (startHour + 1) % 24;
+        const endTime = `${endHour.toString().padStart(2, "0")}:${startMinutes.toString().padStart(2, "0")}`;
         const endsAt = new Date(`${startDate}T${endTime}:00`);
 
         let event: CalendarEventType = {
           id: nanoid(),
           title: "",
-          description: `${initialTime.startTime} - ${endTime} | `,
+          description: `${startTimeFormatted} - ${endTime} | `,
           date: startDate,
           startsAt: startsAt.toISOString(),
           endsAt: endsAt.toISOString()
@@ -74,7 +76,7 @@ const EventForm: React.FC<EventFormProps> = ({
           event = {
             ...event,
             title: todoData.text,
-            description: `${initialTime.startTime} - ${endTime} | ${todoData.text}`,
+            description: `${startTimeFormatted} - ${endTime} | ${todoData.text}`,
             isTodo: true,
             todoId: todoData.id,
             color: "bg-purple-500/70", // Special color for todo events
@@ -147,15 +149,6 @@ const EventForm: React.FC<EventFormProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
-
-// Helper function to calculate an end time 1 hour after the start time
-const getEndTime = (startTime: string): string => {
-  const [hours, minutes] = startTime.split(":").map(Number);
-  const endHour = (hours + 1) % 24;
-  return `${endHour.toString().padStart(2, "0")}:${minutes
-    .toString()
-    .padStart(2, "0")}`;
 };
 
 export default EventForm;
