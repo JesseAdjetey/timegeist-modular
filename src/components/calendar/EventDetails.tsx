@@ -52,7 +52,7 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
         return;
       }
       
-      await toggleTodo(selectedEvent.todoId, false);
+      await toggleTodo(selectedEvent.todoId, true);
       toast.success("Todo marked as complete");
       
       // Update calendar event to reflect completion
