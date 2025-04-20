@@ -18,7 +18,7 @@ dayjs.extend(duration)
 // Initialize environment variables
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-const openaiApiKey = Deno.env.get('OPENAI_API_KEY') || ''
+const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY') || ''
 
 // Initialize the Supabase client
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -215,7 +215,7 @@ function findAvailableTimeSlots(
   for (let i = 0; i <= sortedEvents.length; i++) {
     const nextEventStart = i < sortedEvents.length 
       ? dayjs(sortedEvents[i].starts_at) 
-      : dayEnd
+      : dayjs(dayEnd)
     
     const availableDuration = nextEventStart.diff(currentTime, 'minute')
     
@@ -394,7 +394,6 @@ async function createCalendarEvent(
   event: EventRequest
 ): Promise<{ success: boolean, data?: any, error?: string }> {
   try {
-    // Format for database
     const eventData = {
       title: event.title,
       description: event.description || '',
@@ -431,7 +430,6 @@ async function updateCalendarEvent(
   updates: Partial<EventRequest>
 ): Promise<{ success: boolean, data?: any, error?: string }> {
   try {
-    // Convert from client format to database format
     const eventUpdates: Partial<CalendarEvent> = {}
     
     if (updates.title) eventUpdates.title = updates.title
@@ -484,7 +482,7 @@ async function deleteCalendarEvent(
   }
 }
 
-// Process user request with the LLM
+// Process user request with the Anthropic Claude API
 async function processWithLLM(
   userId: string,
   userMessage: string,
@@ -492,7 +490,6 @@ async function processWithLLM(
   events: CalendarEvent[]
 ): Promise<{ response: string, action?: string, event?: any, events?: any[], processedEvent?: any, error?: string }> {
   try {
-    // Format events for the LLM in a more readable way
     const formattedEvents = events.map(event => ({
       id: event.id,
       title: event.title,
@@ -501,97 +498,115 @@ async function processWithLLM(
       description: event.description
     }))
     
-    // Format message context
-    const messages: Message[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      ...previousMessages,
-      { 
-        role: 'user', 
-        content: userMessage + '\n\nMy current calendar:\n' +
-          JSON.stringify(formattedEvents.slice(0, 20), null, 2)
-      }
-    ]
+    if (!anthropicApiKey) {
+      console.error('Anthropic API key is not configured');
+      return { 
+        response: "I'm having trouble connecting to my AI service. Please contact the administrator to set up the Anthropic API key.",
+        error: "Anthropic API key not configured" 
+      };
+    }
+    
+    const formattedPrompt = `${SYSTEM_PROMPT}\n\nUser's calendar:\n${JSON.stringify(formattedEvents.slice(0, 20), null, 2)}\n\nUser: ${userMessage}`;
+    
+    const conversationContext = previousMessages.map(msg => 
+      `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
+    ).join('\n\n');
+    
+    const fullPrompt = conversationContext 
+      ? `${formattedPrompt}\n\nPrevious conversation:\n${conversationContext}`
+      : formattedPrompt;
 
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    console.log("Calling Anthropic Claude API...");
+    
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json'
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        messages,
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 1500,
         temperature: 0.7,
-        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: [
+          ...previousMessages,
+          {
+            role: 'user',
+            content: `My current calendar:\n${JSON.stringify(formattedEvents.slice(0, 20), null, 2)}\n\n${userMessage}`
+          }
+        ],
         response_format: { type: "json_object" }
       })
-    })
+    });
 
     if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`OpenAI API error: ${errorText}`)
+      const errorData = await response.text();
+      console.error(`Anthropic API Error (${response.status}): ${errorData}`);
+      return {
+        response: "I'm having trouble processing your request right now. Please try again in a moment.",
+        error: `Anthropic API Error (${response.status}): ${errorData}`
+      };
     }
 
-    const result = await response.json()
-    const aiResponse = result.choices[0].message.content
+    const result = await response.json();
+    console.log("Anthropic response received:", result);
     
-    // Parse the JSON response
-    try {
-      const parsedResponse = JSON.parse(aiResponse)
-      
-      // Extract components based on action type
-      const action = parsedResponse.action
-      const responseText = parsedResponse.response || "I've processed your request."
+    const aiResponse = result.content && result.content[0] && result.content[0].text;
+    
+    if (!aiResponse) {
+      throw new Error("Invalid response format from Anthropic API");
+    }
 
-      // Process different action types
-      let processedData: any = { response: responseText, action }
+    try {
+      const parsedResponse = JSON.parse(aiResponse);
+      
+      const action = parsedResponse.action;
+      const responseText = parsedResponse.response || "I've processed your request.";
+
+      let processedData: any = { response: responseText, action };
       
       if (action === 'create' && parsedResponse.event) {
-        // Create a new event
-        processedData.event = parsedResponse.event
+        processedData.event = parsedResponse.event;
       } 
       else if (action === 'update' && parsedResponse.eventId && parsedResponse.updates) {
-        // Update an existing event
         processedData.processedEvent = {
           id: parsedResponse.eventId,
           ...parsedResponse.updates,
           _action: 'update'
-        }
+        };
       }
       else if (action === 'delete' && parsedResponse.eventId) {
-        // Delete an event
         processedData.processedEvent = {
           id: parsedResponse.eventId,
           _action: 'delete'
-        }
+        };
       }
       else if (action === 'suggest' && parsedResponse.events) {
-        // Suggest multiple events (e.g., recurring patterns)
         processedData.events = Array.isArray(parsedResponse.events) 
           ? parsedResponse.events 
-          : [parsedResponse.events]
+          : [parsedResponse.events];
       }
       else if (action === 'conflict' && parsedResponse.conflicts) {
-        // Handle conflict detection
-        processedData.conflicts = parsedResponse.conflicts
-        processedData.suggestions = parsedResponse.suggestions
+        processedData.conflicts = parsedResponse.conflicts;
+        processedData.suggestions = parsedResponse.suggestions;
       }
       
-      return processedData
+      return processedData;
     } catch (error) {
-      console.error(`Error parsing LLM response: ${error}`)
+      console.error(`Error parsing LLM response: ${error}`);
       return { 
         response: "I encountered an issue processing your request. Could you please try rephrasing it?",
         error: `Failed to parse response: ${error}`
-      }
+      };
     }
   } catch (error) {
-    console.error(`Error calling LLM: ${error}`)
+    console.error(`Error calling LLM: ${error}`);
     return { 
       response: "I'm having trouble connecting right now. Please try again in a moment.",
       error: handleError(error)
-    }
+    };
   }
 }
 
@@ -599,13 +614,11 @@ async function processWithLLM(
 serve(async (req) => {
   console.log("Edge function called with method:", req.method);
   
-  // Handle CORS for preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // Get the request body
     const body = await req.json();
     console.log("Received request body:", JSON.stringify(body).substring(0, 200) + "...");
     
@@ -645,19 +658,16 @@ serve(async (req) => {
       );
     }
 
-    // Format previous messages
     const formattedMessages = previousMessages.map((msg: any) => ({
       role: msg.role,
       content: msg.content
     }));
 
-    // Get user's calendar events if not provided
     let events: CalendarEvent[] = [];
     
     if (providedEvents && providedEvents.length > 0) {
       events = providedEvents;
     } else {
-      // Get the next 7 days of events for context
       const startDate = dayjs().format('YYYY-MM-DD');
       const endDate = dayjs().add(7, 'day').format('YYYY-MM-DD');
       events = await getEventsInRange(userId, startDate, endDate);
@@ -665,7 +675,6 @@ serve(async (req) => {
 
     console.log(`Processing text: "${text}" for user ${userId} with ${events.length} calendar events`);
     
-    // Process the request
     const result = await processSchedulingRequest(userId, text, formattedMessages, events);
     console.log("Processing result:", JSON.stringify(result).substring(0, 200) + "...");
 
@@ -706,12 +715,9 @@ async function processSchedulingRequest(
   events: CalendarEvent[]
 ): Promise<any> {
   try {
-    // Use LLM to understand the request and generate a response
     const processedRequest = await processWithLLM(userId, text, messages, events)
     
-    // Handle different actions based on the LLM response
     if (processedRequest.action === 'create' && processedRequest.event) {
-      // Create a new event
       const event = processedRequest.event
       const result = await createCalendarEvent(userId, event)
       
@@ -722,7 +728,6 @@ async function processSchedulingRequest(
         }
       }
       
-      // Return the created event along with the response
       return {
         response: processedRequest.response,
         event: event,
@@ -731,7 +736,6 @@ async function processSchedulingRequest(
     }
     
     if (processedRequest.action === 'update' && processedRequest.processedEvent) {
-      // Update an existing event
       const eventData = processedRequest.processedEvent
       const result = await updateCalendarEvent(userId, eventData.id, eventData)
       
@@ -749,7 +753,6 @@ async function processSchedulingRequest(
     }
     
     if (processedRequest.action === 'delete' && processedRequest.processedEvent) {
-      // Delete an event
       const eventData = processedRequest.processedEvent
       const result = await deleteCalendarEvent(userId, eventData.id)
       
@@ -767,14 +770,12 @@ async function processSchedulingRequest(
     }
     
     if (processedRequest.action === 'suggest' && processedRequest.events) {
-      // For suggestions, just return the suggested events without creating them yet
       return {
         response: processedRequest.response,
         events: processedRequest.events
       }
     }
     
-    // Default: just return the response for clarification, conflict, etc.
     return {
       response: processedRequest.response,
       action: processedRequest.action

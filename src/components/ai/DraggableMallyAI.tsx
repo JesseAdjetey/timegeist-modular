@@ -1,3 +1,4 @@
+
 // src/components/ai/DraggableMallyAI.tsx
 import React, { useState, useEffect, useRef } from "react";
 import MallyAI from "./MallyAI";
@@ -5,6 +6,7 @@ import { CalendarEventType } from "@/lib/stores/types";
 import { motion } from "framer-motion";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
 
 interface DraggableMallyAIProps {
   onScheduleEvent: (event: CalendarEventType) => Promise<any>;
@@ -76,6 +78,32 @@ const DraggableMallyAI: React.FC<DraggableMallyAIProps> = ({
       setTimeout(() => setWasDragged(false), 300); // Reset after a short delay
     }
   };
+
+  // Check if API key is configured
+  useEffect(() => {
+    const checkApiKey = async () => {
+      try {
+        // Simple ping to the edge function to see if it's configured properly
+        const response = await fetch('/api/check-anthropic-key', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ check: true }),
+        });
+        
+        if (!response.ok) {
+          console.warn('MallyAI requires Anthropic API key configuration');
+          // We don't show a toast here as it might be annoying
+          // Users will see an error in the MallyAI interface itself when they try to use it
+        }
+      } catch (error) {
+        console.warn('Could not check AI configuration:', error);
+      }
+    };
+
+    checkApiKey();
+  }, []);
 
   return (
     <motion.div

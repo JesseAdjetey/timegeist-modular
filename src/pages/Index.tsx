@@ -70,7 +70,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col text-white relative">
       <Mainview />
-      <DraggableMallyAI onScheduleEvent={handleScheduleEvent} />
+      <DraggableMallyAI onScheduleEvent={handleScheduleEvent} initialPrompt="I'm Mally, your AI calendar assistant powered by Claude. How can I help with your schedule today?" />
     </div>
   );
 };
