@@ -17,6 +17,8 @@ const Index = () => {
     // Hydrate zustand stores if needed
     const view = useViewStore.getState();
     const date = useDateStore.getState();
+    
+    // Any other initialization needed
   }, []);
 
   // Handler for event scheduling via MallyAI
@@ -70,7 +72,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col text-white relative">
       <Mainview />
-      <DraggableMallyAI onScheduleEvent={handleScheduleEvent} initialPrompt="I'm Mally, your AI calendar assistant powered by Claude. How can I help with your schedule today?" />
+      <DraggableMallyAI onScheduleEvent={handleScheduleEvent} />
     </div>
   );
 };

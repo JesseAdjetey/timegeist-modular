@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { nanoid } from "nanoid";
 import { useEventStore } from "@/lib/store";
 import EnhancedEventForm from "./EnhancedEventForm";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 import { CalendarEventType } from "@/lib/stores/types";
 
 interface EventFormProps {
@@ -86,7 +86,11 @@ const EventForm: React.FC<EventFormProps> = ({
         setInitialEvent(event);
       } catch (error) {
         console.error("Error creating initial event:", error);
-        toast.error("Failed to create event with the selected time");
+        toast({
+          title: "Error",
+          description: "Failed to create event with the selected time",
+          variant: "destructive"
+        });
       }
     } else {
       setInitialEvent(undefined);
@@ -104,9 +108,15 @@ const EventForm: React.FC<EventFormProps> = ({
 
       // Show a success message
       if (todoData) {
-        toast.success(`Todo "${todoData.text}" added to calendar`);
+        toast({
+          title: "Success",
+          description: `Todo "${todoData.text}" added to calendar`,
+        });
       } else {
-        toast.success("Event added to calendar");
+        toast({
+          title: "Success",
+          description: "Event added to calendar",
+        });
       }
     }
     if (handleClose) handleClose();
@@ -116,7 +126,10 @@ const EventForm: React.FC<EventFormProps> = ({
     if (onUseAI) {
       onUseAI();
     } else {
-      toast.success("AI assistance is coming soon!");
+      toast({
+        title: "Mally AI",
+        description: "AI assistance is coming soon!",
+      });
     }
   };
 
