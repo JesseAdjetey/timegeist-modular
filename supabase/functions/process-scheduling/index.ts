@@ -11,7 +11,7 @@ dayjs.extend(timezone)
 // Initialize environment variables
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY') || ''
+const anthropicApiKey = "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" 
 
 // Initialize the Supabase client
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -70,7 +70,7 @@ const processWithClaudeAI = async (text: string) => {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': anthropicApiKey,
-        'anthropic-version': '2023-06-01'
+        // 'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307',
