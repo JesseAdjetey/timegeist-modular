@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import dayjs from 'https://esm.sh/dayjs@1.11.10'
@@ -11,6 +10,7 @@ dayjs.extend(timezone)
 // Initialize environment variables
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY') || ''
 
 // Initialize the Supabase client
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
@@ -53,7 +53,146 @@ const formatTime = (timeStr: string): string => {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
-// Extract event details from text - enhanced for more natural language
+// Process the AI text to create a calendar event using Claude API
+const processWithClaudeAI = async (text: string) => {
+  if (!anthropicApiKey) {
+    console.error("No Anthropic API key found");
+    throw new Error("Anthropic API key is not configured");
+  }
+
+  try {
+    console.log("Calling Claude API for text analysis:", text);
+    
+    // API call to Anthropic Claude 
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-sonnet-20240229',
+        max_tokens: 1000,
+        messages: [
+          {
+            role: 'user',
+            content: `Analyze this text: "${text}"
+            
+            If it's asking to create, schedule or add a calendar event, extract the following information in JSON format:
+            1. Title of the event
+            2. Date (in YYYY-MM-DD format, use today's date if not specified)
+            3. Start time (in HH:MM 24hr format)
+            4. End time (in HH:MM 24hr format)
+            5. Description (if any)
+            
+            Respond in this exact JSON format if it's for creating an event:
+            {
+              "action": "create",
+              "event": {
+                "title": "extracted title",
+                "date": "YYYY-MM-DD",
+                "startsAt": "Full ISO timestamp",
+                "endsAt": "Full ISO timestamp",
+                "description": "extracted description",
+                "color": "bg-blue-500/70" or similar Tailwind color class
+              }
+            }
+            
+            If the text is not about creating a calendar event, respond with:
+            {
+              "action": "unknown",
+              "message": "A helpful message explaining what I can do to help with calendar events"
+            }`
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error("Claude API error:", response.status, errorData);
+      throw new Error(`Claude API error: ${response.status} ${errorData}`);
+    }
+
+    const data = await response.json();
+    console.log("Claude API response:", JSON.stringify(data).slice(0, 200) + "...");
+
+    if (!data.content || !data.content[0] || !data.content[0].text) {
+      console.error("Unexpected Claude API response format:", data);
+      throw new Error("Invalid response format from Claude API");
+    }
+
+    // Extract the JSON from Claude's response
+    const contentText = data.content[0].text;
+    
+    // Find JSON in the response
+    const jsonMatch = contentText.match(/```json\s*([\s\S]*?)\s*```/) || 
+                     contentText.match(/\{[\s\S]*\}/);
+                     
+    let parsedResponse;
+    
+    if (jsonMatch && jsonMatch[1]) {
+      try {
+        parsedResponse = JSON.parse(jsonMatch[1]);
+      } catch (e) {
+        console.error("Failed to parse JSON from Claude response", e);
+        parsedResponse = { action: "unknown", message: "I couldn't understand your request. Please try being more specific about the event details." };
+      }
+    } else {
+      try {
+        // Try to parse the whole response as JSON
+        parsedResponse = JSON.parse(contentText);
+      } catch (e) {
+        console.error("Failed to parse Claude response as JSON", e);
+        parsedResponse = { action: "unknown", message: "I couldn't understand your request. Please try being more specific about the event details." };
+      }
+    }
+
+    // Process event data if action is create
+    if (parsedResponse.action === "create" && parsedResponse.event) {
+      const event = parsedResponse.event;
+      
+      // Ensure dates are in proper ISO format
+      if (event.startsAt && !event.startsAt.includes('T')) {
+        // If only date is provided, add time
+        const startTime = event.startTime || "09:00";
+        event.startsAt = new Date(`${event.date || new Date().toISOString().split('T')[0]}T${startTime}`).toISOString();
+      }
+      
+      if (event.endsAt && !event.endsAt.includes('T')) {
+        // If only date is provided for end time, add time
+        const endTime = event.endTime || "10:00";
+        event.endsAt = new Date(`${event.date || new Date().toISOString().split('T')[0]}T${endTime}`).toISOString();
+      }
+      
+      // If we only have a start time but no end time, set end time to 1 hour later
+      if (!event.endsAt && event.startsAt) {
+        const startDate = new Date(event.startsAt);
+        const endDate = new Date(startDate);
+        endDate.setHours(startDate.getHours() + 1);
+        event.endsAt = endDate.toISOString();
+      }
+      
+      // Ensure color is set
+      if (!event.color) {
+        const colors = ['blue', 'green', 'purple', 'orange', 'teal', 'pink'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        event.color = `bg-${randomColor}-500/70`;
+      }
+    }
+
+    return parsedResponse;
+  } catch (error) {
+    console.error("Error calling Claude API:", error);
+    return {
+      action: "error",
+      message: `Sorry, I encountered an error: ${error.message}`
+    };
+  }
+};
+
+// Extract event details from text - basic fallback if AI fails
 function extractEventDetails(text: string) {
   // More flexible time pattern matching
   const timePattern = /(?:from|at|@)?\s*(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)\s*(?:to|until|till|-)\s*(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)/i;
@@ -208,7 +347,7 @@ function extractEventDetails(text: string) {
   };
 }
 
-// Process the AI text to create a calendar event
+// Process the AI text to create a calendar event - fallback if Claude fails
 const processMallyAIText = (text: string) => {
   // Check if the text is for scheduling an event
   const isScheduling = /schedule|add|create|set up|make|put|new event|new meeting|new appointment|new reminder|book|reserve/i.test(text);
@@ -273,19 +412,42 @@ serve(async (req) => {
       )
     }
 
-    // Process the text with AI
-    const result = processMallyAIText(text)
-
-    return new Response(
-      JSON.stringify(result),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      }
-    )
+    console.log("Processing scheduling request:", text);
+    
+    try {
+      // Try to use Claude API first
+      const aiResult = await processWithClaudeAI(text);
+      
+      console.log("AI result:", JSON.stringify(aiResult).substring(0, 200) + "...");
+      
+      return new Response(
+        JSON.stringify(aiResult),
+        {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    } catch (aiError) {
+      console.error("AI processing error:", aiError);
+      
+      // Fall back to basic processing if AI fails
+      console.log("Falling back to basic text processing");
+      const result = processMallyAIText(text);
+      
+      return new Response(
+        JSON.stringify(result),
+        {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    }
   } catch (error) {
     console.error('Error processing scheduling request:', error)
     
