@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import dayjs from 'https://esm.sh/dayjs@1.11.10'
@@ -110,21 +111,22 @@ const processWithClaudeAI = async (text: string) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error("Claude API error:", response.status, errorData);
-      throw new Error(`Claude API error: ${response.status} ${errorData}`);
+      const errorText = await response.text();
+      console.error("Claude API error response:", response.status, errorText);
+      throw new Error(`Claude API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log("Claude API response:", JSON.stringify(data).slice(0, 200) + "...");
+    console.log("Claude API response received:", JSON.stringify(data).slice(0, 500) + "...");
 
     if (!data.content || !data.content[0] || !data.content[0].text) {
-      console.error("Unexpected Claude API response format:", data);
+      console.error("Invalid response format from Claude API:", data);
       throw new Error("Invalid response format from Claude API");
     }
 
     // Extract the JSON from Claude's response
     const contentText = data.content[0].text;
+    console.log("Claude content text:", contentText.slice(0, 300) + "...");
     
     // Find JSON in the response
     const jsonMatch = contentText.match(/```json\s*([\s\S]*?)\s*```/) || 
@@ -132,14 +134,19 @@ const processWithClaudeAI = async (text: string) => {
                      
     let parsedResponse;
     
-    if (jsonMatch && jsonMatch[1]) {
+    if (jsonMatch) {
+      const jsonContent = jsonMatch[1] || jsonMatch[0];
+      console.log("Extracted JSON content:", jsonContent);
+      
       try {
-        parsedResponse = JSON.parse(jsonMatch[1]);
+        parsedResponse = JSON.parse(jsonContent);
+        console.log("Successfully parsed JSON response:", parsedResponse);
       } catch (e) {
         console.error("Failed to parse JSON from Claude response", e);
         parsedResponse = { action: "unknown", message: "I couldn't understand your request. Please try being more specific about the event details." };
       }
     } else {
+      console.error("No JSON found in Claude response");
       try {
         // Try to parse the whole response as JSON
         parsedResponse = JSON.parse(contentText);
@@ -187,7 +194,7 @@ const processWithClaudeAI = async (text: string) => {
     console.error("Error calling Claude API:", error);
     return {
       action: "error",
-      message: `Sorry, I encountered an error: ${error.message}`
+      message: `Sorry, I encountered an error: ${error.message || "Unknown error"}`
     };
   }
 };
@@ -395,12 +402,14 @@ serve(async (req) => {
 
   try {
     // Get the request body
-    const { text, userId } = await req.json()
+    const reqBody = await req.json();
+    const text = reqBody.text || reqBody.prompt || '';
+    const userId = reqBody.userId;
 
     if (!text) {
       return new Response(
         JSON.stringify({
-          error: 'Missing required field: text',
+          error: 'Missing required field: text or prompt',
         }),
         {
           status: 400,
@@ -412,16 +421,21 @@ serve(async (req) => {
       )
     }
 
-    console.log("Processing scheduling request:", text);
+    console.log("Processing scheduling request. Text:", text.substring(0, 100) + "...");
     
     try {
       // Try to use Claude API first
+      console.log("Attempting to process with Claude AI");
       const aiResult = await processWithClaudeAI(text);
       
-      console.log("AI result:", JSON.stringify(aiResult).substring(0, 200) + "...");
+      console.log("AI result action:", aiResult.action);
       
       return new Response(
-        JSON.stringify(aiResult),
+        JSON.stringify({
+          response: aiResult.message || "I've analyzed your request.",
+          action: aiResult.action,
+          event: aiResult.event,
+        }),
         {
           status: 200,
           headers: {
@@ -431,14 +445,18 @@ serve(async (req) => {
         }
       );
     } catch (aiError) {
-      console.error("AI processing error:", aiError);
+      console.error("Claude AI processing error:", aiError);
       
       // Fall back to basic processing if AI fails
       console.log("Falling back to basic text processing");
       const result = processMallyAIText(text);
       
       return new Response(
-        JSON.stringify(result),
+        JSON.stringify({
+          response: result.message || "I've processed your request using basic analysis.",
+          action: result.action,
+          event: result.event,
+        }),
         {
           status: 200,
           headers: {
@@ -453,7 +471,7 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({
-        error: `Server error: ${error.message}`,
+        error: `Server error: ${error.message || "Unknown error"}`,
       }),
       {
         status: 500,

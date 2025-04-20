@@ -1,3 +1,4 @@
+
 // src/components/ai/MallyAI.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2, Sparkles, Brain, Mic } from 'lucide-react';
@@ -51,6 +52,8 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
   const { user } = useAuth();
   const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const buttonPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const retryCountRef = useRef<number>(0);
+  const maxRetries = 2;
 
   // Create particles at random intervals
   useEffect(() => {
@@ -196,55 +199,55 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
     setInput('');
     const aiMessageId = addAIMessage('Thinking...', true);
     setIsProcessing(true);
+    retryCountRef.current = 0;
 
-    try {
-      console.log("Calling Supabase edge function: process-scheduling");
-      
-      const currentEvents = await fetchEvents();
-      
-      const response = await supabase.functions.invoke('process-scheduling', {
-        body: { 
-          prompt: messageText,
-          messages: messages
-            .filter(m => !m.isLoading)
-            .map(m => ({
-              role: m.sender === 'user' ? 'user' : 'assistant',
-              content: m.text
-            })),
-          events: currentEvents,
-          userId: user?.id
-        }
-      });
-
-      console.log("Edge function response:", response);
-
-      if (response.error) {
-        console.error('Edge function error:', response.error);
-        throw new Error(response.error.message || 'Failed to get AI response');
-      }
-
-      const data = response.data;
-      
-      if (!data || (!data.response && !data.error)) {
-        console.error('Invalid response from edge function:', data);
-        throw new Error('Received an invalid response from the AI service');
-      }
-      
-      if (data.error) {
-        console.error('AI processing error:', data.error);
-        throw new Error(data.error);
-      }
-      
-      updateAIMessage(aiMessageId, data.response || 'I couldn\'t process that request. Please try again.', false);
-
-      //TODO: Clear this console log
-      console.log("Length of data events:", data.events?.length);
-
-      if (data.events && data.events.length > 0) {
-        console.log("New events received from edge function:", data.events);
+    const tryProcessMessage = async () => {
+      try {
+        console.log("Calling Supabase edge function: process-scheduling");
         
-        for (const eventData of data.events) {
+        const currentEvents = await fetchEvents();
+        
+        const response = await supabase.functions.invoke('process-scheduling', {
+          body: { 
+            text: messageText,
+            prompt: messageText,
+            messages: messages
+              .filter(m => !m.isLoading)
+              .map(m => ({
+                role: m.sender === 'user' ? 'user' : 'assistant',
+                content: m.text
+              })),
+            events: currentEvents,
+            userId: user?.id
+          }
+        });
+
+        console.log("Edge function response:", response);
+
+        if (response.error) {
+          console.error('Edge function error:', response.error);
+          throw new Error(response.error.message || 'Failed to get AI response');
+        }
+
+        const data = response.data;
+        
+        if (!data || (!data.response && !data.action && !data.error)) {
+          console.error('Invalid response from edge function:', data);
+          throw new Error('Received an invalid response from the AI service');
+        }
+        
+        if (data.error) {
+          console.error('AI processing error:', data.error);
+          throw new Error(data.error);
+        }
+        
+        updateAIMessage(aiMessageId, data.response || 'I processed your request.', false);
+
+        if (data.action === 'create' && data.event) {
+          console.log("New event received from edge function:", data.event);
+          
           try {
+            const eventData = data.event;
             const startsAt = eventData.starts_at || eventData.startsAt || new Date().toISOString();
             const endsAt = eventData.ends_at || eventData.endsAt || new Date(new Date(startsAt).getTime() + 60*60*1000).toISOString();
             const eventDate = new Date(startsAt).toISOString().split('T')[0];
@@ -296,63 +299,81 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
             toast.error(`Error adding event: ${err instanceof Error ? err.message : 'Unknown error'}`);
           }
         }
-      }
-      
-      if (data.processedEvent) {
-        const processedEvent = data.processedEvent;
         
-        if (processedEvent._action === 'delete') {
-          const response = await removeEvent(processedEvent.id);
-          if (response.success) {
-            toast.success(`Event "${processedEvent.title}" has been deleted`);
-          } else {
-            toast.error(`Failed to delete event: ${response.error || 'Unknown error'}`);
-          }
-        } else if (processedEvent.id) {
-          const startTime = new Date(processedEvent.starts_at).toLocaleTimeString([], {
-            hour: '2-digit', 
-            minute: '2-digit', 
-            hour12: false
-          });
+        if (data.processedEvent) {
+          const processedEvent = data.processedEvent;
           
-          const endTime = new Date(processedEvent.ends_at).toLocaleTimeString([], {
-            hour: '2-digit', 
-            minute: '2-digit', 
-            hour12: false
-          });
-          
-          const eventDescription = `${startTime} - ${endTime} | ${processedEvent.description || ''}`;
-          
-          const eventToUpdate: CalendarEventType = {
-            id: processedEvent.id,
-            title: processedEvent.title,
-            description: eventDescription,
-            startsAt: processedEvent.starts_at,
-            endsAt: processedEvent.ends_at,
-            date: new Date(processedEvent.starts_at).toISOString().split('T')[0],
-            color: processedEvent.color || 'bg-purple-500/70',
-            isLocked: processedEvent.is_locked || false,
-            isTodo: processedEvent.is_todo || false,
-            hasAlarm: processedEvent.has_alarm || false,
-            hasReminder: processedEvent.has_reminder || false
-          };
-          
-          const response = await updateEvent(eventToUpdate);
-          if (response.success) {
-            toast.success(`Event "${processedEvent.title}" has been updated`);
-          } else {
-            toast.error(`Failed to update event: ${response.error || 'Unknown error'}`);
+          if (processedEvent._action === 'delete') {
+            const response = await removeEvent(processedEvent.id);
+            if (response.success) {
+              toast.success(`Event "${processedEvent.title}" has been deleted`);
+            } else {
+              toast.error(`Failed to delete event: ${response.error || 'Unknown error'}`);
+            }
+          } else if (processedEvent.id) {
+            const startTime = new Date(processedEvent.starts_at).toLocaleTimeString([], {
+              hour: '2-digit', 
+              minute: '2-digit', 
+              hour12: false
+            });
+            
+            const endTime = new Date(processedEvent.ends_at).toLocaleTimeString([], {
+              hour: '2-digit', 
+              minute: '2-digit', 
+              hour12: false
+            });
+            
+            const eventDescription = `${startTime} - ${endTime} | ${processedEvent.description || ''}`;
+            
+            const eventToUpdate: CalendarEventType = {
+              id: processedEvent.id,
+              title: processedEvent.title,
+              description: eventDescription,
+              startsAt: processedEvent.starts_at,
+              endsAt: processedEvent.ends_at,
+              date: new Date(processedEvent.starts_at).toISOString().split('T')[0],
+              color: processedEvent.color || 'bg-purple-500/70',
+              isLocked: processedEvent.is_locked || false,
+              isTodo: processedEvent.is_todo || false,
+              hasAlarm: processedEvent.has_alarm || false,
+              hasReminder: processedEvent.has_reminder || false
+            };
+            
+            const response = await updateEvent(eventToUpdate);
+            if (response.success) {
+              toast.success(`Event "${processedEvent.title}" has been updated`);
+            } else {
+              toast.error(`Failed to update event: ${response.error || 'Unknown error'}`);
+            }
           }
         }
+      } catch (error) {
+        console.error('Error processing AI request:', error);
+        
+        // Retry logic
+        if (retryCountRef.current < maxRetries) {
+          retryCountRef.current++;
+          console.log(`Retrying request (${retryCountRef.current}/${maxRetries})...`);
+          updateAIMessage(aiMessageId, `Thinking... (retrying ${retryCountRef.current}/${maxRetries})`, true);
+          
+          // Exponential backoff
+          const backoffTime = 1000 * Math.pow(2, retryCountRef.current - 1);
+          await new Promise(resolve => setTimeout(resolve, backoffTime));
+          
+          return tryProcessMessage();
+        }
+        
+        updateAIMessage(
+          aiMessageId, 
+          `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`, 
+          false,
+          true
+        );
       }
-    } catch (error) {
-      console.error('Error processing AI request:', error);
-      updateAIMessage(
-        aiMessageId, 
-        `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`, 
-        false,
-        true
-      );
+    };
+
+    try {
+      await tryProcessMessage();
     } finally {
       setIsProcessing(false);
     }
@@ -561,9 +582,9 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
                   ${showEntranceAnimation ? 'ai-chat-enter' : ''} glow-border`}
       >
         {/* Floating particles */}
-        {particles.map((particle, index) => (
+        {particles.map((particle, idx) => (
           <div 
-            key={index} 
+            key={`particle-${idx}-${particle.x}-${particle.y}`} 
             className="particle" 
             style={{
               left: `${particle.x}px`,
@@ -603,11 +624,10 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
         </div>
         
         <div className="flex-1 overflow-y-auto mb-3 p-3">
-          {messages.map((message, index) => (
+          {messages.map((message) => (
             <div
               key={message.id}
               className={`mb-3 ${message.sender === 'user' ? 'ml-auto' : 'mr-auto'}`}
-              style={{ animationDelay: `${index * 100}ms` }}
             >
               <div
                 className={`p-2 rounded-lg max-w-[85%] message-in ${
@@ -617,7 +637,6 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
                       ? 'bg-red-500/30 mr-auto'
                       : 'bg-secondary mr-auto'
                 } ${message.isLoading ? 'animate-pulse' : ''}`}
-                style={{ animationDelay: `${index * 100}ms` }}
               >
                 <p className="text-sm">{message.text}</p>
                 {message.isLoading && (
