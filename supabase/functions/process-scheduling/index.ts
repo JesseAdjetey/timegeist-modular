@@ -508,14 +508,6 @@ async function processWithLLM(
     
     const formattedPrompt = `${SYSTEM_PROMPT}\n\nUser's calendar:\n${JSON.stringify(formattedEvents.slice(0, 20), null, 2)}\n\nUser: ${userMessage}`;
     
-    const conversationContext = previousMessages.map(msg => 
-      `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
-    ).join('\n\n');
-    
-    const fullPrompt = conversationContext 
-      ? `${formattedPrompt}\n\nPrevious conversation:\n${conversationContext}`
-      : formattedPrompt;
-
     console.log("Calling Anthropic Claude API...");
     
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -527,17 +519,19 @@ async function processWithLLM(
       },
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307',
-        max_tokens: 1500,
-        temperature: 0.7,
-        system: SYSTEM_PROMPT,
         messages: [
+          {
+            role: 'system',
+            content: SYSTEM_PROMPT
+          },
           ...previousMessages,
           {
             role: 'user',
             content: `My current calendar:\n${JSON.stringify(formattedEvents.slice(0, 20), null, 2)}\n\n${userMessage}`
           }
         ],
-        response_format: { type: "json_object" }
+        max_tokens: 1500,
+        temperature: 0.7
       })
     });
 
