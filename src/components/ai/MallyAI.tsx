@@ -1,3 +1,4 @@
+
 // src/components/ai/MallyAI.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2, Sparkles, Brain, Mic } from 'lucide-react';
@@ -51,6 +52,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
   const { user } = useAuth();
   const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const buttonPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const retryCountRef = useRef<number>(0);
 
   // Create particles at random intervals
   useEffect(() => {
@@ -204,7 +206,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
       
       const response = await supabase.functions.invoke('process-scheduling', {
         body: { 
-          prompt: messageText,
+          text: messageText,
           messages: messages
             .filter(m => !m.isLoading)
             .map(m => ({
@@ -225,7 +227,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
 
       const data = response.data;
       
-      if (!data || (!data.response && !data.error)) {
+      if (!data || (!data.response && !data.error && !data.message && !data.event)) {
         console.error('Invalid response from edge function:', data);
         throw new Error('Received an invalid response from the AI service');
       }
@@ -235,67 +237,14 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
         throw new Error(data.error);
       }
       
-      updateAIMessage(aiMessageId, data.response || 'I couldn\'t process that request. Please try again.', false);
+      updateAIMessage(aiMessageId, data.response || data.message || 'I processed your request.', false);
 
-      //TODO: Clear this console log
-      console.log("Length of data events:", data.events?.length);
-
+      if (data.event) {
+        await processEventCreation([data.event]);
+      }
+      
       if (data.events && data.events.length > 0) {
-        console.log("New events received from edge function:", data.events);
-        
-        for (const eventData of data.events) {
-          try {
-            const startsAt = eventData.starts_at || eventData.startsAt || new Date().toISOString();
-            const endsAt = eventData.ends_at || eventData.endsAt || new Date(new Date(startsAt).getTime() + 60*60*1000).toISOString();
-            const eventDate = new Date(startsAt).toISOString().split('T')[0];
-            
-            const startTime = new Date(startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-            const endTime = new Date(endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-            const description = `${startTime} - ${endTime} | ${eventData.description || ''}`;
-            
-            const formattedEvent: CalendarEventType = {
-              id: eventData.id || crypto.randomUUID(),
-              title: eventData.title,
-              description: description,
-              startsAt: startsAt,
-              endsAt: endsAt,
-              date: eventDate,
-              color: eventData.color || 'bg-purple-500/70',
-              isLocked: eventData.is_locked || eventData.isLocked || false,
-              isTodo: eventData.is_todo || eventData.isTodo || false,
-              hasAlarm: eventData.has_alarm || eventData.hasAlarm || false,
-              hasReminder: eventData.has_reminder || eventData.hasReminder || false,
-              todoId: eventData.todo_id || eventData.todoId
-            };
-            
-            if (onScheduleEvent) {
-              console.log("Using onScheduleEvent callback for event:", formattedEvent);
-              const result = await onScheduleEvent(formattedEvent);
-              console.log("Result from onScheduleEvent:", result);
-              
-              if (result && result.success) {
-                toast.success(`Event "${formattedEvent.title}" scheduled successfully`);
-              } else {
-                console.error("Failed to schedule event:", result?.error || "unknown error");
-                toast.error(`Failed to schedule event: ${result?.error || 'Unknown error'}`);
-              }
-            } else {
-              console.log("Using addEvent hook directly");
-              const result = await addEvent(formattedEvent);
-              console.log("Result from addEvent hook:", result);
-              
-              if (result.success) {
-                toast.success(`Event "${formattedEvent.title}" added to your calendar`);
-              } else {
-                console.error("Failed to add event:", result.error);
-                toast.error(`Failed to add event: ${result.error || 'Unknown error'}`);
-              }
-            }
-          } catch (err) {
-            console.error("Error processing AI-created event:", err);
-            toast.error(`Error adding event: ${err instanceof Error ? err.message : 'Unknown error'}`);
-          }
-        }
+        await processEventCreation(data.events);
       }
       
       if (data.processedEvent) {
@@ -345,16 +294,93 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
           }
         }
       }
+      
+      // Reset retry count on successful request
+      retryCountRef.current = 0;
+      
     } catch (error) {
       console.error('Error processing AI request:', error);
+      
+      // Retry logic for edge function failures
+      if (retryCountRef.current < 2) {
+        retryCountRef.current += 1;
+        updateAIMessage(
+          aiMessageId, 
+          `I'm having trouble connecting. Retrying... (${retryCountRef.current}/2)`, 
+          true,
+          false
+        );
+        
+        setTimeout(() => {
+          handleSendMessage(messageText);
+        }, 1500);
+        return;
+      }
+      
       updateAIMessage(
         aiMessageId, 
-        `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`, 
+        `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again later.`, 
         false,
         true
       );
+      
+      // Reset retry count after failing all retries
+      retryCountRef.current = 0;
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Process event creation from AI response
+  const processEventCreation = async (events: any[]) => {
+    console.log("Processing events:", events);
+    
+    for (const eventData of events) {
+      try {
+        const startsAt = eventData.starts_at || eventData.startsAt || new Date().toISOString();
+        const endsAt = eventData.ends_at || eventData.endsAt || new Date(new Date(startsAt).getTime() + 60*60*1000).toISOString();
+        const eventDate = new Date(startsAt).toISOString().split('T')[0];
+        
+        const startTime = new Date(startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        const endTime = new Date(endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        const description = `${startTime} - ${endTime} | ${eventData.description || ''}`;
+        
+        const formattedEvent: CalendarEventType = {
+          id: eventData.id || crypto.randomUUID(),
+          title: eventData.title,
+          description: description,
+          startsAt: startsAt,
+          endsAt: endsAt,
+          date: eventDate,
+          color: eventData.color || 'bg-purple-500/70',
+          isLocked: eventData.is_locked || eventData.isLocked || false,
+          isTodo: eventData.is_todo || eventData.isTodo || false,
+          hasAlarm: eventData.has_alarm || eventData.hasAlarm || false,
+          hasReminder: eventData.has_reminder || eventData.hasReminder || false,
+          todoId: eventData.todo_id || eventData.todoId
+        };
+        
+        let result;
+        if (onScheduleEvent) {
+          console.log("Using onScheduleEvent callback for event:", formattedEvent);
+          result = await onScheduleEvent(formattedEvent);
+        } else {
+          console.log("Using addEvent hook directly");
+          result = await addEvent(formattedEvent);
+        }
+        
+        console.log("Result from event creation:", result);
+        
+        if (result && result.success) {
+          toast.success(`Event "${formattedEvent.title}" scheduled successfully`);
+        } else {
+          console.error("Failed to schedule event:", result?.error || "unknown error");
+          toast.error(`Failed to schedule event: ${result?.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        console.error("Error processing AI-created event:", err);
+        toast.error(`Error adding event: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
     }
   };
 

@@ -170,9 +170,6 @@
   animation: achievement-unlock 0.6s forwards;
 }
 
-/* New AI animations from ai-animations.css */
-/* These imports are now done through direct file imports in the components that need them */
-
 /* Subtle gradient animation for event form background */
 @keyframes subtle-gradient {
   0% {
@@ -207,4 +204,226 @@
 .hover-lift:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Button glow effect for primary actions */
+@keyframes button-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.6);
+  }
+}
+
+.button-glow {
+  animation: button-glow 2s infinite;
+}
+
+/* Improved mic wave animation for voice recording */
+@keyframes mic-wave-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.mic-wave {
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  animation: mic-wave-pulse 1.5s infinite;
+}
+
+/* Brain pulse animation for AI thinking */
+@keyframes brain-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.2;
+  }
+}
+
+.brain-pulse {
+  animation: brain-pulse 2s ease-in-out infinite;
+}
+
+/* Floating button animation */
+@keyframes floatButton {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Soft sparkle animation for decorative elements */
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
+.animate-sparkle {
+  animation: sparkle 2s ease infinite;
+}
+
+/* Typing indicator animation */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.6);
+  animation: typing-dot-bounce 1s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-dot-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Chat entrance animation */
+@keyframes chat-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.ai-chat-enter {
+  animation: chat-enter 0.3s forwards ease-out;
+}
+
+/* Glass effect for inputs */
+.glass-input {
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Message incoming animation */
+.message-in {
+  animation: message-in 0.3s forwards;
+}
+
+@keyframes message-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Glow border for containers */
+.glow-border {
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+/* Send ripple effect */
+.send-ripple {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: rgba(139, 92, 246, 0.7);
+  pointer-events: none;
+  z-index: 9999;
+  animation: send-ripple 1s forwards;
+}
+
+@keyframes send-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(20);
+    opacity: 0;
+  }
+}
+
+/* Particle animation for ambient effects */
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(45deg, rgba(139, 92, 246, 0.6), rgba(124, 58, 237, 0.6));
+  pointer-events: none;
+  animation: particle-fade 3s forwards;
+}
+
+@keyframes particle-fade {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.6;
+  }
+  80% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* AI button hover effect */
+.ai-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-button::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.ai-button:hover::after {
+  opacity: 1;
 }

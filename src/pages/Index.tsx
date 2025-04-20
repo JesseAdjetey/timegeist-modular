@@ -17,8 +17,6 @@ const Index = () => {
     // Hydrate zustand stores if needed
     const view = useViewStore.getState();
     const date = useDateStore.getState();
-    
-    // Any other initialization needed
   }, []);
 
   // Handler for event scheduling via MallyAI
