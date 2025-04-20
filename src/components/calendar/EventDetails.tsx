@@ -9,7 +9,6 @@ import dayjs from 'dayjs';
 import EnhancedEventForm from './EnhancedEventForm';
 import { CalendarEventType } from '@/lib/stores/types';
 import { useTodos } from '@/hooks/use-todos';
-import { Calendar, Clock, CheckCircle, Lock, Users } from 'lucide-react';
 
 interface EventDetailsProps {
   open: boolean;
@@ -98,13 +97,10 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
   const formattedDate = selectedEvent.date 
     ? dayjs(selectedEvent.date).format('dddd, MMMM D, YYYY')
     : dayjs(selectedEvent.startsAt).format('dddd, MMMM D, YYYY');
-    
-  // Get participants if any
-  const hasParticipants = selectedEvent.participants && selectedEvent.participants.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="sm:max-w-[550px] bg-background/95 border-white/10">
+      <DialogContent className="sm:max-w-[500px] bg-background/95 border-white/10">
         {isEditing ? (
           <EnhancedEventForm 
             initialEvent={selectedEvent}
@@ -118,95 +114,58 @@ const EventDetails: React.FC<EventDetailsProps> = ({ open, onClose }) => {
               <DialogTitle className="text-xl">{selectedEvent.title}</DialogTitle>
             </DialogHeader>
             
-            <div className="py-4 space-y-4">
-              <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">Date</span>
-                  <p className="text-foreground">{formattedDate}</p>
-                </div>
+            <div className="py-4">
+              <div className="mb-4">
+                <span className="text-sm font-medium text-muted-foreground">Date:</span>
+                <p>{formattedDate}</p>
               </div>
               
-              <div className="flex items-start gap-3">
-                <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">Time</span>
-                  <p className="text-foreground">{timeRange}</p>
-                </div>
+              <div className="mb-4">
+                <span className="text-sm font-medium text-muted-foreground">Time:</span>
+                <p>{timeRange}</p>
               </div>
               
               {actualDescription && (
-                <div className="mb-4 border-t pt-3">
-                  <span className="text-sm font-medium text-muted-foreground block mb-1">Description</span>
-                  <p className="text-foreground">{actualDescription}</p>
+                <div className="mb-4">
+                  <span className="text-sm font-medium text-muted-foreground">Description:</span>
+                  <p>{actualDescription}</p>
                 </div>
               )}
               
-              {hasParticipants && (
-                <div className="flex items-start gap-3">
-                  <Users className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div>
-                    <span className="text-sm font-medium text-muted-foreground">Participants</span>
-                    <p className="text-foreground">{selectedEvent.participants?.join(', ')}</p>
-                  </div>
+              {selectedEvent.isTodo && (
+                <div className="mb-4">
+                  <span className="text-sm font-medium text-muted-foreground">Todo:</span>
+                  <p className="flex items-center">
+                    <span className="h-2 w-2 rounded-full bg-purple-500 mr-2"></span>
+                    Linked to todo
+                  </p>
                 </div>
               )}
               
-              <div className="flex flex-wrap gap-2 mt-3 border-t pt-3">
-                {selectedEvent.isTodo && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/20 text-xs">
-                    <CheckCircle size={14} />
-                    <span>Todo</span>
-                  </div>
-                )}
-                
-                {selectedEvent.isLocked && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-500/20 text-xs">
-                    <Lock size={14} />
-                    <span>Locked</span>
-                  </div>
-                )}
-                
-                {selectedEvent.hasAlarm && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/20 text-xs">
-                    <Clock size={14} />
-                    <span>Alarm</span>
-                  </div>
-                )}
-                
-                {selectedEvent.hasReminder && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/20 text-xs">
-                    <Clock size={14} />
-                    <span>Reminder</span>
-                  </div>
-                )}
-              </div>
+              {selectedEvent.isLocked && (
+                <div className="mb-4">
+                  <span className="text-sm font-medium text-muted-foreground">Status:</span>
+                  <p className="flex items-center">
+                    <span className="h-2 w-2 rounded-full bg-yellow-500 mr-2"></span>
+                    Locked event
+                  </p>
+                </div>
+              )}
             </div>
             
             <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
               <div>
-                <Button 
-                  variant="destructive" 
-                  onClick={handleDelete}
-                  className="transition-colors hover:bg-destructive/90"
-                >
+                <Button variant="destructive" onClick={handleDelete}>
                   Delete
                 </Button>
               </div>
               <div className="flex gap-2">
                 {selectedEvent.isTodo && (
-                  <Button 
-                    variant="secondary" 
-                    onClick={handleComplete}
-                    className="transition-colors hover:bg-secondary/80"
-                  >
+                  <Button variant="secondary" onClick={handleComplete}>
                     Complete
                   </Button>
                 )}
-                <Button 
-                  onClick={handleEdit}
-                  className="transition-colors hover:bg-primary/90"
-                >
+                <Button onClick={handleEdit}>
                   Edit
                 </Button>
               </div>
