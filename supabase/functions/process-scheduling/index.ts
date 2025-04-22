@@ -70,7 +70,7 @@ const processWithClaudeAI = async (text: string) => {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': anthropicApiKey,
-        // 'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
         model: 'claude-3-haiku-20240307',
