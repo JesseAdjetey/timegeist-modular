@@ -11,7 +11,7 @@ dayjs.extend(timezone)
 // Initialize environment variables
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-const anthropicApiKey = "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" 
+const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
 
 // Initialize the Supabase client
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
