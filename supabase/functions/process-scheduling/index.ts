@@ -1,4 +1,3 @@
-
 // supabase/functions/process-scheduling/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
@@ -9,49 +8,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper function to extract date and time from text
-function parseDateTime(text: string) {
-  // More sophisticated datetime parsing
-  const timeRegex = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i;
-  const dateRegex = /(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next week|[\d]{1,2}\/[\d]{1,2}(?:\/[\d]{2,4})?)/i;
-  
-  let timeMatch = text.match(timeRegex);
-  let dateMatch = text.match(dateRegex);
-  
-  return {
-    time: timeMatch ? timeMatch[0] : null,
-    date: dateMatch ? dateMatch[0] : null,
+// Interface for structured calendar operation data from Claude
+interface CalendarOperation {
+  action: 'create' | 'edit' | 'delete' | 'query';
+  eventDetails?: {
+    title: string;
+    date?: string;          // YYYY-MM-DD format
+    startTime?: string;     // HH:MM format
+    endTime?: string;       // HH:MM format
+    description?: string;
   };
+  targetEventId?: string;   // For edit/delete operations
 }
 
-// Helper function to convert natural language date to YYYY-MM-DD
-function getNormalizedDate(dateText: string) {
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  
-  // Handle common date expressions
-  if (!dateText || dateText.toLowerCase() === 'today') {
-    return today.toISOString().split('T')[0];
-  } else if (dateText.toLowerCase() === 'tomorrow') {
-    return tomorrow.toISOString().split('T')[0];
-  }
-  
-  // Try to parse date values
-  const date = new Date(dateText);
-  if (!isNaN(date.getTime())) {
-    return date.toISOString().split('T')[0];
-  }
-  
-  // Fallback to today
-  return today.toISOString().split('T')[0];
-}
-
-// Helper to check for event conflicts
+// Check for conflicts between events (kept for backward compatibility)
 function detectConflicts(proposedEvent: any, existingEvents: any[]) {
+  if (!proposedEvent || !proposedEvent.starts_at || !proposedEvent.ends_at) {
+    return [];
+  }
+  
   // Filter to only check events on the same day
   const eventDate = new Date(proposedEvent.starts_at).toISOString().split('T')[0];
   const sameDay = existingEvents.filter(event => {
+    if (!event || !event.starts_at) return false;
     const eventStartDate = new Date(event.starts_at).toISOString().split('T')[0];
     return eventStartDate === eventDate;
   });
@@ -66,6 +45,8 @@ function detectConflicts(proposedEvent: any, existingEvents: any[]) {
   const proposedEnd = getMinutes(proposedEvent.ends_at);
   
   return sameDay.filter(event => {
+    if (!event.starts_at || !event.ends_at) return false;
+    
     const eventStart = getMinutes(event.starts_at);
     const eventEnd = getMinutes(event.ends_at);
     
@@ -78,120 +59,74 @@ function detectConflicts(proposedEvent: any, existingEvents: any[]) {
   });
 }
 
-// Extract action intent from user message
-function extractActionIntent(text: string) {
-  const text_lower = text.toLowerCase();
-  
-  if (text_lower.includes('delete') || text_lower.includes('remove') || text_lower.includes('cancel')) {
-    return 'delete';
-  } else if (text_lower.includes('edit') || text_lower.includes('update') || text_lower.includes('change') || text_lower.includes('reschedule')) {
-    return 'edit';
-  } else if (text_lower.includes('schedule') || text_lower.includes('add') || text_lower.includes('create') || text_lower.includes('new')) {
-    return 'create';
-  }
-  
-  return null;
+// Find an event by ID in the events array
+function findEventById(eventId: string, events: any[]) {
+  return events.find(event => event.id === eventId);
 }
 
-// Extract event details from text
-function extractEventDetails(text: string) {
-  const timePattern = /(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)\s*(?:to|-)\s*(\d{1,2}(?::\d{1,2})?\s*(?:am|pm)?)/i;
-  const datePattern = /(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next week|[\d]{1,2}\/[\d]{1,2}(?:\/[\d]{2,4})?)/i;
-  
-  const timeMatch = text.match(timePattern);
-  const dateMatch = text.match(datePattern);
-  
-  // Try to extract a title - this is basic and should be enhanced
-  let title = '';
-  
-  // Look for keywords followed by possible title
-  const titlePatterns = [
-    /(?:schedule|add|create|new event|event for|meeting for|call with|appointment with|appointment for)\s+(?:a|an)?\s*"?([^"]*?)"?(?:\s+on|\s+at|\s+from|\s+with|\s+for|$)/i,
-    /(?:schedule|add|create|new)\s+(?:a|an)?\s*"?([^"]*?)"?(?:\s+on|\s+at|\s+from|\s+with|\s+for|$)/i,
-    /(?:about|regarding|titled|called|named)\s+(?:a|an)?\s*"?([^"]*?)"?(?:\s+on|\s+at|\s+from|\s+with|\s+for|$)/i
-  ];
-  
-  for (const pattern of titlePatterns) {
-    const match = text.match(pattern);
-    if (match && match[1] && match[1].trim()) {
-      title = match[1].trim();
-      break;
+// Extract structured data that might be embedded in Claude's response
+function extractStructuredData(response: string): CalendarOperation | null {
+  try {
+    // Look for JSON block in the response
+    const jsonMatch = response.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+      const data = JSON.parse(jsonMatch[1]);
+      return data as CalendarOperation;
     }
+    
+    // Alternative format: look for <calendar_operation>...</calendar_operation> tags
+    const xmlMatch = response.match(/<calendar_operation>([\s\S]*?)<\/calendar_operation>/);
+    if (xmlMatch && xmlMatch[1]) {
+      const data = JSON.parse(xmlMatch[1]);
+      return data as CalendarOperation;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error extracting structured data:", error);
+    return null;
   }
+}
+
+// Create a clean response without structured data blocks
+function cleanResponse(response: string): string {
+  // Remove JSON blocks
+  let cleaned = response.replace(/```json\s*(\{[\s\S]*?\})\s*```/g, '');
   
-  // If no title found via patterns, use a generic one
-  if (!title) {
-    title = 'New Event';
-  }
+  // Remove XML-style calendar operation tags
+  cleaned = cleaned.replace(/<calendar_operation>[\s\S]*?<\/calendar_operation>/g, '');
   
-  // Normalize time format
-  let startTime = timeMatch ? timeMatch[1].trim() : '9:00';
-  let endTime = timeMatch ? timeMatch[2].trim() : '10:00';
+  // Remove any "I've scheduled this event" type messages (Claude will sometimes add these)
+  cleaned = cleaned.replace(/I've (scheduled|created|added|updated|deleted|removed) (this|the|your) (event|meeting|appointment).*?\./g, '');
   
-  // Ensure HH:MM format for times
-  const formatTime = (timeStr: string) => {
-    let [hours, minutes] = [12, 0]; // Default
-    
-    // Handle different input formats
-    if (timeStr.includes(':')) {
-      [hours, minutes] = timeStr.split(':').map(num => parseInt(num));
-    } else {
-      hours = parseInt(timeStr);
-      minutes = 0;
-    }
-    
-    // Handle AM/PM
-    if (timeStr.toLowerCase().includes('pm') && hours < 12) {
-      hours += 12;
-    }
-    if (timeStr.toLowerCase().includes('am') && hours === 12) {
-      hours = 0;
-    }
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  };
+  // Clean up double spacing that might result from removals
+  cleaned = cleaned.replace(/\n\s*\n\s*\n/g, '\n\n');
   
-  const formattedStartTime = formatTime(startTime);
-  const formattedEndTime = formatTime(endTime);
+  return cleaned.trim();
+}
+
+// Convert calendar operation to database format
+function formatEventForDatabase(eventDetails: any, userId: string): Record<string, any> {
+  const date = eventDetails.date || new Date().toISOString().split('T')[0];
+  const startTime = eventDetails.startTime || '09:00';
+  const endTime = eventDetails.endTime || '10:00';
   
-  // Get the date in YYYY-MM-DD format
-  const eventDate = dateMatch ? getNormalizedDate(dateMatch[0]) : getNormalizedDate('today');
-  
-  // Create ISO timestamps for start and end times
-  const startsAt = new Date(`${eventDate}T${formattedStartTime}`).toISOString();
-  const endsAt = new Date(`${eventDate}T${formattedEndTime}`).toISOString();
+  // Create ISO timestamps
+  const startsAt = new Date(`${date}T${startTime}`).toISOString();
+  const endsAt = new Date(`${date}T${endTime}`).toISOString();
   
   return {
-    title,
-    date: eventDate, // Keep date field for compatibility
-    description: title, // Use title as the description base
+    title: eventDetails.title,
+    description: eventDetails.description || eventDetails.title,
+    color: eventDetails.color || 'bg-purple-500/70',
+    user_id: userId,
     starts_at: startsAt,
     ends_at: endsAt,
-    startsAt: startsAt, // Add this for frontend compatibility 
-    endsAt: endsAt // Add this for frontend compatibility
+    has_reminder: false,
+    has_alarm: false,
+    is_locked: false,
+    is_todo: false
   };
-}
-
-// Identify event by title/description for edit/delete operations
-function findEventByTitle(title: string, events: any[]) {
-  if (!title || events.length === 0) return null;
-  
-  const titleLower = title.toLowerCase();
-  
-  // First try exact title match
-  let matchedEvent = events.find(event => 
-    event.title.toLowerCase() === titleLower
-  );
-  
-  // If no exact match, try substring match
-  if (!matchedEvent) {
-    matchedEvent = events.find(event => 
-      event.title.toLowerCase().includes(titleLower) || 
-      titleLower.includes(event.title.toLowerCase())
-    );
-  }
-  
-  return matchedEvent;
 }
 
 serve(async (req) => {
@@ -222,57 +157,41 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     const requestData = await req.json();
-    const { prompt, messages, events = [], userId } = requestData;
+    const { text, prompt, messages = [], events = [], userId } = requestData;
+    
+    // Use text or prompt as the user input (for flexibility)
+    const userInput = text || prompt;
     
     console.log("Request received:", { 
-      prompt, 
+      userInput: userInput?.substring(0, 100), 
       messageCount: messages?.length, 
       eventsCount: events?.length, 
       userId 
     });
 
-    // Determine user intent
-    const actionIntent = extractActionIntent(prompt);
-    console.log("Detected action intent:", actionIntent);
-    
-    // Handle event operations based on intent
-    let operationResult = null;
-    let targetEvent = null;
-    let eventDetails = null;
-    let conflicts = [];
-    
-    if (actionIntent) {
-      eventDetails = extractEventDetails(prompt);
-      console.log("Extracted event details:", eventDetails);
+    // Get today's date in readable format
+    const todayDate = new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+
+    // Format events for Claude context
+    const formattedEvents = events.map(event => {
+      const startDate = new Date(event.starts_at);
+      const endDate = new Date(event.ends_at);
       
-      if (actionIntent === 'create') {
-        // Check for conflicts
-        conflicts = detectConflicts(eventDetails, events);
-        console.log("Detected conflicts:", conflicts.length > 0 ? conflicts.map(e => e.title) : "None");
-        
-        if (conflicts.length === 0) {
-          // We'll create the event after the AI response
-          operationResult = {
-            success: true,
-            action: 'create',
-            details: eventDetails
-          };
-        }
-      } else if (actionIntent === 'edit' || actionIntent === 'delete') {
-        // Find the event to edit/delete
-        targetEvent = findEventByTitle(eventDetails.title, events);
-        console.log("Target event for edit/delete:", targetEvent ? targetEvent.title : "Not found");
-        
-        if (targetEvent) {
-          operationResult = {
-            success: true,
-            action: actionIntent,
-            eventId: targetEvent.id,
-            details: actionIntent === 'edit' ? eventDetails : null
-          };
-        }
-      }
-    }
+      return {
+        id: event.id,
+        title: event.title,
+        date: startDate.toISOString().split('T')[0],
+        day: startDate.toLocaleDateString('en-US', { weekday: 'long' }),
+        startTime: startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        endTime: endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        description: event.description
+      };
+    });
 
     // Format conversation with system message for Claude
     const systemPrompt = `You are Mally AI, an intelligent calendar assistant in the Malleabite time management app.
@@ -280,34 +199,43 @@ Your job is to help users manage their calendar by scheduling, rescheduling, or 
 
 IMPORTANT CAPABILITIES AND CONSTRAINTS:
 - You can create, edit, and delete events in the user's calendar
-- Today's date is ${new Date().toLocaleDateString()}
+- Today's date is ${todayDate}
 - The user has ${events.length} events in their calendar
 - Be conversational but efficient - users want to complete tasks quickly
-- NEVER claim there are scheduling conflicts unless specifically indicated
 - When a user asks to schedule something, respond with confirmation with specific date/time details
-- Don't ask for information they've already provided (like time, date, or event title)
 - If time information is not provided, suggest a time but don't require it
 - If date information is not provided, assume today or suggest a good time
 
+When processing calendar operations, you MUST:
+1. Identify the appropriate action (create/edit/delete/query)
+2. Extract all relevant details (title, date, time, etc.)
+3. Respond in a helpful, conversational way
+4. For database operations, output a JSON object with this structure:
+
+\`\`\`json
+{
+  "action": "create|edit|delete|query",
+  "eventDetails": {
+    "title": "Event title",
+    "date": "YYYY-MM-DD",
+    "startTime": "HH:MM",
+    "endTime": "HH:MM",
+    "description": "Optional description"
+  },
+  "targetEventId": "ID of existing event for edit/delete operations"
+}
+\`\`\`
+
+This structured JSON will ONLY be used for database operations and won't be shown to the user.
+The JSON block must be included in your response for any calendar operation, but you must still
+provide a natural conversational response separately from this structured data.
+
+USER'S CURRENT EVENTS:
+${formattedEvents.length > 0 ? JSON.stringify(formattedEvents, null, 2) : "No events currently scheduled"}
+
 Be helpful, accommodating, and make the scheduling process as simple as possible.`;
 
-    // Add context about the operation result
-    let aiPrompt = prompt;
-    if (operationResult) {
-      if (operationResult.action === 'create' && conflicts.length === 0) {
-        aiPrompt += "\n\n[SYSTEM: No scheduling conflicts found. You can proceed with creating this event.]";
-      } else if (operationResult.action === 'create' && conflicts.length > 0) {
-        aiPrompt += `\n\n[SYSTEM: Found ${conflicts.length} scheduling conflicts. Suggest an alternative time or ask the user how to proceed.]`;
-      } else if (operationResult.action === 'edit' && targetEvent) {
-        aiPrompt += "\n\n[SYSTEM: Event found and ready to be edited.]";
-      } else if (operationResult.action === 'delete' && targetEvent) {
-        aiPrompt += "\n\n[SYSTEM: Event found and ready to be deleted.]";
-      } else if ((operationResult.action === 'edit' || operationResult.action === 'delete') && !targetEvent) {
-        aiPrompt += "\n\n[SYSTEM: Could not find the specified event. Ask the user for clarification.]";
-      }
-    }
-
-    // Format messages for Claude API
+    // Format messages for Claude API (previous messages and current prompt)
     const formattedMessages = messages.map((msg: any) => ({
       role: msg.role,
       content: msg.content
@@ -316,12 +244,12 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
     // Add the current prompt as the last user message
     formattedMessages.push({
       role: 'user',
-      content: prompt
+      content: userInput
     });
 
     console.log("Calling Anthropic API with model: claude-3-haiku-20240307");
     
-    // Call Claude API with the proper format (system as a separate parameter)
+    // Call Claude API with the proper format
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -357,47 +285,48 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
 
     const aiResponse = data.content?.[0]?.text || '';
     console.log("AI Response received:", aiResponse.substring(0, 100) + "...");
-
-    // Process actual event operations based on the AI response and our detected intent
-    const newEvents = [];
+    
+    // Extract structured data about the calendar operation from Claude's response
+    const calendarOperation = extractStructuredData(aiResponse);
+    
+    console.log("Extracted calendar operation:", calendarOperation);
+    
+    // Create a clean version of the response for the user (without JSON data)
+    const cleanedResponse = cleanResponse(aiResponse);
+    
+    // Initialize variables for operation results
+    let operationResult = null;
     let processedEvent = null;
     
-    if (operationResult && operationResult.success) {
-      if (operationResult.action === 'create' && conflicts.length === 0) {
-        // Create a new event with the extracted details
-        const newEvent = {
-          id: crypto.randomUUID(),
-          title: eventDetails.title,
-          description: eventDetails.description,
-          color: 'bg-purple-500/70',
-          starts_at: eventDetails.starts_at,
-          ends_at: eventDetails.ends_at,
-          // Add these fields for frontend compatibility
-          startsAt: eventDetails.starts_at,
-          endsAt: eventDetails.ends_at,
-          date: new Date(eventDetails.starts_at).toISOString().split('T')[0]
-        };
-        
-        // Insert into database if possible
-        if (userId) {
-          try {
-            console.log("Attempting to insert event into database:", newEvent);
-            
+    // Process the calendar operation from Claude
+    if (calendarOperation) {
+      const { action, eventDetails, targetEventId } = calendarOperation;
+      
+      if (action === 'create' && eventDetails && userId) {
+        try {
+          console.log("Creating new event:", eventDetails);
+          
+          // Format event for database
+          const dbEvent = formatEventForDatabase(eventDetails, userId);
+          
+          // Check for conflicts first
+          const conflicts = detectConflicts(dbEvent, events);
+          if (conflicts.length > 0) {
+            console.log("Conflicts detected:", conflicts.map(e => e.title));
+            operationResult = {
+              success: false,
+              action: 'create',
+              conflicts: conflicts.map(e => ({
+                title: e.title,
+                startTime: new Date(e.starts_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                endTime: new Date(e.ends_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+              }))
+            };
+          } else {
             // Insert into calendar_events table
             const { data, error } = await supabase
               .from('calendar_events')
-              .insert({
-                title: newEvent.title,
-                description: newEvent.description || newEvent.title,
-                color: newEvent.color,
-                user_id: userId,
-                starts_at: newEvent.starts_at,
-                ends_at: newEvent.ends_at,
-                has_reminder: false,
-                has_alarm: false,
-                is_locked: false,
-                is_todo: false
-              })
+              .insert(dbEvent)
               .select();
             
             if (error) {
@@ -405,92 +334,181 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
               throw error;
             }
             
-            // Use the newly created event with DB ID
+            // Return the newly created event
             if (data && data[0]) {
               console.log("Successfully created event in database with ID:", data[0].id);
+              
               processedEvent = {
-                ...newEvent,
-                id: data[0].id
+                id: data[0].id,
+                title: data[0].title,
+                description: data[0].description,
+                startsAt: data[0].starts_at,  // Frontend compatibility
+                endsAt: data[0].ends_at,      // Frontend compatibility
+                date: new Date(data[0].starts_at).toISOString().split('T')[0],
+                color: data[0].color || 'bg-purple-500/70'
               };
-              newEvents.push(processedEvent);
-            } else {
-              console.log("No data returned from insert operation, using generated event");
-              newEvents.push(newEvent);
+              
+              operationResult = {
+                success: true,
+                action: 'create',
+                event: processedEvent
+              };
             }
-          } catch (error) {
-            console.error("Failed to insert event into database:", error);
-            // Fall back to client-side handling
-            newEvents.push(newEvent);
           }
-        } else {
-          console.log("No user ID provided, skipping database insertion");
-          newEvents.push(newEvent);
+        } catch (error) {
+          console.error("Error creating event:", error);
+          operationResult = {
+            success: false,
+            action: 'create',
+            error: error.message
+          };
         }
-      } else if (operationResult.action === 'edit' && targetEvent) {
-        // Update the event
-        const updatedEvent = {
-          ...targetEvent,
-          title: eventDetails.title,
-          description: eventDetails.description,
-          starts_at: eventDetails.starts_at,
-          ends_at: eventDetails.ends_at,
-          // Add these fields for frontend compatibility
-          startsAt: eventDetails.starts_at,
-          endsAt: eventDetails.ends_at,
-          date: new Date(eventDetails.starts_at).toISOString().split('T')[0]
+      } else if (action === 'edit' && targetEventId && eventDetails && userId) {
+        try {
+          console.log("Editing event:", targetEventId, eventDetails);
+          
+          // Find the target event
+          const targetEvent = findEventById(targetEventId, events);
+          if (!targetEvent) {
+            throw new Error(`Event with ID ${targetEventId} not found`);
+          }
+          
+          // Format update data
+          const updatedFields: Record<string, any> = {};
+          
+          if (eventDetails.title) updatedFields.title = eventDetails.title;
+          if (eventDetails.description) updatedFields.description = eventDetails.description;
+          
+          // Update time fields if provided
+          if (eventDetails.date || eventDetails.startTime || eventDetails.endTime) {
+            const currentStartDate = new Date(targetEvent.starts_at);
+            const currentEndDate = new Date(targetEvent.ends_at);
+            
+            const newDate = eventDetails.date || currentStartDate.toISOString().split('T')[0];
+            
+            let newStartTime = eventDetails.startTime;
+            let newEndTime = eventDetails.endTime;
+            
+            if (!newStartTime) {
+              // Keep current start time if not provided
+              newStartTime = currentStartDate.getHours().toString().padStart(2, '0') + ':' +
+                             currentStartDate.getMinutes().toString().padStart(2, '0');
+            }
+            
+            if (!newEndTime) {
+              // Keep current end time if not provided
+              newEndTime = currentEndDate.getHours().toString().padStart(2, '0') + ':' +
+                           currentEndDate.getMinutes().toString().padStart(2, '0');
+            }
+            
+            // Create ISO timestamps
+            updatedFields.starts_at = new Date(`${newDate}T${newStartTime}`).toISOString();
+            updatedFields.ends_at = new Date(`${newDate}T${newEndTime}`).toISOString();
+          }
+          
+          // Update in database
+          const { data, error } = await supabase
+            .from('calendar_events')
+            .update(updatedFields)
+            .eq('id', targetEventId)
+            .eq('user_id', userId)
+            .select();
+          
+          if (error) {
+            console.error("Database update error details:", error);
+            throw error;
+          }
+          
+          if (data && data[0]) {
+            console.log("Successfully updated event in database:", data[0]);
+            
+            processedEvent = {
+              id: data[0].id,
+              title: data[0].title,
+              description: data[0].description,
+              startsAt: data[0].starts_at,  // Frontend compatibility
+              endsAt: data[0].ends_at,      // Frontend compatibility
+              date: new Date(data[0].starts_at).toISOString().split('T')[0],
+              color: data[0].color || 'bg-purple-500/70'
+            };
+            
+            operationResult = {
+              success: true,
+              action: 'edit',
+              event: processedEvent
+            };
+          }
+        } catch (error) {
+          console.error("Error updating event:", error);
+          operationResult = {
+            success: false,
+            action: 'edit',
+            error: error.message
+          };
+        }
+      } else if (action === 'delete' && targetEventId && userId) {
+        try {
+          console.log("Deleting event:", targetEventId);
+          
+          // Find the target event first for return data
+          const targetEvent = findEventById(targetEventId, events);
+          
+          // Delete from database
+          const { error } = await supabase
+            .from('calendar_events')
+            .delete()
+            .eq('id', targetEventId)
+            .eq('user_id', userId);
+          
+          if (error) {
+            console.error("Database delete error details:", error);
+            throw error;
+          }
+          
+          console.log("Successfully deleted event from database");
+          
+          if (targetEvent) {
+            processedEvent = { 
+              ...targetEvent, 
+              _action: 'delete' 
+            };
+            
+            operationResult = {
+              success: true,
+              action: 'delete',
+              event: processedEvent
+            };
+          } else {
+            operationResult = {
+              success: true,
+              action: 'delete',
+              eventId: targetEventId
+            };
+          }
+        } catch (error) {
+          console.error("Error deleting event:", error);
+          operationResult = {
+            success: false,
+            action: 'delete',
+            error: error.message
+          };
+        }
+      } else if (action === 'query') {
+        // For query actions, we just provide the response with no database operations
+        operationResult = {
+          success: true,
+          action: 'query'
         };
-        
-        // Update in database if possible
-        if (userId && targetEvent.id) {
-          try {
-            const { data, error } = await supabase
-              .from('calendar_events')
-              .update({
-                title: updatedEvent.title,
-                description: updatedEvent.description,
-                starts_at: updatedEvent.starts_at,
-                ends_at: updatedEvent.ends_at
-              })
-              .eq('id', targetEvent.id)
-              .select();
-            
-            if (error) throw error;
-            
-            console.log("Successfully updated event in database");
-            processedEvent = updatedEvent;
-          } catch (error) {
-            console.error("Failed to update event in database:", error);
-          }
-        } else {
-          processedEvent = updatedEvent;
-        }
-      } else if (operationResult.action === 'delete' && targetEvent) {
-        // Delete the event
-        if (userId && targetEvent.id) {
-          try {
-            const { error } = await supabase
-              .from('calendar_events')
-              .delete()
-              .eq('id', targetEvent.id);
-            
-            if (error) throw error;
-            
-            console.log("Successfully deleted event from database");
-            processedEvent = { ...targetEvent, _action: 'delete' };
-          } catch (error) {
-            console.error("Failed to delete event from database:", error);
-          }
-        } else {
-          processedEvent = { ...targetEvent, _action: 'delete' };
-        }
       }
     }
-
+    
+    // Return the final response to the frontend
     return new Response(
       JSON.stringify({ 
-        response: aiResponse, 
-        events: newEvents,
-        processedEvent
+        response: cleanedResponse, 
+        action: calendarOperation?.action,
+        event: processedEvent,
+        operationResult
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
