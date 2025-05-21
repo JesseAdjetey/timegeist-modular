@@ -1,8 +1,7 @@
 Malleabite - README
 
-==================================================
+
 Malleabite: Modular Productivity & AI Scheduling
-==================================================
 
 Malleabite is a flexible, modular time-management and productivity web app. It helps you organize tasks, manage your calendar, set reminders, and boost productivity using proven techniques—all in a customizable, real-time environment powered by AI.
 
