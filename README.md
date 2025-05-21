@@ -1,69 +1,118 @@
-# Welcome to your Lovable project
+Malleabite - README
 
-## Project info
+==================================================
+Malleabite: Modular Productivity & AI Scheduling
+==================================================
 
-**URL**: https://lovable.dev/projects/0a9106a9-1055-47b9-9329-1fa7edfa05ca
+Malleabite is a flexible, modular time-management and productivity web app. It helps you organize tasks, manage your calendar, set reminders, and boost productivity using proven techniques—all in a customizable, real-time environment powered by AI.
 
-## How can I edit this code?
+----------------------
+Key Features
+----------------------
+- Modular sidebar: Add/remove productivity modules (To-Do, Eisenhower Matrix, Pomodoro, Reminders, Invites, and more)
+- AI-powered scheduling: Use natural language to create, edit, or delete events with Mally AI (Anthropic Claude integration)
+- Real-time updates: See changes instantly across devices
+- Calendar & event management: Schedule, edit, and delete events
+- Eisenhower Matrix: Prioritize tasks by urgency and importance
+- Pomodoro timer: Track focused work sessions
+- Reminders & alarms: Never miss important tasks
+- Collaborative invites: Share events and manage RSVPs
+- Data visualization: View productivity stats and charts
 
-There are several ways of editing your application.
+----------------------
+Tech Stack
+----------------------
+Frontend:
+- React (with TypeScript)
+- Vite (fast dev/build tool)
+- shadcn-ui (UI components)
+- Tailwind CSS (utility-first styling)
+- Framer Motion (animations)
+- Lucide-react (icons)
+- Zustand (state management)
+- @tanstack/react-query (data fetching/caching)
 
-**Use Lovable**
+Backend:
+- Supabase (Postgres database, Auth, Realtime, Edge Functions)
+- Supabase Edge Functions (serverless backend logic)
+- Anthropic Claude (AI for natural language scheduling)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0a9106a9-1055-47b9-9329-1fa7edfa05ca) and start prompting.
+Other:
+- date-fns / dayjs (date/time utilities)
+- recharts (charts/graphs)
+- sonner (toast notifications)
+- clsx, tailwind-merge (class utilities)
+- ESLint, PostCSS (dev tooling)
 
-Changes made via Lovable will be committed automatically to this repo.
+----------------------
+Getting Started
+----------------------
+1. **Clone the repository:**
+   git clone <YOUR_GIT_URL>
+   cd malleabite
 
-**Use your preferred IDE**
+2. **Install dependencies:**
+   npm install
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+3. **Start the development server:**
+   npm run dev
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+4. **Open your browser:**
+   Visit http://localhost:5173 (or the port shown in your terminal)
 
-Follow these steps:
+----------------------
+Deployment
+----------------------
+- Deploy easily with [Lovable](https://lovable.dev/projects/0a9106a9-1055-47b9-9329-1fa7edfa05ca)
+- For custom domains, use Netlify or your preferred static hosting provider
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+----------------------
+How It Works
+----------------------
+- The frontend (React) provides a modular, interactive UI.
+- All data (tasks, events, users) is stored in Supabase (Postgres).
+- Supabase Edge Functions handle backend logic, including AI scheduling.
+- Mally AI (Anthropic Claude) lets you create, edit, or delete events by typing natural language requests.
+- Real-time updates keep your data in sync across devices.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+----------------------
+AI Assistant (Mally AI)
+----------------------
+- Mally AI is an intelligent calendar assistant.
+- You can schedule, reschedule, or cancel events using plain English.
+- Mally AI responds conversationally and always includes a structured JSON block for database operations.
+- See `docs/ENHANCED_MALLY_SYSTEM_PROMPT.md` for the exact system prompt and JSON format.
 
-# Step 3: Install the necessary dependencies.
-npm i
+----------------------
+Project Structure
+----------------------
+- /src/components: UI modules and shared components
+- /src/hooks: Custom hooks for data and logic
+- /src/lib: Utilities and global stores
+- /supabase/functions: Serverless backend functions
+- /docs: Documentation and system prompts
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+----------------------
+Contributing
+----------------------
+1. Fork the repo and create a feature branch
+2. Make your changes and commit
+3. Open a pull request
 
-**Edit a file directly in GitHub**
+----------------------
+Support & Documentation
+----------------------
+- For issues, open a GitHub issue or check the /docs folder for troubleshooting and advanced usage.
+- See ENHANCED_MALLY_SYSTEM_PROMPT.md for details on AI scheduling integration.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+----------------------
+License
+----------------------
+This project is licensed under the MIT License.
 
-**Use GitHub Codespaces**
+----------------------
+Contact
+----------------------
+For questions or feedback, please open an issue or contact the maintainer.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/0a9106a9-1055-47b9-9329-1fa7edfa05ca) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+Enjoy using Malleabite!
