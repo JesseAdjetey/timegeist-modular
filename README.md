@@ -60,11 +60,6 @@ Getting Started
 4. **Open your browser:**
    Visit http://localhost:5173 (or the port shown in your terminal)
 
-----------------------
-Deployment
-----------------------
-- Deploy easily with [Lovable](https://lovable.dev/projects/0a9106a9-1055-47b9-9329-1fa7edfa05ca)
-- For custom domains, use Netlify or your preferred static hosting provider
 
 ----------------------
 How It Works
@@ -114,5 +109,7 @@ This project is licensed under the MIT License.
 Contact
 ----------------------
 For questions or feedback, please open an issue or contact the maintainer.
+Jesse Adjetey
+jesseniiadjetey@gmail.com
 
 Enjoy using Malleabite!
