@@ -1,4 +1,3 @@
-// supabase/functions/process-scheduling/index.ts
 import { createServer } from 'http';
 import { createClient } from '@supabase/supabase-js';
 // Use node-fetch for Node.js environments (needed for Node.js < 18)
@@ -142,6 +141,27 @@ function extractStructuredData(response: string): CalendarOperation | null {
     }
     
     console.warn("No structured data format found in Claude response");
+    
+    // Last resort - check for a scheduling intent and extract minimal event details
+    if (response.toLowerCase().includes('schedule') && response.toLowerCase().includes('event')) {
+      console.log("Scheduling intent detected, creating fallback calendar operation");
+      
+      // Extract potential title from response
+      const titleMatch = response.match(/(?:scheduled|added|created|event titled|for)\s+["']?([^"'\n.!?]+)["']?/i);
+      if (titleMatch && titleMatch[1]) {
+        return {
+          action: 'create',
+          eventDetails: {
+            title: titleMatch[1].trim(),
+            date: new Date().toISOString().split('T')[0],
+            startTime: "09:00",
+            endTime: "10:00",
+            description: "Event created via Mally AI"
+          }
+        };
+      }
+    }
+    
     // Log the full response to help with debugging
     console.warn("Full response for debugging:", response);
     return null;
@@ -353,8 +373,12 @@ const server = createServer(async (req, res) => {
         error: 'API key or database credentials not configured properly.'
       }));
       return;
-    }    // Create a Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);    // Run database schema check first
+    }
+    
+    // Create a Supabase client
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    
+    // Run database schema check first
     const schemaCheckResult = await checkDatabaseSchema(supabase);
     console.log("Database schema check result:", schemaCheckResult);
     
@@ -423,26 +447,16 @@ const server = createServer(async (req, res) => {
 
     // Format conversation with system message for Claude
     const systemPrompt = `You are Mally AI, an intelligent calendar assistant in the Malleabite time management app.
-Your job is to help users manage their calendar by scheduling, rescheduling, or canceling events. Before ever starting to schedule an event, check the users events and summarize the list of events and all their details so you will be familiar with it and avoid conflicts. At all costs make sure a conflict NEVER happens.
-
-USER'S CURRENT EVENTS:
-${formattedEvents.length > 0 ? JSON.stringify(formattedEvents, null, 2) : "No events currently scheduled"}
+Your job is to help users manage their calendar by scheduling, rescheduling, or canceling events.
 
 IMPORTANT CAPABILITIES AND CONSTRAINTS:
-- Before you ever start to schedule an event, you must check the user's current events for conflicts and summarize it in your own understanding to ensure you have a good standing of all events that are happening and when they are happening. You can tell the user that you are checking their calendar before scheduling any meeting to avoid conflicts.
-- After You can create, edit, and delete events in the user's calendar
+- You can create, edit, and delete events in the user's calendar
 - Today's date is ${todayDate}
 - The user has ${events.length} events in their calendar
 - Be conversational but efficient - users want to complete tasks quickly
-- When a user asks to schedule something, check for conflicts by going through the users current events first ALWAYS. USER'S CURRENT EVENTS: ${formattedEvents.length > 0 ? JSON.stringify(formattedEvents, null, 2) : "No events currently scheduled"} 
--  If there are no conflicts, respond with confirmation with specific date/time details else respond saying there is a conflict and suggest alternatives.
+- When a user asks to schedule something, respond with confirmation with specific date/time details
 - If time information is not provided, suggest a time but don't require it
 - If date information is not provided, assume today or suggest a good time
-- Always confirm the action with the user before proceeding to create events
-- Also always be aware of the todays date. Dont make mistakes with dates. Make sure you plan regarding the current date unless told otherwise by the user.
-- If you realize a conflict with an existing event, inform the user and suggest alternatives
-- Never backdate an event if a user hasnt asked
-- Never schedule an event in the past even though there might be conflicts with the current time the user is asking for. Tell the user there is a conflict and suggest alternatives.
 
 When processing calendar operations, you MUST:
 1. Identify the appropriate action (create/edit/delete/query)
@@ -466,8 +480,7 @@ When processing calendar operations, you MUST:
 
 CRITICAL: The JSON block above MUST be included in your response for any calendar operation.
 Make sure the JSON is properly formatted and enclosed in the code block with \`\`\`json at the start and \`\`\` at the end.
-Do not modify the format - follow the exact structure shown. "When you output a JSON object, do not include any markdown code block markers, extra text, or explanations. Output only a single, minified JSON object with no newlines, escapes, or extra formatting.
- This is required for the system to process your response correctly.
+Do not modify the format - follow the exact structure shown. This is required for the system to process your response correctly.
 
 This structured JSON will ONLY be used for database operations and won't be shown to the user.
 You must still provide a natural conversational response separately from this structured data.
@@ -487,7 +500,9 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
     formattedMessages.push({
       role: 'user',
       content: userInput
-    });    console.log("Calling Anthropic API with model: claude-3-haiku-20240307");
+    });
+    
+    console.log("Calling Anthropic API with model: claude-3-haiku-20240307");
     
     // Prepare the request body
     const requestBody = {
@@ -534,47 +549,20 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
     if (!response.ok) {
       console.error("API Error:", data.error || "Unknown API error");
       throw new Error(data.error?.message || `Failed to get response from Anthropic (Status: ${response.status})`);
-    }    const aiResponse = data.content?.[0]?.text || '';
+    }
+
+    const aiResponse = data.content?.[0]?.text || '';
     console.log("AI Response received:", aiResponse.substring(0, 100) + "...");
     console.log("FULL RAW AI RESPONSE:", JSON.stringify(aiResponse));
-        // Extract structured data about the calendar operation from Claude's response
+    
+    // Extract structured data about the calendar operation from Claude's response
     let calendarOperation = extractStructuredData(aiResponse);
-    
     console.log("Extracted calendar operation:", JSON.stringify(calendarOperation, null, 2));
-    
-    // If no calendar operation was extracted, create a default one for event creation
-    if (!calendarOperation && aiResponse.toLowerCase().includes("schedule") && aiResponse.toLowerCase().includes("event")) {
-      console.log("No calendar operation extracted but response mentions scheduling/events. Creating default operation.");
-      
-      // Extract potential event details using simple regex patterns
-      const titleMatch = aiResponse.match(/(?:scheduled|added|created|event titled|for)\s+["']?([^"'\n.!?]+)["']?/i);
-      const dateMatch = aiResponse.match(/(?:on|for)\s+([A-Za-z]+day|tomorrow|today|\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+(?:\s+\d{4})?)/i);
-      const timeMatch = aiResponse.match(/(?:at|from)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)(?:\s*(?:to|-)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?/i);
-      
-      if (titleMatch && titleMatch[1]) {
-        const defaultEventDetails = {
-          title: titleMatch[1].trim(),
-          date: new Date().toISOString().split('T')[0], // Default to today
-          startTime: "09:00",
-          endTime: "10:00",
-          description: "Event created via Mally AI"
-        };
-        
-        console.log("Created default event details:", defaultEventDetails);
-        
-        calendarOperation = {
-          action: "create",
-          eventDetails: defaultEventDetails
-        };
-      }
-    }
-    
-    // Log the raw AI response to see exactly what's coming back from Claude
-    console.log("Full AI response for debugging:", aiResponse);
     
     // Create a clean version of the response for the user (without JSON data)
     const cleanedResponse = cleanResponse(aiResponse);
-      // Initialize variables for operation results
+    
+    // Initialize variables for operation results
     let operationResult: { success: boolean; action: string; event?: any; conflicts?: any[]; error?: string } | null = null;
     let processedEvent: { id: string; title: string; description: string; startsAt: string; endsAt: string; date: string; color: string } | null = null;
     
@@ -587,7 +575,8 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
       if (action === 'create' && eventDetails && userId) {
         try {
           console.log("Creating new event:", eventDetails);
-            // Format event for database
+          
+          // Format event for database
           const dbEvent = formatEventForDatabase(eventDetails, userId);
           
           // Check for conflicts first
@@ -671,8 +660,8 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
                     id: data[0].id,
                     title: data[0].title,
                     description: data[0].description,
-                    startsAt: data[0].starts_at,  // Frontend compatibility
-                    endsAt: data[0].ends_at,      // Frontend compatibility
+                    startsAt: data[0].starts_at,
+                    endsAt: data[0].ends_at,
                     date: new Date(data[0].starts_at).toISOString().split('T')[0],
                     color: data[0].color || 'bg-purple-500/70'
                   };
@@ -688,27 +677,6 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
               console.error("Exception during insert operation:", insertError);
               console.error("Stack trace:", insertError.stack);
               throw insertError;
-            }
-            
-            // Return the newly created event
-            if (data && data[0]) {
-              console.log("Successfully created event in database with ID:", data[0].id);
-              
-              processedEvent = {
-                id: data[0].id,
-                title: data[0].title,
-                description: data[0].description,
-                startsAt: data[0].starts_at,  // Frontend compatibility
-                endsAt: data[0].ends_at,      // Frontend compatibility
-                date: new Date(data[0].starts_at).toISOString().split('T')[0],
-                color: data[0].color || 'bg-purple-500/70'
-              };
-              
-              operationResult = {
-                success: true,
-                action: 'create',
-                event: processedEvent
-              };
             }
           }
         } catch (error) {
@@ -782,8 +750,8 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
               id: data[0].id,
               title: data[0].title,
               description: data[0].description,
-              startsAt: data[0].starts_at,  // Frontend compatibility
-              endsAt: data[0].ends_at,      // Frontend compatibility
+              startsAt: data[0].starts_at,
+              endsAt: data[0].ends_at,
               date: new Date(data[0].starts_at).toISOString().split('T')[0],
               color: data[0].color || 'bg-purple-500/70'
             };
@@ -838,7 +806,7 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
             operationResult = {
               success: true,
               action: 'delete',
-              event: { id: targetEventId } // Use 'event' instead of 'eventId'
+              event: { id: targetEventId }
             };
           }
         } catch (error) {
@@ -855,62 +823,100 @@ Be helpful, accommodating, and make the scheduling process as simple as possible
           success: true,
           action: 'query'
         };
-      }    } else {
+      }
+    } else {
       // No calendar operation was found in Claude's response
       console.warn("No calendar operation found in Claude response. This might indicate a parsing issue or that Claude didn't output the expected JSON structure.");
       
-      // Create a default query response so the frontend can at least display the message
-      operationResult = {
-        success: true,
-        action: 'query',
-        error: 'Could not determine calendar operation from AI response'
-      };
-    }
-      // --- PATCH: Robust fallback JSON extraction if calendarOperation is null ---
-    let fallbackEvent: any = null;
-    if (!calendarOperation) {
-      // Try to extract JSON block manually from the AI response
-      const fallbackMatch = aiResponse.match(/\{[\s\S]*?"action"\s*:\s*"create"[\s\S]*?\}/);
-      if (fallbackMatch && fallbackMatch[0]) {
-        try {
-          const parsed = JSON.parse(fallbackMatch[0]);
-          if (parsed && parsed.eventDetails) {
-            fallbackEvent = {
-              id: `temp-${Date.now()}`,
-              title: parsed.eventDetails.title,
-              description: parsed.eventDetails.description || parsed.eventDetails.title,
-              startsAt: parsed.eventDetails.date && parsed.eventDetails.startTime ? new Date(`${parsed.eventDetails.date}T${parsed.eventDetails.startTime}`).toISOString() : undefined,
-              endsAt: parsed.eventDetails.date && parsed.eventDetails.endTime ? new Date(`${parsed.eventDetails.date}T${parsed.eventDetails.endTime}`).toISOString() : undefined,
-              date: parsed.eventDetails.date,
-              color: 'bg-purple-500/70'
-            };
-            console.log("[PATCH] Fallback event extracted:", fallbackEvent);
+      // Check if the message indicates a scheduling intent
+      if (aiResponse.toLowerCase().includes('schedule') && aiResponse.toLowerCase().includes('event')) {
+        console.log("Creating fallback calendar operation from scheduling intent");
+        
+        // Try to extract a title from the response
+        const titleMatch = aiResponse.match(/(?:scheduled|added|created|event titled|for)\s+["']?([^"'\n.!?]+)["']?/i);
+        const title = titleMatch && titleMatch[1] ? titleMatch[1].trim() : "New Event";
+        
+        // Create a minimal event
+        const eventDetails = {
+          title: title,
+          date: new Date().toISOString().split('T')[0],
+          startTime: "09:00", 
+          endTime: "10:00",
+          description: "Event created via Mally AI"
+        };
+        
+        // Try to create this event if we have a user ID
+        if (userId) {
+          try {
+            console.log("Creating fallback event:", eventDetails);
+            
+            // Format for database and insert
+            const dbEvent = formatEventForDatabase(eventDetails, userId);
+            const { data, error } = await supabase
+              .from('calendar_events')
+              .insert(dbEvent)
+              .select();
+            
+            if (error) {
+              console.error("Error creating fallback event:", error);
+            } else if (data && data[0]) {
+              console.log("Successfully created fallback event:", data[0]);
+              
+              processedEvent = {
+                id: data[0].id,
+                title: data[0].title,
+                description: data[0].description,
+                startsAt: data[0].starts_at,
+                endsAt: data[0].ends_at,
+                date: new Date(data[0].starts_at).toISOString().split('T')[0],
+                color: data[0].color || 'bg-purple-500/70'
+              };
+              
+              operationResult = {
+                success: true,
+                action: 'create',
+                event: processedEvent
+              };
+            }
+          } catch (error) {
+            console.error("Error creating fallback event:", error);
           }
-        } catch (err) {
-          console.error("[PATCH] Failed to parse fallback event JSON:", err, fallbackMatch[0]);
         }
       }
+      
+      // If we still don't have an operationResult, create a default one
+      if (!operationResult) {
+        operationResult = {
+          success: true,
+          action: 'query',
+          error: 'Could not determine calendar operation from AI response'
+        };
+      }
     }
+    
+    // Ensure we always have an operation result even if processing failed
+    if (!operationResult) {
+      console.warn("No operation result was created. Using fallback operation result.");
+      operationResult = {
+        success: true,
+        action: 'query'
+      };
+    }
+    
+    // Return the final response to the frontend
+    res.writeHead(200, { ...corsHeaders, 'Content-Type': 'application/json' });
     
     const responsePayload = { 
       response: cleanedResponse, 
       action: calendarOperation?.action || operationResult?.action,
-      // Always return the extracted event details for the frontend
-      event: processedEvent || (calendarOperation?.eventDetails ? {
-        id: `temp-${Date.now()}`,
-        title: calendarOperation.eventDetails.title,
-        description: calendarOperation.eventDetails.description || calendarOperation.eventDetails.title,
-        startsAt: calendarOperation.eventDetails.date && calendarOperation.eventDetails.startTime ? new Date(`${calendarOperation.eventDetails.date}T${calendarOperation.eventDetails.startTime}`).toISOString() : undefined,
-        endsAt: calendarOperation.eventDetails.date && calendarOperation.eventDetails.endTime ? new Date(`${calendarOperation.eventDetails.date}T${calendarOperation.eventDetails.endTime}`).toISOString() : undefined,
-        date: calendarOperation.eventDetails.date,
-        color: 'bg-purple-500/70'
-      } : fallbackEvent),
+      event: processedEvent,
       operationResult
     };
     
     console.log("Sending final response to frontend:", JSON.stringify(responsePayload, null, 2));
     
-    res.end(JSON.stringify(responsePayload));} catch (error) {
+    res.end(JSON.stringify(responsePayload));
+  } catch (error) {
     console.error('Error processing scheduling request:', error);
     // Log the full error object for debugging
     console.error('Detailed error:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));

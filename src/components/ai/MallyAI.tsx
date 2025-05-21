@@ -1,18 +1,29 @@
-
 // src/components/ai/MallyAI.tsx
-import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Plus, X, ArrowRight, ArrowLeft, ArrowUpRight, Loader2, Sparkles, Brain, Mic } from 'lucide-react';
-import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { CalendarEventType } from '@/lib/stores/types';
-import { useCalendarEvents } from '@/hooks/use-calendar-events';
-import '../../styles/ai-animations.css';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Bot,
+  Send,
+  Plus,
+  X,
+  ArrowRight,
+  ArrowLeft,
+  ArrowUpRight,
+  Loader2,
+  Sparkles,
+  Brain,
+  Mic,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { CalendarEventType } from "@/lib/stores/types";
+import { useCalendarEvents } from "@/hooks/use-calendar-events";
+import "../../styles/ai-animations.css";
 
 interface Message {
   id: string;
   text: string;
-  sender: 'user' | 'ai';
+  sender: "user" | "ai";
   timestamp: Date;
   isLoading?: boolean;
   isError?: boolean;
@@ -20,11 +31,11 @@ interface Message {
 
 const initialMessages: Message[] = [
   {
-    id: '1',
+    id: "1",
     text: "Hi, I'm Mally AI! I can help you schedule and manage events. How can I assist you today?",
-    sender: 'ai',
-    timestamp: new Date()
-  }
+    sender: "ai",
+    timestamp: new Date(),
+  },
 ];
 
 interface MallyAIProps {
@@ -33,14 +44,20 @@ interface MallyAIProps {
   preventOpenOnClick?: boolean;
 }
 
-const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preventOpenOnClick = false }) => {
+const MallyAI = ({
+  onScheduleEvent,
+  initialPrompt,
+  preventOpenOnClick = false,
+}: MallyAIProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [input, setInput] = useState(initialPrompt || '');
+  const [input, setInput] = useState(initialPrompt || "");
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSidebarView, setIsSidebarView] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [particles, setParticles] = useState<{x: number, y: number, size: number, life: number}[]>([]);
+  const [particles, setParticles] = useState<
+    { x: number; y: number; size: number; life: number }[]
+  >([]);
   const [showEntranceAnimation, setShowEntranceAnimation] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isButtonRecording, setIsButtonRecording] = useState(false);
@@ -58,7 +75,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
   // Create particles at random intervals
   useEffect(() => {
     if (!isOpen) return;
-    
+
     const interval = setInterval(() => {
       if (chatContainerRef.current) {
         const containerRect = chatContainerRef.current.getBoundingClientRect();
@@ -67,11 +84,11 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
         const size = Math.random() * 8 + 2;
         const life = Math.random() * 2000 + 1000;
 
-        setParticles(prev => [...prev, { x, y, size, life }]);
+        setParticles((prev) => [...prev, { x, y, size, life }]);
 
         // Clean up old particles
         setTimeout(() => {
-          setParticles(prev => prev.filter(p => p.x !== x || p.y !== y));
+          setParticles((prev) => prev.filter((p) => p.x !== x || p.y !== y));
         }, life);
       }
     }, 2000);
@@ -92,21 +109,117 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
   }, [isOpen, initialPrompt]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const toggleAI = () => {
     // Don't toggle if we're coming from a drag operation
     if (preventOpenOnClick) return;
-    
+
     setShowEntranceAnimation(true);
     setIsOpen(!isOpen);
-    
+
     // Reset entrance animation flag after animation completes
     if (!isOpen) {
       setTimeout(() => {
         setShowEntranceAnimation(false);
       }, 500);
+    }
+  };
+
+  // Define transcribeAudio function before it's used
+  const transcribeAudio = async (audioBlob: Blob) => {
+    try {
+      setIsProcessing(true);
+
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+
+      reader.onloadend = async () => {
+        const base64Audio = reader.result?.toString().split(",")[1];
+
+        if (!base64Audio) {
+          throw new Error("Failed to convert audio to base64");
+        }
+
+        const response = await supabase.functions.invoke("transcribe-audio", {
+          body: { audio: base64Audio },
+        });
+
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+
+        const { text } = response.data;
+
+        if (text && text.trim()) {
+          setInput(text);
+          // Don't automatically send - let the user review first
+          toast.success("Speech transcribed!");
+        } else {
+          toast.error("No speech detected");
+        }
+      };
+    } catch (error) {
+      console.error("Error transcribing audio:", error);
+      toast.error(
+        `Transcription error: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Speech to text functionality
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.addEventListener("dataavailable", (event) => {
+        audioChunksRef.current.push(event.data);
+      });
+
+      mediaRecorder.addEventListener("stop", async () => {
+        if (audioChunksRef.current.length > 0) {
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: "audio/webm",
+          });
+          await transcribeAudio(audioBlob);
+        }
+      });
+
+      mediaRecorder.start();
+      setIsRecording(true);
+
+      // Auto-stop after 10 seconds
+      recordingTimeoutRef.current = setTimeout(() => {
+        if (isRecording) {
+          stopRecording();
+        }
+      }, 10000);
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+      toast.error("Could not access microphone");
+    }
+  };
+
+  const stopRecording = () => {
+    if (recordingTimeoutRef.current) {
+      clearTimeout(recordingTimeoutRef.current);
+      recordingTimeoutRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream
+        .getTracks()
+        .forEach((track) => track.stop());
+      setIsRecording(false);
     }
   };
 
@@ -128,7 +241,7 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
     if (isButtonRecording) {
       stopRecording();
       setIsButtonRecording(false);
-      
+
       // Open the chat if it's not already open
       if (!isOpen) {
         setShowEntranceAnimation(true);
@@ -145,47 +258,50 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
 
   const addUserMessage = (text: string) => {
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       text,
-      sender: 'user',
-      timestamp: new Date()
+      sender: "user",
+      timestamp: new Date(),
     };
-    
-    setMessages(prev => [...prev, userMessage]);
+
+    setMessages((prev) => [...prev, userMessage]);
     return userMessage.id;
   };
 
   const addAIMessage = (text: string, isLoading = false, isError = false) => {
     const aiMessage: Message = {
-      id: Date.now().toString(),
+      id: `ai-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       text,
-      sender: 'ai',
+      sender: "ai",
       timestamp: new Date(),
       isLoading,
-      isError
+      isError,
     };
-    
-    setMessages(prev => [...prev, aiMessage]);
+
+    setMessages((prev) => [...prev, aiMessage]);
     return aiMessage.id;
   };
 
-  const updateAIMessage = (id: string, text: string, isLoading = false, isError = false) => {
-    setMessages(prev => 
-      prev.map(message => 
-        message.id === id 
-          ? { ...message, text, isLoading, isError } 
-          : message
+  const updateAIMessage = (
+    id: string,
+    text: string,
+    isLoading = false,
+    isError = false
+  ) => {
+    setMessages((prev) =>
+      prev.map((message) =>
+        message.id === id ? { ...message, text, isLoading, isError } : message
       )
     );
   };
 
   const createSendRipple = (x: number, y: number) => {
-    const ripple = document.createElement('div');
-    ripple.className = 'send-ripple';
+    const ripple = document.createElement("div");
+    ripple.className = "send-ripple";
     ripple.style.left = `${x}px`;
     ripple.style.top = `${y}px`;
     document.body.appendChild(ripple);
-    
+
     // Remove the ripple after animation completes
     setTimeout(() => {
       ripple.remove();
@@ -194,178 +310,263 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
 
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim()) return;
-    
+
     const userMessageId = addUserMessage(messageText);
-    setInput('');
-    const aiMessageId = addAIMessage('Thinking...', true);
+    setInput("");
+    const aiMessageId = addAIMessage("Thinking...", true);
     setIsProcessing(true);
     retryCountRef.current = 0;
 
     const tryProcessMessage = async () => {
       try {
         console.log("Calling Supabase edge function: process-scheduling");
-        
+
         const currentEvents = await fetchEvents();
-        
-        const response = await supabase.functions.invoke('process-scheduling', {
-          body: { 
+
+        const response = await supabase.functions.invoke("process-scheduling", {
+          body: {
             text: messageText,
             prompt: messageText,
             messages: messages
-              .filter(m => !m.isLoading)
-              .map(m => ({
-                role: m.sender === 'user' ? 'user' : 'assistant',
-                content: m.text
+              .filter((m) => !m.isLoading)
+              .map((m) => ({
+                role: m.sender === "user" ? "user" : "assistant",
+                content: m.text,
               })),
             events: currentEvents,
-            userId: user?.id
-          }
+            userId: user?.id,
+          },
         });
 
         console.log("Edge function response:", response);
+        console.log("Full data object received from edge function (MallyAI.tsx):", JSON.stringify(response.data, null, 2)); // Added log
 
         if (response.error) {
-          console.error('Edge function error:', response.error);
-          throw new Error(response.error.message || 'Failed to get AI response');
+          console.error("Edge function error:", response.error);
+          throw new Error(
+            response.error.message || "Failed to get AI response"
+          );
         }
 
         const data = response.data;
-        
+
         if (!data || (!data.response && !data.action && !data.error)) {
-          console.error('Invalid response from edge function:', data);
-          throw new Error('Received an invalid response from the AI service');
+          console.error("Invalid response from edge function:", data);
+          throw new Error("Received an invalid response from the AI service");
         }
-        
+
         if (data.error) {
-          console.error('AI processing error:', data.error);
+          console.error("AI processing error:", data.error);
           throw new Error(data.error);
         }
-        
-        updateAIMessage(aiMessageId, data.response || 'I processed your request.', false);
 
-        if (data.action === 'create' && data.event) {
-          console.log("New event received from edge function:", data.event);
-          
-          try {
-            const eventData = data.event;
-            const startsAt = eventData.starts_at || eventData.startsAt || new Date().toISOString();
-            const endsAt = eventData.ends_at || eventData.endsAt || new Date(new Date(startsAt).getTime() + 60*60*1000).toISOString();
-            const eventDate = new Date(startsAt).toISOString().split('T')[0];
-            
-            const startTime = new Date(startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-            const endTime = new Date(endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-            const description = `${startTime} - ${endTime} | ${eventData.description || ''}`;
-            
-            const formattedEvent: CalendarEventType = {
-              id: eventData.id || crypto.randomUUID(),
-              title: eventData.title,
-              description: description,
-              startsAt: startsAt,
-              endsAt: endsAt,
-              date: eventDate,
-              color: eventData.color || 'bg-purple-500/70',
-              isLocked: eventData.is_locked || eventData.isLocked || false,
-              isTodo: eventData.is_todo || eventData.isTodo || false,
-              hasAlarm: eventData.has_alarm || eventData.hasAlarm || false,
-              hasReminder: eventData.has_reminder || eventData.hasReminder || false,
-              todoId: eventData.todo_id || eventData.todoId
-            };
-            
-            if (onScheduleEvent) {
-              console.log("Using onScheduleEvent callback for event:", formattedEvent);
-              const result = await onScheduleEvent(formattedEvent);
-              console.log("Result from onScheduleEvent:", result);
-              
-              if (result && result.success) {
-                toast.success(`Event "${formattedEvent.title}" scheduled successfully`);
+        updateAIMessage(
+          aiMessageId,
+          data.response || "I processed your request.",
+          false
+        );
+
+        // Check if we have an event creation intent in the response or action
+        if (
+          data.action === "create" ||
+          data.operationResult?.action === "create" ||
+          (data.response?.toLowerCase().includes("schedule") &&
+            data.response?.toLowerCase().includes("event"))
+        ) {
+          console.log("Event creation/scheduling intent detected in MallyAI.tsx."); // Enhanced log
+
+          // Check if we have event data from the backend
+          const eventData = data.event || data.operationResult?.event;
+          console.log("Resolved eventData for creation in MallyAI.tsx:", JSON.stringify(eventData, null, 2)); // Added log
+
+          if (eventData && Object.keys(eventData).length > 0 && eventData.title) { // Added check for non-empty object and title
+            console.log("Valid eventData found, proceeding to format and add/schedule event:", JSON.stringify(eventData, null, 2)); // Enhanced log
+            try {
+              const startsAt =
+                eventData.starts_at ||
+                eventData.startsAt ||
+                new Date().toISOString();
+              const endsAt =
+                eventData.ends_at ||
+                eventData.endsAt ||
+                new Date(
+                  new Date(startsAt).getTime() + 60 * 60 * 1000
+                ).toISOString();
+              const eventDate = new Date(startsAt).toISOString().split("T")[0];
+
+              const startTime = new Date(startsAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              });
+              const endTime = new Date(endsAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              });
+              const description = `${startTime} - ${endTime} | ${
+                eventData.description || ""
+              }`;
+
+              const formattedEvent: CalendarEventType = {
+                id: eventData.id || crypto.randomUUID(),
+                title: eventData.title,
+                description: description,
+                startsAt: startsAt,
+                endsAt: endsAt,
+                date: eventDate,
+                color: eventData.color || "bg-purple-500/70",
+                isLocked: eventData.is_locked || eventData.isLocked || false,
+                isTodo: eventData.is_todo || eventData.isTodo || false,
+                hasAlarm: eventData.has_alarm || eventData.hasAlarm || false,
+                hasReminder:
+                  eventData.has_reminder || eventData.hasReminder || false,
+                todoId: eventData.todo_id || eventData.todoId,
+              };
+
+              if (onScheduleEvent) {
+                console.log(
+                  "Using onScheduleEvent callback for event:",
+                  formattedEvent
+                );
+                const result = await onScheduleEvent(formattedEvent);
+                console.log("Result from onScheduleEvent:", result);
+
+                if (result && result.success) {
+                  toast.success(
+                    `Event "${formattedEvent.title}" scheduled successfully`
+                  );
+                } else {
+                  console.error(
+                    "Failed to schedule event:",
+                    result?.error || "unknown error"
+                  );
+                  toast.error(
+                    `Failed to schedule event: ${
+                      result?.error || "Unknown error"
+                    }`
+                  );
+                }
               } else {
-                console.error("Failed to schedule event:", result?.error || "unknown error");
-                toast.error(`Failed to schedule event: ${result?.error || 'Unknown error'}`);
+                console.log("Using addEvent hook directly");
+                const result = await addEvent(formattedEvent);
+                console.log("Result from addEvent hook:", result);
+
+                if (result.success) {
+                  toast.success(
+                    `Event "${formattedEvent.title}" added to your calendar`
+                  );
+                } else {
+                  console.error("Failed to add event:", result.error);
+                  toast.error(
+                    `Failed to add event: ${result.error || "Unknown error"}`
+                  );
+                }
               }
-            } else {
-              console.log("Using addEvent hook directly");
-              const result = await addEvent(formattedEvent);
-              console.log("Result from addEvent hook:", result);
-              
-              if (result.success) {
-                toast.success(`Event "${formattedEvent.title}" added to your calendar`);
-              } else {
-                console.error("Failed to add event:", result.error);
-                toast.error(`Failed to add event: ${result.error || 'Unknown error'}`);
-              }
+            } catch (err) {
+              console.error("Error processing AI-created event in MallyAI.tsx:", err, "Original eventData:", JSON.stringify(eventData, null, 2)); // Enhanced log
+              toast.error(
+                `Error adding event: ${
+                  err instanceof Error ? err.message : "Unknown error"
+                }`
+              );
             }
-          } catch (err) {
-            console.error("Error processing AI-created event:", err);
-            toast.error(`Error adding event: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          } else {
+            // Added else block for clarity when eventData is missing or invalid
+            console.warn(
+              "Event creation/scheduling intent detected, but no valid eventData (or title missing) found in response from edge function. Full data:",
+              JSON.stringify(data, null, 2) // Enhanced log
+            );
           }
         }
-        
+
         if (data.processedEvent) {
           const processedEvent = data.processedEvent;
-          
-          if (processedEvent._action === 'delete') {
+
+          if (processedEvent._action === "delete") {
             const response = await removeEvent(processedEvent.id);
             if (response.success) {
               toast.success(`Event "${processedEvent.title}" has been deleted`);
             } else {
-              toast.error(`Failed to delete event: ${response.error || 'Unknown error'}`);
+              toast.error(
+                `Failed to delete event: ${response.error || "Unknown error"}`
+              );
             }
           } else if (processedEvent.id) {
-            const startTime = new Date(processedEvent.starts_at).toLocaleTimeString([], {
-              hour: '2-digit', 
-              minute: '2-digit', 
-              hour12: false
+            const startTime = new Date(
+              processedEvent.starts_at
+            ).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
             });
-            
-            const endTime = new Date(processedEvent.ends_at).toLocaleTimeString([], {
-              hour: '2-digit', 
-              minute: '2-digit', 
-              hour12: false
-            });
-            
-            const eventDescription = `${startTime} - ${endTime} | ${processedEvent.description || ''}`;
-            
+
+            const endTime = new Date(processedEvent.ends_at).toLocaleTimeString(
+              [],
+              {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              }
+            );
+
+            const eventDescription = `${startTime} - ${endTime} | ${
+              processedEvent.description || ""
+            }`;
+
             const eventToUpdate: CalendarEventType = {
               id: processedEvent.id,
               title: processedEvent.title,
               description: eventDescription,
               startsAt: processedEvent.starts_at,
               endsAt: processedEvent.ends_at,
-              date: new Date(processedEvent.starts_at).toISOString().split('T')[0],
-              color: processedEvent.color || 'bg-purple-500/70',
+              date: new Date(processedEvent.starts_at)
+                .toISOString()
+                .split("T")[0],
+              color: processedEvent.color || "bg-purple-500/70",
               isLocked: processedEvent.is_locked || false,
               isTodo: processedEvent.is_todo || false,
               hasAlarm: processedEvent.has_alarm || false,
-              hasReminder: processedEvent.has_reminder || false
+              hasReminder: processedEvent.has_reminder || false,
             };
-            
+
             const response = await updateEvent(eventToUpdate);
             if (response.success) {
               toast.success(`Event "${processedEvent.title}" has been updated`);
             } else {
-              toast.error(`Failed to update event: ${response.error || 'Unknown error'}`);
+              toast.error(
+                `Failed to update event: ${response.error || "Unknown error"}`
+              );
             }
           }
         }
       } catch (error) {
-        console.error('Error processing AI request:', error);
-        
+        console.error("Error processing AI request:", error);
+
         // Retry logic
         if (retryCountRef.current < maxRetries) {
           retryCountRef.current++;
-          console.log(`Retrying request (${retryCountRef.current}/${maxRetries})...`);
-          updateAIMessage(aiMessageId, `Thinking... (retrying ${retryCountRef.current}/${maxRetries})`, true);
-          
+          console.log(
+            `Retrying request (${retryCountRef.current}/${maxRetries})...`
+          );
+          updateAIMessage(
+            aiMessageId,
+            `Thinking... (retrying ${retryCountRef.current}/${maxRetries})`,
+            true
+          );
+
           // Exponential backoff
           const backoffTime = 1000 * Math.pow(2, retryCountRef.current - 1);
-          await new Promise(resolve => setTimeout(resolve, backoffTime));
-          
+          await new Promise((resolve) => setTimeout(resolve, backoffTime));
+
           return tryProcessMessage();
         }
-        
+
         updateAIMessage(
-          aiMessageId, 
-          `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`, 
+          aiMessageId,
+          `Sorry, I encountered an error: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }. Please try again.`,
           false,
           true
         );
@@ -379,23 +580,35 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
     }
   };
 
-  const formatEventDescription = (startsAt: string, endsAt: string, description: string): string => {
-    const startTime = new Date(startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    const endTime = new Date(endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  const formatEventDescription = (
+    startsAt: string,
+    endsAt: string,
+    description: string
+  ): string => {
+    const startTime = new Date(startsAt).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const endTime = new Date(endsAt).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
     return `${startTime} - ${endTime} | ${description}`;
   };
 
   const fetchEvents = async () => {
     try {
       if (!user) return [];
-      
+
       const { data, error } = await supabase
-        .from('calendar_events')
-        .select('*')
-        .eq('user_id', user.id);
-        
+        .from("calendar_events")
+        .select("*")
+        .eq("user_id", user.id);
+
       if (error) throw error;
-      
+
       return data || [];
     } catch (error) {
       console.error("Error fetching events for AI context:", error);
@@ -405,22 +618,22 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
 
   const sendMessage = () => {
     if (isProcessing) return;
-    
+
     const messageToSend = input.trim();
-    
+
     if (messageToSend) {
       // Create send ripple effect
       if (chatContainerRef.current) {
         const rect = chatContainerRef.current.getBoundingClientRect();
         createSendRipple(rect.right - 30, rect.bottom - 30);
       }
-      
+
       handleSendMessage(messageToSend);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -434,100 +647,11 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
     setIsSidebarView(!isSidebarView);
   };
 
-  // Speech to text functionality
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      
-      mediaRecorder.addEventListener('dataavailable', (event) => {
-        audioChunksRef.current.push(event.data);
-      });
-      
-      mediaRecorder.addEventListener('stop', async () => {
-        if (audioChunksRef.current.length > 0) {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          await transcribeAudio(audioBlob);
-        }
-      });
-      
-      mediaRecorder.start();
-      setIsRecording(true);
-      
-      // Auto-stop after 10 seconds
-      recordingTimeoutRef.current = setTimeout(() => {
-        if (isRecording) {
-          stopRecording();
-        }
-      }, 10000);
-      
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      toast.error('Could not access microphone');
-    }
-  };
-  
-  const stopRecording = () => {
-    if (recordingTimeoutRef.current) {
-      clearTimeout(recordingTimeoutRef.current);
-      recordingTimeoutRef.current = null;
-    }
-    
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      setIsRecording(false);
-    }
-  };
-
   const toggleRecording = () => {
     if (isRecording) {
       stopRecording();
     } else {
       startRecording();
-    }
-  };
-  
-  const transcribeAudio = async (audioBlob: Blob) => {
-    try {
-      setIsProcessing(true);
-      
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      
-      reader.onloadend = async () => {
-        const base64Audio = reader.result?.toString().split(',')[1];
-        
-        if (!base64Audio) {
-          throw new Error('Failed to convert audio to base64');
-        }
-        
-        const response = await supabase.functions.invoke('transcribe-audio', {
-          body: { audio: base64Audio }
-        });
-        
-        if (response.error) {
-          throw new Error(response.error.message);
-        }
-        
-        const { text } = response.data;
-        
-        if (text && text.trim()) {
-          setInput(text);
-          // Don't automatically send - let the user review first
-          toast.success('Speech transcribed!');
-        } else {
-          toast.error('No speech detected');
-        }
-      };
-      
-    } catch (error) {
-      console.error('Error transcribing audio:', error);
-      toast.error(`Transcription error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -542,16 +666,16 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
 
   if (!isOpen) {
     return (
-      <div 
+      <div
         className="fixed z-50 flex items-center justify-center shadow-lg hover:shadow-xl transition-all ai-button"
         style={{
-          bottom: '6rem',
-          right: '2rem',
-          width: '3.5rem',
-          height: '3.5rem',
-          borderRadius: '50%',
-          backgroundColor: 'rgba(139, 92, 246, 0.8)',
-          animation: 'floatButton 2s ease-in-out infinite'
+          bottom: "6rem",
+          right: "2rem",
+          width: "3.5rem",
+          height: "3.5rem",
+          borderRadius: "50%",
+          backgroundColor: "rgba(139, 92, 246, 0.8)",
+          animation: "floatButton 2s ease-in-out infinite",
         }}
         onClick={toggleAI}
         onMouseDown={startButtonRecording}
@@ -559,7 +683,11 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
         onTouchStart={startButtonRecording}
         onTouchEnd={stopButtonRecording}
       >
-        <Sparkles size={16} className="absolute text-white/50 animate-sparkle" style={{ top: '8px', right: '8px' }} />
+        <Sparkles
+          size={16}
+          className="absolute text-white/50 animate-sparkle"
+          style={{ top: "8px", right: "8px" }}
+        />
         {isButtonRecording ? (
           <div className="relative">
             <Mic size={24} className="text-white animate-pulse" />
@@ -574,47 +702,57 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
 
   return (
     <>
-      <div 
+      <div
         ref={chatContainerRef}
-        className={`ai-chat-container ${isExpanded ? 'w-96 h-[500px]' : 'w-80 h-[400px]'} 
-                  ${isSidebarView ? 'fixed left-[400px] bottom-0 rounded-none h-[calc(100vh-64px)] w-96' : 'fixed bottom-20 right-8 z-50 rounded-lg shadow-xl'} 
+        className={`ai-chat-container ${
+          isExpanded ? "w-96 h-[500px]" : "w-80 h-[400px]"
+        } 
+                  ${
+                    isSidebarView
+                      ? "fixed left-[400px] bottom-0 rounded-none h-[calc(100vh-64px)] w-96"
+                      : "fixed bottom-20 right-8 z-50 rounded-lg shadow-xl"
+                  } 
                   flex flex-col transition-all duration-300 bg-gradient-to-br from-purple-900/90 to-indigo-900/90 text-white border border-purple-500/20
-                  ${showEntranceAnimation ? 'ai-chat-enter' : ''} glow-border`}
+                  ${showEntranceAnimation ? "ai-chat-enter" : ""} glow-border`}
       >
         {/* Floating particles */}
         {particles.map((particle, idx) => (
-          <div 
-            key={`particle-${idx}-${particle.x}-${particle.y}`} 
-            className="particle" 
+          <div
+            key={`particle-${idx}-${particle.x}-${particle.y}`}
+            className="particle"
             style={{
               left: `${particle.x}px`,
               top: `${particle.y}px`,
               width: `${particle.size}px`,
               height: `${particle.size}px`,
-              opacity: 0.6
+              opacity: 0.6,
             }}
           />
         ))}
-        
+
         <div className="flex justify-between items-center p-3 border-b border-white/10 backdrop-blur-sm">
           <div className="flex items-center">
             <Bot size={20} className="text-primary animate-pulse mr-2" />
             <h3 className="font-semibold">Mally AI</h3>
           </div>
           <div className="flex items-center space-x-1">
-            <button 
+            <button
               onClick={toggleSidebarView}
               className="p-1 rounded-full hover:bg-white/10 transition-colors"
             >
-              {isSidebarView ? <ArrowRight size={14} /> : <ArrowLeft size={14} />}
+              {isSidebarView ? (
+                <ArrowRight size={14} />
+              ) : (
+                <ArrowLeft size={14} />
+              )}
             </button>
-            <button 
+            <button
               onClick={toggleExpand}
               className="p-1 rounded-full hover:bg-white/10 transition-colors"
             >
               {isExpanded ? <ArrowUpRight size={14} /> : <Plus size={14} />}
             </button>
-            <button 
+            <button
               onClick={toggleAI}
               className="p-1 rounded-full hover:bg-white/10 transition-colors"
             >
@@ -622,50 +760,59 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
             </button>
           </div>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto mb-3 p-3">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`mb-3 ${message.sender === 'user' ? 'ml-auto' : 'mr-auto'}`}
+              className={`mb-3 ${
+                message.sender === "user" ? "ml-auto" : "mr-auto"
+              }`}
             >
               <div
                 className={`p-2 rounded-lg max-w-[85%] message-in ${
-                  message.sender === 'user'
-                    ? 'bg-primary/30 ml-auto'
-                    : message.isError 
-                      ? 'bg-red-500/30 mr-auto'
-                      : 'bg-secondary mr-auto'
-                } ${message.isLoading ? 'animate-pulse' : ''}`}
+                  message.sender === "user"
+                    ? "bg-primary/30 ml-auto"
+                    : message.isError
+                    ? "bg-red-500/30 mr-auto"
+                    : "bg-secondary mr-auto"
+                } ${message.isLoading ? "animate-pulse" : ""}`}
               >
                 <p className="text-sm">{message.text}</p>
                 {message.isLoading && (
                   <div className="flex justify-center mt-1">
-                    {isProcessing ? <TypingIndicator /> : <Loader2 size={16} className="animate-spin text-white/70" />}
+                    {isProcessing ? (
+                      <TypingIndicator />
+                    ) : (
+                      <Loader2
+                        size={16}
+                        className="animate-spin text-white/70"
+                      />
+                    )}
                   </div>
                 )}
               </div>
               <div
                 className={`text-xs opacity-70 mt-1 ${
-                  message.sender === 'user' ? 'text-right' : ''
+                  message.sender === "user" ? "text-right" : ""
                 }`}
               >
                 {message.timestamp.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit'
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })}
               </div>
             </div>
           ))}
           <div ref={messagesEndRef} />
         </div>
-        
+
         {isProcessing && (
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
             <Brain size={80} className="text-purple-400/10 brain-pulse" />
           </div>
         )}
-        
+
         <div className="flex items-center p-3 border-t border-white/10 backdrop-blur-sm relative z-10">
           <textarea
             value={input}
@@ -679,10 +826,17 @@ const MallyAI: React.FC<MallyAIProps> = ({ onScheduleEvent, initialPrompt, preve
           <button
             onClick={toggleRecording}
             disabled={isProcessing}
-            className={`ml-2 p-2 rounded-full ${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-white/10 hover:bg-white/20'} transition-all`}
+            className={`ml-2 p-2 rounded-full ${
+              isRecording
+                ? "bg-red-500 hover:bg-red-600"
+                : "bg-white/10 hover:bg-white/20"
+            } transition-all`}
             title={isRecording ? "Stop recording" : "Start voice input"}
           >
-            <Mic size={16} className={`${isRecording ? 'animate-pulse' : ''}`} />
+            <Mic
+              size={16}
+              className={`${isRecording ? "animate-pulse" : ""}`}
+            />
           </button>
           <button
             onClick={sendMessage}

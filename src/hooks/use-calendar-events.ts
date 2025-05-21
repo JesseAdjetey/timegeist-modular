@@ -1,4 +1,3 @@
-
 // Updated version of useCalendarEvents hook for the new calendar_events schema
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +16,8 @@ interface SupabaseActionResponse {
   success: boolean;
   data?: any;
   error?: Error | unknown;
+  // Additional fields for diagnostics
+  diagnosticMessage?: string;
 }
 
 export function useCalendarEvents() {
@@ -164,8 +165,7 @@ export function useCalendarEvents() {
       
       console.log('Starts At (ISO):', startsAt);
       console.log('Ends At (ISO):', endsAt);
-      
-      // Extract the actual description part
+        // Extract the actual description part
       const descriptionParts = event.description.split('|');
       const actualDescription = descriptionParts.length > 1 ? descriptionParts[1].trim() : '';
       
@@ -185,16 +185,27 @@ export function useCalendarEvents() {
       };
       
       console.log('Prepared Supabase Event Object:', newEvent);
+      console.log('Supabase client config:', {
+        authHeader: !!supabase.auth,
+        userId: user.id
+      });
       
       const { data, error } = await supabase
         .from('calendar_events')
         .insert(newEvent)
         .select();
       
-      console.log('Supabase Insert Response:', { data, error });
-        
+      console.log('Supabase Insert Response:', { 
+        success: !error, 
+        data: data ? `Data returned with ${data.length} items` : 'No data', 
+        error: error ? JSON.stringify(error) : 'No error'
+      });
+      
       if (error) {
         console.error('Detailed Supabase Error:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
         toast.error(`Failed to add event: ${error.message}`);
         return { success: false, error };
       }
@@ -376,6 +387,88 @@ export function useCalendarEvents() {
     }
   };
 
+  // Diagnostic test function to help troubleshoot calendar event issues
+  const testCalendarDatabase = async (): Promise<SupabaseActionResponse> => {
+    if (!user) {
+      toast.error('User not authenticated');
+      return { success: false };
+    }
+    
+    try {
+      // First, try to fetch events to test read access
+      console.log('CALENDAR DATABASE TEST: Testing read access...');
+      const { data: readData, error: readError } = await supabase
+        .from('calendar_events')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+      
+      if (readError) {
+        console.error('TEST FAILED: Cannot read from calendar_events table:', readError);
+        return { 
+          success: false, 
+          error: readError 
+        };
+      }
+      
+      console.log('READ TEST PASSED. Found events:', readData?.length);
+      
+      // Next, try to create a test event
+      console.log('CALENDAR DATABASE TEST: Testing write access...');
+      const testEvent = {
+        title: "DATABASE TEST EVENT - Please Delete",
+        description: "This is an automated test to verify database permissions",
+        color: "bg-red-500/70",
+        user_id: user.id,
+        starts_at: new Date().toISOString(),
+        ends_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour later
+        has_reminder: false,
+        has_alarm: false,
+        is_locked: false,
+        is_todo: false
+      };
+      
+      const { data: writeData, error: writeError } = await supabase
+        .from('calendar_events')
+        .insert(testEvent)
+        .select();
+      
+      if (writeError) {
+        console.error('TEST FAILED: Cannot write to calendar_events table:', writeError);
+        return { 
+          success: false, 
+          error: writeError 
+        };
+      }
+      
+      console.log('WRITE TEST PASSED. Created test event:', writeData?.[0]?.id);
+      
+      // Finally, clean up by deleting the test event
+      if (writeData && writeData[0]) {
+        const { error: deleteError } = await supabase
+          .from('calendar_events')
+          .delete()
+          .eq('id', writeData[0].id);
+        
+        if (deleteError) {
+          console.warn('TEST CLEANUP FAILED: Cannot delete test event:', deleteError);
+        } else {
+          console.log('TEST CLEANUP PASSED: Test event deleted successfully');
+        }
+      }
+      
+      toast.success('Calendar database test passed!');
+      return { 
+        success: true,
+        data: { readTest: true, writeTest: true }
+      };
+    } catch (err) {
+      console.error('ERROR DURING CALENDAR DATABASE TEST:', err);
+      toast.error('Calendar database test failed');
+      return { success: false, error: err };
+    }
+  };
+
   // Load events when component mounts or user changes
   useEffect(() => {
     if (user) {
@@ -420,5 +513,6 @@ export function useCalendarEvents() {
     removeEvent,
     toggleEventLock,
     addTestEvent,
+    testCalendarDatabase,
   };
 }
